@@ -1,0 +1,17 @@
+{
+  "name": "ufbx-doc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild scripts/index.js --minimize --bundle --outfile=build/components.js --jsx-factory=h --jsx-fragment=Fragment",
+    "watch": "esbuild scripts/index.js --watch --bundle --outfile=build/components.js --jsx-factory=h --jsx-fragment=Fragment"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "esbuild": "^0.14.1",
+    "kaiku": "^1.19.2",
+    "watch": "^1.0.2"
+  }
+}
