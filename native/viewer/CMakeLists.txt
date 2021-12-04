@@ -26,5 +26,11 @@ add_library(viewer STATIC ${SRC_FILES})
 
 add_dependencies(viewer gen)
 
-target_include_directories(viewer PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen/shaders")
+target_include_directories(viewer PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen")
 target_include_directories(viewer INTERFACE ".")
+
+if(MSVC)
+  target_compile_options(viewer PRIVATE /W4 /WX)
+else()
+  target_compile_options(viewer PRIVATE -Wall -Werror)
+endif()

@@ -5,6 +5,11 @@
 #include <float.h>
 #include <stdbool.h>
 
+#if defined(_MSC_VER)
+	#pragma warning(push)
+	#pragma warning(disable: 4201)
+#endif
+
 #define um_inline static inline
 
 #if defined(__cplusplus)
@@ -242,6 +247,10 @@ um_inline um_quat operator*(const um_quat &a, const um_quat &b) { return um_quat
 um_inline um_mat operator+(const um_mat &a, const um_mat &b) { return um_mat_add(a, b); }
 um_inline um_mat operator-(const um_mat &a, const um_mat &b) { return um_mat_sub(a, b); }
 um_inline um_mat operator*(const um_mat &a, const um_mat &b) { return um_mat_mul(a, b); }
+#endif
+
+#if defined(_MSC_VER)
+	#pragma warning(pop)
 #endif
 
 #endif
