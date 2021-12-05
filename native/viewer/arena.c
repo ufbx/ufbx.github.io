@@ -12,20 +12,20 @@ enum {
 };
 
 static const uint8_t arenaimp_size_classes[] = {
-    2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64
+    2, 3, 4, 6, 10, 14, 18, 26, 34, 56,
 };
 
 static const uint8_t arenaimp_size_to_class[] = {
-    0, 0, 0, 1, 2, 3, 3, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7,
-    7, 8,8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-    9, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10
+    0, 0, 0, 1, 2, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6,
+    7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9,
+    9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
 };
 
 enum {
     ARENAIMP_SIZECLASS_QUANTIZATION = 8,
     ARENAIMP_NUM_SIZECLASSES = sizeof(arenaimp_size_classes),
-    ARENAIMP_LARGEST_SIZECLASS = 512,
-    ARENAIMP_FIRST_PAGE_SIZE = 1024,
+    ARENAIMP_LARGEST_SIZECLASS = 448,
+    ARENAIMP_FIRST_PAGE_SIZE = 512,
     ARENAIMP_MAX_PAGE_SIZE = 4096,
 };
 
@@ -34,15 +34,10 @@ typedef union arenaimp_common_header arenaimp_common_header;
 typedef union arenaimp_small_header arenaimp_small_header;
 typedef struct arenaimp_big_header arenaimp_big_header;
 
-typedef union {
-    struct {
-		arena_defer_fn *fn;
-		void *user;
-    } active;
-    struct {
-		arena_defer_fn *tag_null;
-        size_t next_free_slot;
-    } freed;
+typedef struct {
+	arena_defer_fn *fn;
+	void *user;
+    size_t prev, next;
 } arenaimp_defer_slot;
 
 typedef union {
@@ -80,7 +75,8 @@ struct arenaimp_t {
 
     arenaimp_defer_slot *defers;
     size_t num_defers;
-    size_t free_defer_slot;
+    size_t active_defer_head;
+    size_t free_defer_head;
 
     arenaimp_big_header big_head, big_tail;
 
@@ -111,7 +107,8 @@ static void arenaimp_defer_free_arena(void *user)
 static void arenaimp_init(arenaimp_t *a)
 {
 	a->magic = ARENAIMP_MAGIC_ARENA;
-    a->free_defer_slot = SIZE_MAX;
+    a->active_defer_head = SIZE_MAX;
+    a->free_defer_head = SIZE_MAX;
     a->big_head.next = &a->big_tail;
     a->big_tail.next = &a->big_head;
     a->next_size = ARENAIMP_FIRST_PAGE_SIZE / 2;
@@ -121,7 +118,7 @@ static void arenaimp_init(arenaimp_t *a)
     a->size = ARENAIMP_INIT_SIZE;
 }
 
-arena_t *arena_make(arena_t *parent)
+arena_t *arena_create(arena_t *parent)
 {
 	arenaimp_t *a, *p = (arenaimp_t*)parent;
     if (p) {
@@ -169,19 +166,17 @@ void arena_free(arena_t *arena)
     assert(a->magic == ARENAIMP_MAGIC_ARENA);
     a->magic = ARENAIMP_MAGIC_FREE;
 
-    size_t num_defers = 0;
+    size_t slot = a->active_defer_head;
     arenaimp_defer_slot *defers = a->defers;
-    for (size_t i = 0; i < num_defers; i++) {
-        arenaimp_defer_slot ds = defers[i];
-        if (ds.active.fn) {
-            ds.active.fn(ds.active.user);
-        }
+    while (slot != SIZE_MAX) {
+        defers[slot].fn(defers[slot].user);
+        slot = defers[slot].next;
     }
 
     arenaimp_big_header *alloc = a->big_head.next;
     arenaimp_big_header *last = &a->big_tail;
     while (alloc != last) {
-		arenaimp_big_header *next = alloc;
+		arenaimp_big_header *next = alloc->next;
         free(alloc);
         alloc = next;
     }
@@ -204,7 +199,7 @@ void *arena_defer_size(arena_t *arena, arena_defer_fn *fn, size_t size, const vo
     assert(a->magic == ARENAIMP_MAGIC_ARENA);
 
     size_t total = sizeof(arenaimp_defer_header) + size;
-    arenaimp_defer_header *dh = (arenaimp_defer_header*)aalloc_copy_size(arena, total, 1, data);
+    arenaimp_defer_header *dh = (arenaimp_defer_header*)aalloc_uninit_size(arena, total, 1);
     assert(dh);
     if (!dh) return NULL;
     void *copy = dh + 1;
@@ -249,18 +244,26 @@ size_t arena_ext_defer(arena_t *arena, arena_defer_fn *fn, const void *data)
     assert(fn);
 
     size_t slot = 0;
-    if (a->free_defer_slot != SIZE_MAX) {
-        slot = a->free_defer_slot;
-        a->free_defer_slot = a->defers[slot].freed.next_free_slot;
+    if (a->free_defer_head != SIZE_MAX) {
+        slot = a->free_defer_head;
+        a->free_defer_head = a->defers[slot].next;
     } else {
-        a->defers = arealloc((arena_t*)a, arenaimp_defer_slot, a->num_defers + 1, a->defers);
-        if (!a->defers) return SIZE_MAX;
+        arenaimp_defer_slot *defers = arealloc((arena_t*)a, arenaimp_defer_slot, a->num_defers + 1, a->defers);
+        if (!defers) return SIZE_MAX;
+        a->defers = defers;
         slot = a->num_defers++;
     }
 
+    size_t head = a->active_defer_head;
     arenaimp_defer_slot *ds = &a->defers[slot];
-    ds->active.fn = fn;
-    ds->active.user = (void*)data;
+    ds->fn = fn;
+    ds->user = (void*)data;
+    ds->next = head;
+    ds->prev = SIZE_MAX;
+    if (head != SIZE_MAX) {
+        a->defers[head].prev = slot;
+    }
+    a->active_defer_head = slot;
     return slot;
 }
 
@@ -271,8 +274,8 @@ void arena_ext_redefer(arena_t *arena, size_t slot, arena_defer_fn *fn, const vo
     assert(a->magic == ARENAIMP_MAGIC_ARENA);
 
     arenaimp_defer_slot *ds = &a->defers[slot];
-    ds->active.fn = fn;
-    ds->active.user = (void*)data;
+    ds->fn = fn;
+    ds->user = (void*)data;
 }
 
 void arena_ext_cancel(arena_t *arena, size_t slot)
@@ -282,17 +285,37 @@ void arena_ext_cancel(arena_t *arena, size_t slot)
     assert(a->magic == ARENAIMP_MAGIC_ARENA);
 
     arenaimp_defer_slot *ds = &a->defers[slot];
-    ds->freed.tag_null = NULL;
-    ds->freed.next_free_slot = a->free_defer_slot;
+    if (ds->prev != SIZE_MAX) {
+        a->defers[ds->prev].next = ds->next;
+    } else {
+		a->active_defer_head = ds->next;
+    }
+    if (ds->next != SIZE_MAX) {
+        a->defers[ds->next].prev = ds->prev;
+    }
+
+    ds->fn = NULL;
+    ds->user = NULL;
+    ds->next = a->free_defer_head;
+    ds->prev = SIZE_MAX;
+    a->free_defer_head = slot;
 }
 
 void *aalloc_uninit_size(arena_t *arena, size_t size, size_t count)
 {
+    size_t total = size * count;
+    if (!arena) {
+		size_t total_alloc = sizeof(arenaimp_common_header) + total;
+        arenaimp_common_header *alloc = (arenaimp_common_header*)malloc(total_alloc);
+        if (!alloc) return NULL;
+        alloc->capacity = total;
+        return alloc + 1;
+    }
+
 	arenaimp_t *a = (arenaimp_t*)arena;
     assert(a);
     assert(a->magic == ARENAIMP_MAGIC_ARENA);
 
-    size_t total = size * count;
     size_t total_small = sizeof(arenaimp_small_header) + total;
 
     if (total_small <= ARENAIMP_LARGEST_SIZECLASS) {
@@ -316,6 +339,7 @@ void *aalloc_uninit_size(arena_t *arena, size_t size, size_t count)
                 a->next_size = next_size;
 
                 size_t page_size = next_size - sizeof(arenaimp_small_header);
+                if (page_size < total) page_size = total;
                 assert(page_size > ARENAIMP_LARGEST_SIZECLASS);
                 void *new_page = aalloc_uninit_size((arena_t*)a, 1, page_size);
                 if (!new_page) return NULL;
@@ -323,9 +347,11 @@ void *aalloc_uninit_size(arena_t *arena, size_t size, size_t count)
 				arenaimp_small_header *alloc = (arenaimp_small_header*)new_page;
                 alloc->active.capacity = total;
 
-                a->page = (char*)new_page;
-                a->pos = total;
-                a->size = page_size;
+                if (page_size - total > a->size - a->pos) {
+					a->page = (char*)new_page;
+					a->pos = total;
+					a->size = page_size;
+                }
                 return alloc + 1;
             }
         }
@@ -365,9 +391,47 @@ char *aalloc_copy_str(arena_t *a, const char *str)
     return aalloc_copy(a, char, count, str);
 }
 
-void *arenaimp_arealloc_size(arena_t *arena, size_t size, size_t count, void *ptr)
+void afree(arena_t *arena, void *ptr)
 {
-    if (!ptr) return aalloc_uninit_size(arena, size, count);
+    if (!ptr) return;
+	arenaimp_common_header *common = (arenaimp_common_header*)ptr - 1;
+
+    if (!arena) {
+        free(common);
+        return;
+    }
+
+    size_t capacity = common->capacity;
+    if (capacity <= ARENAIMP_LARGEST_SIZECLASS - sizeof(arenaimp_small_header)) {
+        arenaimp_small_header *alloc = (arenaimp_small_header*)ptr - 1;
+        arenaimp_t *a = (arenaimp_t*)arena;
+        size_t total_small = capacity + sizeof(arenaimp_small_header);
+        size_t quantized = (total_small + ARENAIMP_SIZECLASS_QUANTIZATION - 1) / ARENAIMP_SIZECLASS_QUANTIZATION;
+        size_t sizeclass = arenaimp_size_to_class[quantized];
+        alloc->freed.next_free = a->next_free[sizeclass];
+        a->next_free[sizeclass] = alloc;
+    } else {
+        arenaimp_big_header *alloc = (arenaimp_big_header*)ptr - 1;
+        arenaimp_big_header *prev = alloc->prev, *next = alloc->next;
+        assert(prev->next == alloc && next->prev == alloc);
+        prev->next = next;
+        next->prev = prev;
+    }
+}
+
+size_t aalloc_capacity_bytes(void *ptr)
+{
+    if (!ptr) return 0;
+	arenaimp_common_header *common = (arenaimp_common_header*)ptr - 1;
+    return common->capacity;
+}
+
+void *arealloc_size(arena_t *arena, size_t size, size_t count, void *ptr)
+{
+    if (!ptr) {
+		if (count == 0) return NULL;
+        return aalloc_uninit_size(arena, size, count);
+    }
 	arenaimp_common_header *common = (arenaimp_common_header*)ptr - 1;
     size_t capacity = common->capacity;
 
@@ -387,26 +451,44 @@ void *arenaimp_arealloc_size(arena_t *arena, size_t size, size_t count, void *pt
     return new_ptr;
 }
 
-void afree(arena_t *arena, void *ptr)
-{
-    if (!ptr) return;
-	arenaimp_common_header *common = (arenaimp_common_header*)ptr - 1;
-    size_t capacity = common->capacity;
+typedef struct {
+    void *data;
+    size_t count;
+} arenaimp_alist;
 
-    if (capacity <= ARENAIMP_LARGEST_SIZECLASS - sizeof(arenaimp_small_header)) {
-        arenaimp_small_header *alloc = (arenaimp_small_header*)ptr - 1;
-        arenaimp_t *a = (arenaimp_t*)arena;
-        size_t total_small = capacity + sizeof(arenaimp_small_header);
-        size_t quantized = (total_small + ARENAIMP_SIZECLASS_QUANTIZATION - 1) / ARENAIMP_SIZECLASS_QUANTIZATION;
-        size_t sizeclass = arenaimp_size_to_class[quantized];
-        alloc->freed.next_free = a->next_free[sizeclass];
-        a->next_free[sizeclass] = alloc;
-    } else {
-        arenaimp_big_header *alloc = (arenaimp_big_header*)ptr - 1;
-        arenaimp_big_header *prev = alloc->prev, *next = alloc->next;
-        assert(prev->next == alloc && next->prev == alloc);
-        prev->next = next;
-        next->prev = prev;
-    }
+void *alist_push_size(arena_t *arena, size_t size, void *p_list, void *item)
+{
+    arenaimp_alist *list = (arenaimp_alist*)p_list;
+    size_t index = list->count;
+    void *ptr = arealloc_size(arena, size, index + 1, list->data);
+    if (!ptr) return NULL;
+    if (ptr != list->data) list->data = ptr;
+    void *dst = (char*)ptr + index * size;
+    arenaimp_copy(dst, item, size);
+    list->count = index + 1;
+    return dst;
 }
 
+void *alist_pop_size(size_t size, void *p_list)
+{
+    arenaimp_alist *list = (arenaimp_alist*)p_list;
+    assert(list->count > 0);
+    if (list->count == 0) return NULL;
+    size_t index = list->count - 1;
+    list->count = index;
+    return (char*)list->data + index * size;
+}
+
+bool alist_remove_size(size_t size, void *p_list, size_t index)
+{
+    arenaimp_alist *list = (arenaimp_alist*)p_list;
+    assert(index < list->count);
+    if (index >= list->count) return false;
+	size_t last = --list->count;
+    if (index != last) {
+		void *src = (char*)list->data + index * size;
+		void *dst = (char*)list->data + last * size;
+        memcpy(dst, src, size);
+    }
+    return true;
+}

@@ -12,12 +12,11 @@ foreach(SHADER_SRC ${SHADERS})
     add_custom_command(
         DEPENDS ${SHADER_SRC}
         OUTPUT ${SHADER_DST}
-        COMMAND ${SOKOL_SHDC} --ifdef -l hlsl5:glsl300es:glsl330 -i ${SHADER_SRC} -o ${SHADER_DST}
+        COMMAND ${SOKOL_SHDC} --ifdef -b -l hlsl5:glsl300es:glsl330 -i ${SHADER_SRC} -o ${SHADER_DST}
     )
     list(APPEND GEN_OUTPUT ${SHADER_DST})
 endforeach(SHADER_SRC)
 
-message(${GEN_OUTPUT})
 add_custom_target(gen DEPENDS ${GEN_OUTPUT})
 
 file(GLOB_RECURSE SRC_FILES "*.c" "*.h")

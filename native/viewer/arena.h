@@ -13,7 +13,7 @@ typedef struct arena_t {
 
 typedef void arena_defer_fn(void *user);
 
-arena_t *arena_make(arena_t *parent);
+arena_t *arena_create(arena_t *parent);
 bool arena_init(arena_t *arena, arena_t *parent);
 void arena_free(arena_t *arena);
 
@@ -34,15 +34,21 @@ char *aalloc_copy_str(arena_t *arena, const char *str);
 #define aalloc_copy(arena, type, count, data) ((type*)aalloc_copy_size((arena), sizeof(type), (count), (data)))
 #define aalloc(arena, type, count) ((type*)aalloc_size((arena), sizeof(type), (count)))
 
-static void *arealloc_size(arena_t *arena, size_t size, size_t count, void *ptr) {
-	void *arenaimp_arealloc_size(arena_t *arena, size_t size, size_t count, void *ptr);
-    if (ptr && ((size_t*)ptr)[-1] >= size * count) {
-        return ptr;
-    } else {
-		return arenaimp_arealloc_size(arena, size, count, ptr);
-    }
-}
-#define arealloc(arena, type, count, ptr) ((type*)arealloc_size((arena), sizeof(type), (count), (ptr)))
-
 void afree(arena_t *arena, void *ptr);
 
+size_t aalloc_capacity_bytes(void *ptr);
+#define alloc_capacity(type, ptr) (aalloc_byte_capacity(ptr) / sizeof(type))
+
+void *arealloc_size(arena_t *arena, size_t size, size_t count, void *ptr);
+#define arealloc(arena, type, count, ptr) ((type*)arealloc_size((arena), sizeof(type), (count), (ptr)))
+
+#define alist_t(type) struct { type *data; size_t count; }
+
+void *alist_push_size(arena_t *arena, size_t size, void *p_list, void *p_item);
+void *alist_pop_size(size_t size, void *p_list);
+bool alist_remove_size(size_t size, void *p_list, size_t index);
+
+#define alist_push_zero(arena, type, p_list) ((type*)alist_push_size((arena), sizeof(type), (p_list), NULL))
+#define alist_push_ptr(arena, type, p_list, p_item) ((type*)alist_push_size((arena), sizeof(type), (p_list), (p_item)))
+#define alist_pop(type, p_list) ((type*)alist_push_size(sizeof(type), (p_list)))
+#define alist_remove(type, p_list) (alist_remove_size(sizeof(type), (p_list)))

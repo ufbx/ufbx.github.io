@@ -10,10 +10,14 @@
 layout(location=0) in vec2 a_uv;
 out vec2 v_uv;
 
+uniform ubo_copy {
+    vec2 uv_scale;
+};
+
 void main()
 {
     gl_Position = vec4(a_uv.x * 2.0 - 1.0, a_uv.y * 2.0 - 1.0, 0.5, 1.0);
-    v_uv = a_uv;
+    v_uv = a_uv * uv_scale;
 }
 
 @end

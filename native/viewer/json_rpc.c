@@ -79,26 +79,26 @@ enum {
 };
 
 typedef struct {
-	arena_t arena;
+	arena_t *arena;
 	const char *name;
 	ufbx_scene *fbx_scene;
 	vi_scene *vi_scene;
 } rpc_scene;
 
+typedef alist_t(rpc_scene) rpc_scene_list;
+
 typedef struct {
-	arena_t arena;
-	rpc_scene *scenes;
-	size_t num_scenes;
+	rpc_scene_list scenes;
 } rpc_globals;
 
 static rpc_globals rpcg;
 
 char *rpc_cmd_init(arena_t *tmp, jsi_obj *args)
 {
-	arena_init(&rpcg.arena, NULL);
-
 	g_pretty = jsi_get_bool(args, "pretty", g_pretty);
 	g_verbose = jsi_get_bool(args, "verbose", g_verbose);
+
+	vi_setup();
 
 	jso_stream s = begin_response();
 	jso_prop_boolean(&s, "pretty", g_pretty);
@@ -115,18 +115,16 @@ char *rpc_cmd_load_scene(arena_t *tmp, jsi_obj *args)
 	if (!data || !size) return fmt_error("Bad data range: { %p, %zu }", data, size);
 
 	rpc_scene *scene = NULL;
-	for (size_t i = 0; i < rpcg.num_scenes; i++) {
-		if (!strcmp(rpcg.scenes[i].name, name)) {
-			scene = &rpcg.scenes[i];
+	for (size_t i = 0; i < rpcg.scenes.count; i++) {
+		if (!strcmp(rpcg.scenes.data[i].name, name)) {
+			scene = &rpcg.scenes.data[i];
 			break;
 		}
 	}
 	if (!scene) {
-		rpcg.num_scenes++;
-		rpcg.scenes = arealloc(&rpcg.arena, rpc_scene, rpcg.num_scenes + 1, rpcg.scenes);
-		scene = rpcg.scenes + rpcg.num_scenes++;
-		memset(scene, 0, sizeof(rpc_scene));
-		scene->name = aalloc_copy_str(&scene->arena, name);
+		scene = alist_push_zero(NULL, rpc_scene, &rpcg.scenes);
+		scene->arena = arena_create(NULL);
+		scene->name = aalloc_copy_str(scene->arena, name);
 	}
 
 	ufbx_load_opts opts = {
@@ -149,12 +147,68 @@ char *rpc_cmd_load_scene(arena_t *tmp, jsi_obj *args)
 	return end_response(&s);
 }
 
+static um_vec3 get_vec3(jsi_obj *obj, const char *name, um_vec3 def)
+{
+	jsi_arr *arr = jsi_get_arr(obj, name);
+	if (arr && arr->num_values == 3) {
+		return um_v3(
+			(float)jsi_as_double(&arr->values[0], def.x),
+			(float)jsi_as_double(&arr->values[1], def.y),
+			(float)jsi_as_double(&arr->values[2], def.z));
+	} else {
+		return def;
+	}
+}
+
 char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 {
 	jsi_obj *target = jsi_get_obj(args, "target");
 	jsi_obj *desc = jsi_get_obj(args, "desc");
 	if (!target) return fmt_error("Missing field: 'target'");
 	if (!desc) return fmt_error("Missing field: 'desc'");
+
+	vi_target vtarget = {
+		.target_index = (uint32_t)jsi_get_int(target, "index", 0),
+		.width = (uint32_t)jsi_get_int(target, "width", 256),
+		.height = (uint32_t)jsi_get_int(target, "height", 256),
+		.samples = (uint32_t)jsi_get_int(target, "samples", 1),
+	};
+
+	const char *name = jsi_get_str(desc, "sceneName", NULL);
+	if (!name) return fmt_error("Missing field: 'name'");
+	rpc_scene *scene = NULL;
+	for (size_t i = 0; i < rpcg.scenes.count; i++) {
+		if (!strcmp(rpcg.scenes.data[i].name, name)) {
+			scene = &rpcg.scenes.data[i];
+			break;
+		}
+	}
+	if (!scene) {
+		return fmt_error("Scene not found: '%s'", name);
+	}
+
+	jsi_obj *camera = jsi_get_obj(desc, "camera");
+	vi_desc vdesc = {
+		.camera_pos = get_vec3(camera, "position", um_v3(4.0f, 4.0f, 4.0f)),
+		.camera_target = get_vec3(camera, "target", um_zero3),
+		.field_of_view = (float)jsi_get_double(camera, "fieldOfView", 50.0f),
+		.near_plane = (float)jsi_get_double(camera, "nearPlane", 0.01f),
+		.far_plane = (float)jsi_get_double(camera, "farPlane", 100.0f),
+	};
+
+	vi_render(scene->vi_scene, &vtarget, &vdesc);
+
+	jso_stream s = begin_response();
+	return end_response(&s);
+}
+
+char *rpc_cmd_present(arena_t *tmp, jsi_obj *args)
+{
+	uint32_t target = (uint32_t)jsi_get_int(args, "targetIndex", 0);
+	uint32_t width = (uint32_t)jsi_get_int(args, "width", 0);
+	uint32_t height = (uint32_t)jsi_get_int(args, "height", 0);
+
+	vi_present(target, width, height);
 
 	jso_stream s = begin_response();
 	return end_response(&s);
@@ -172,6 +226,8 @@ char *rpc_handle(arena_t *tmp, jsi_value *value)
 		return rpc_cmd_load_scene(tmp, obj);
 	} else if (!strcmp(cmd, "render")) {
 		return rpc_cmd_render(tmp, obj);
+	} else if (!strcmp(cmd, "present")) {
+		return rpc_cmd_present(tmp, obj);
 	} else {
 		return fmt_error("Unknown cmd: '%s'\n", cmd);
 	}

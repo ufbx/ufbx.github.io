@@ -180,9 +180,12 @@ um_inline bool um_quat_equal(um_quat a, um_quat b) { return (a.x == b.x) & (a.y 
 
 um_abi um_quat um_quat_mul(um_quat a, um_quat b);
 um_abi um_vec3 um_quat_rotate(um_quat a, um_vec3 b);
+#define um_quat_mulrev(a, b) um_quat_mul((b), (a))
 
 um_abi um_quat um_quat_lerp(um_quat a, um_quat b, float t);
 um_abi um_quat um_quat_slerp(um_quat a, um_quat b, float t);
+
+um_abi um_quat um_quat_axis_angle(um_vec3 axis, float radians);
 
 #define um_mat_is_affine(a) um_equal4((a).cols[3], um_v4(0, 0, 0, 1))
 
@@ -206,6 +209,7 @@ um_abi um_mat um_mat_tranpose(um_mat a);
 um_abi um_mat um_mat_mul(um_mat a, um_mat b);
 um_abi um_vec4 um_mat_mull(um_vec4 a, um_mat b);
 um_abi um_vec4 um_mat_mulr(um_mat a, um_vec4 b);
+#define um_mat_mulrev(a, b) um_mat_mul((b), (a))
 
 um_abi um_mat um_mat_add(um_mat a, um_mat b);
 um_abi um_mat um_mat_sub(um_mat a, um_mat b);
@@ -315,6 +319,13 @@ um_abi um_quat um_quat_slerp(um_quat a, um_quat b, float t)
 	float z = af*a.z + bf*b.z;
 	float w = af*a.w + bf*b.w;
 	return um_quat_normalize(um_quat_xyzw(x, y, z, w));
+}
+
+um_abi um_quat um_quat_axis_angle(um_vec3 axis, float radians)
+{
+	axis = um_normalize3(axis);
+	float c = cosf(radians * 0.5f), s = sinf(radians * 0.5f);
+	return um_quat_xyzw(axis.x * s, axis.y * s, axis.z * s, c);
 }
 
 um_abi um_mat um_mat_basis(um_vec3 x, um_vec3 y, um_vec3 z, um_vec3 origin)
