@@ -5,7 +5,7 @@
 #include "shaders/copy.h"
 #include "shaders/mesh.h"
 
-static um_vec2 fbx_to_um_vec2(ufbx_vec2 v) { return um_v2((float)v.x, (float)v.y); }
+// static um_vec2 fbx_to_um_vec2(ufbx_vec2 v) { return um_v2((float)v.x, (float)v.y); }
 static um_vec3 fbx_to_um_vec3(ufbx_vec3 v) { return um_v3((float)v.x, (float)v.y, (float)v.z); }
 um_quat fbx_to_um_quat(ufbx_quat v) { return um_quat_xyzw((float)v.x, (float)v.y, (float)v.z, (float)v.w); }
 um_mat fbx_to_um_mat(ufbx_matrix m) {
@@ -188,7 +188,7 @@ void vi_setup()
 
 	vig.backend = sg_query_backend();
 
-	um_vec2 quad_data[] = { { 0.0f, 0.0f }, { 0.0f, 2.0f }, { 2.0f, 0.0f } };
+	um_vec2 quad_data[] = { um_v2(0.0f, 0.0f), um_v2(2.0f, 0.0f), um_v2(0.0f, 2.0f) };
 	vig.quad_buffer = make_buffer(&vig.arena, NULL, &(sg_buffer_desc){
 		.type = SG_BUFFERTYPE_VERTEXBUFFER,
 		.data = SG_RANGE(quad_data),
@@ -296,6 +296,10 @@ vi_scene *vi_make_scene(const ufbx_scene *fbx_scene)
 	vs->meshes = aalloc(vs->arena, vi_mesh, fbx_scene->meshes.count);
 	vs->nodes = aalloc(vs->arena, vi_node, fbx_scene->nodes.count);
 	vs->materials = aalloc(vs->arena, vi_material, fbx_scene->materials.count + 1); // + NULL
+
+	for (size_t i = 0; i < vs->fbx.nodes.count; i++) {
+		vi_init_node(vs, &vs->nodes[i], vs->fbx.nodes.data[i]);
+	}
 
 	for (size_t i = 0; i < vs->fbx.meshes.count; i++) {
 		vi_init_mesh(vs, &vs->meshes[i], vs->fbx.meshes.data[i]);

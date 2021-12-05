@@ -1,4 +1,4 @@
-#include "rpc.h"
+#include "json_rpc.h"
 #include "external/json_input.h"
 #include "external/json_output.h"
 #include "external/cputime.h"

@@ -67,11 +67,6 @@ const char *element_type_str(ufbx_element_type type)
     }
 }
 
-static void jso_ustring(jso_stream *s, ufbx_string str)
-{
-	jso_string_len(s, str.data, str.length);
-}
-
 static void jso_prop_ustring(jso_stream *s, const char *key, ufbx_string str)
 {
 	jso_prop_string_len(s, key, str.data, str.length);

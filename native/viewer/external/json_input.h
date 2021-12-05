@@ -6,6 +6,11 @@
 	#pragma warning(disable: 4200)
 #endif
 
+#if defined(__clang__)
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wunused-function"
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -179,6 +184,10 @@ static jsi_obj *jsi_get_obj(jsi_obj *obj, const char *name) { return jsi_as_obj(
 
 #if defined(_MSC_VER)
 	#pragma warning(pop)
+#endif
+
+#if defined(__clang__)
+	#pragma clang diagnostic pop
 #endif
 
 #endif

@@ -6,6 +6,11 @@
 #define JSO_BUFFER_MIN_SIZE 64
 #define JSO_MAX_INDENTS 16
 
+#if defined(__clang__)
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wunused-function"
+#endif
+
 // Input
 
 typedef struct jso_stream jso_stream;
@@ -84,3 +89,6 @@ static void jso_prop_array(jso_stream *s, const char *key) { jso_prop(s, key); j
 static void jso_prop_json(jso_stream *s, const char *key, const char *json) { jso_prop(s, key); jso_json(s, json); }
 static void jso_prop_json_len(jso_stream *s, const char *key, const char *json, size_t length) { jso_prop(s, key); jso_json_len(s, json, length); }
 
+#if defined(__clang__)
+	#pragma clang diagnostic pop
+#endif

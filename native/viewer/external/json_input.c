@@ -310,7 +310,7 @@ jsi_skip_whitespace(jsi_parser *p, const char *ptr, const char *end)
 	}
 	#endif
 
-	while (jsi_char_tab[*ptr] == jsi_char_whitespace) {
+	while (jsi_char_tab[(unsigned char)*ptr] == jsi_char_whitespace) {
 		if (*ptr == '\n') {
 			p->newline_offset = p->data_offset + (ptr - p->data);
 			p->line_index++;
@@ -473,12 +473,14 @@ jsi_temp_grow(jsi_parser *p)
 	return 1;
 }
 
+#if !JSI_USE_SSE
 static const char jsi_stop_char_tab[256] = {
 	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
 	0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 };
+#endif
 
 static const char jsi_escape_tab[256] =
 	"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
@@ -560,7 +562,7 @@ jsi_copy_utf16(jsi_parser *p, const char *ptr, const char *end, char *buf)
 			} else {
 				// Surrogate with unrelated escape
 				buf = jsi_write_utf8(buf, hi);
-				char ch = jsi_escape_tab[*ptr];
+				char ch = jsi_escape_tab[(unsigned char)*ptr];
 				if (ch != 0) {
 					*buf++ = ch;
 				} else if (!p->dialect.allow_unknown_escape) {
@@ -646,10 +648,10 @@ jsi_copy_string(jsi_parser *p, const char *ptr, const char *end, jsi_value *valu
 			dst_ptr[1] = b;
 			dst_ptr[2] = c;
 			dst_ptr[3] = d;
-			if (jsi_stop_char_tab[a]) { ptr += 0; dst_ptr += 0; break; }
-			if (jsi_stop_char_tab[b]) { ptr += 1; dst_ptr += 1; break; }
-			if (jsi_stop_char_tab[c]) { ptr += 2; dst_ptr += 2; break; }
-			if (jsi_stop_char_tab[d]) { ptr += 3; dst_ptr += 3; break; }
+			if (jsi_stop_char_tab[(unsigned char)a]) { ptr += 0; dst_ptr += 0; break; }
+			if (jsi_stop_char_tab[(unsigned char)b]) { ptr += 1; dst_ptr += 1; break; }
+			if (jsi_stop_char_tab[(unsigned char)c]) { ptr += 2; dst_ptr += 2; break; }
+			if (jsi_stop_char_tab[(unsigned char)d]) { ptr += 3; dst_ptr += 3; break; }
 			ptr += 4;
 			dst_ptr += 4;
 		}
@@ -666,7 +668,7 @@ jsi_copy_string(jsi_parser *p, const char *ptr, const char *end, jsi_value *valu
 		if (c == '\\') {
 			char esc = *ptr;
 			jsi_advance(p, ptr, end);
-			char ch = jsi_escape_tab[esc];
+			char ch = jsi_escape_tab[(unsigned char)esc];
 			if (ch != 0) {
 				*dst_ptr++ = ch;
 			} else if (esc == 'u') {
@@ -1020,7 +1022,7 @@ jsi_parse_array(jsi_parser *p, const char *ptr, const char *end, jsi_value *valu
 
 	value->type = jsi_type_array;
 
-	if (jsi_char_tab[*ptr] == jsi_char_whitespace) {
+	if (jsi_char_tab[(unsigned char)*ptr] == jsi_char_whitespace) {
 		jsi_skip_whitespace(p, ptr, end);
 		ptr = p->ptr; end = p->end;
 	}
@@ -1064,7 +1066,7 @@ jsi_parse_array(jsi_parser *p, const char *ptr, const char *end, jsi_value *valu
 			}
 		}
 
-		if (jsi_char_tab[*ptr] == jsi_char_whitespace) {
+		if (jsi_char_tab[(unsigned char)*ptr] == jsi_char_whitespace) {
 			jsi_skip_whitespace(p, ptr, end);
 			ptr = p->ptr; end = p->end;
 		}
@@ -1109,7 +1111,7 @@ jsi_parse_number(jsi_parser *p, const char *ptr, const char *end, jsi_value *val
 	if (*ptr == '-') {
 		jsi_advance(p, ptr, end);
 		sign = -1;
-		if (jsi_char_tab[*ptr] != jsi_char_number) {
+		if (jsi_char_tab[(unsigned char)*ptr] != jsi_char_number) {
 			return jsi_err(p, ptr, "Invalid number");
 		}
 	}
@@ -1126,7 +1128,7 @@ jsi_parse_number(jsi_parser *p, const char *ptr, const char *end, jsi_value *val
 			ptr++;
 			int_val = int_val * 10 + (int64_t)digit;
 		}
-		if (jsi_char_tab[*ptr] != jsi_char_number) {
+		if (jsi_char_tab[(unsigned char)*ptr] != jsi_char_number) {
 			if (p->store_integers_as_int64) {
 				value->int64_storage = int_val * (int64_t)sign;
 				value->flags |= jsi_flag_integer | jsi_flag_stored_as_int64;
@@ -1149,7 +1151,7 @@ jsi_parse_number(jsi_parser *p, const char *ptr, const char *end, jsi_value *val
 		if (buf_ptr == buf_end) {
 			return jsi_err(p, ptr, "Number is too long");
 		}
-	} while (jsi_char_tab[*ptr] == jsi_char_number);
+	} while (jsi_char_tab[(unsigned char)*ptr] == jsi_char_number);
 
 	*buf_ptr = '\0';
 	char *conv_end;
@@ -1239,11 +1241,11 @@ jsi_noinline static int
 jsi_parse_value(jsi_parser *p, const char *ptr, const char *end, jsi_value *value)
 {
 	for (;;) {
-		char char_type = jsi_char_tab[(uint8_t)*ptr];
+		char char_type = jsi_char_tab[(unsigned char)(uint8_t)*ptr];
 		if (char_type != 0) {
 			value->key_hash = 0;
 			value->flags = 0;
-			jsi_parse_fn func = jsi_parse_funcs[char_type];
+			jsi_parse_fn func = jsi_parse_funcs[(unsigned char)char_type];
 			return func(p, ptr, end, value);
 		} else {
 			if (!jsi_skip_whitespace(p, ptr, end)) return 0;
@@ -1537,7 +1539,6 @@ jsi_value *jsi_get_len(jsi_obj *obj, const char *key, size_t length)
 		}
 	} else {
 		// Unsorted properties
-		char prefix = key[0];
 		uint16_t key_hash = (uint16_t)((unsigned)key[0] + ((unsigned)length << 7));
 		size_t num_props = obj->num_props;
 		for (size_t i = 0; i < num_props; i++) {

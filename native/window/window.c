@@ -106,6 +106,10 @@ void event(const sapp_event *ev)
             cam_pitch = um_min(um_max(cam_pitch, -85.0f), 85.0f);
         }
         break;
+
+    default:
+        break;
+    
     }
 }
 

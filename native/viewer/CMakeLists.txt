@@ -33,3 +33,7 @@ if(MSVC)
 else()
   target_compile_options(viewer PRIVATE -Wall -Werror)
 endif()
+
+if(EMSCRIPTEN)
+  target_link_options(viewer PUBLIC -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2)
+endif()

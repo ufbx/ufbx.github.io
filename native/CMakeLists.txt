@@ -4,3 +4,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 add_subdirectory(viewer)
 add_subdirectory(window)
+
+if(EMSCRIPTEN)
+  add_subdirectory(js_viewer)
+endif()

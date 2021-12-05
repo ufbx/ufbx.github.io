@@ -72,25 +72,25 @@ typedef struct um_mat {
 	#define um_new(type) (type)
 #endif
 
-#define um_v2(x, y) (um_new(um_vec2){ (x), (y) })
-#define um_v3(x, y, z) (um_new(um_vec3){ (x), (y), (z) })
-#define um_v4(x, y, z, w) (um_new(um_vec4){ (x), (y), (z), (w) })
+#define um_v2(x, y) (um_new(um_vec2){{{ (x), (y) }}})
+#define um_v3(x, y, z) (um_new(um_vec3){{{ (x), (y), (z) }}})
+#define um_v4(x, y, z, w) (um_new(um_vec4){{{ (x), (y), (z), (w) }}})
 
-#define um_quat_xyzw(x, y, z, w) (um_new(um_quat){ (x), (y), (z), (w) })
+#define um_quat_xyzw(x, y, z, w) (um_new(um_quat){{{ (x), (y), (z), (w) }}})
 
 #define um_mat_rows(m11, m12, m13, m14, m21, m22, m23, m24, m31, m32, m33, m34, m41, m42, m43, m44, ...) \
-	(um_new(um_mat){{ \
+	(um_new(um_mat){{{ \
 	(m11), (m21), (m31), (m41), \
 	(m12), (m22), (m32), (m42), \
 	(m13), (m23), (m33), (m43), \
-	(m14), (m24), (m34), (m44), } __VA_ARGS__ })
+	(m14), (m24), (m34), (m44), }} __VA_ARGS__ })
 
 #define um_mat_cols(m11, m21, m31, m41, m12, m22, m32, m42, m13, m23, m33, m43, m14, m24, m34, m44, ...) \
-	(um_new(um_mat){{ \
+	(um_new(um_mat){{{ \
 	(m11), (m21), (m31), (m41), \
 	(m12), (m22), (m32), (m42), \
 	(m13), (m23), (m33), (m43), \
-	(m14), (m24), (m34), (m44), } __VA_ARGS__ })
+	(m14), (m24), (m34), (m44), }} __VA_ARGS__ })
 
 #define um_zero2 (um_v2(0, 0))
 #define um_zero3 (um_v3(0, 0, 0))
@@ -263,12 +263,12 @@ um_inline um_mat operator*(const um_mat &a, const um_mat &b) { return um_mat_mul
 #ifndef UMATH_H_IMPLEMENTED
 #define UMATH_H_IMPLEMENTED
 
-const um_mat um_mat_identity = {
+const um_mat um_mat_identity = {{{
 	1.0f, 0.0f, 0.0f, 0.0f,
 	0.0f, 1.0f, 0.0f, 0.0f,
 	0.0f, 0.0f, 1.0f, 0.0f,
 	0.0f, 0.0f, 0.0f, 1.0f,
-};
+}}};
 
 um_abi um_quat um_quat_mul(um_quat a, um_quat b)
 {
