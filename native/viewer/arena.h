@@ -19,7 +19,8 @@ void arena_free(arena_t *arena);
 
 void *arena_defer_size(arena_t *arena, arena_defer_fn *fn, size_t size, const void *data);
 #define arena_defer(arena, fn, type, data) (type*)arena_defer_size((arena), (fn), sizeof(type), (data))
-void arena_cancel(void *ptr);
+void arena_cancel_retain(arena_t *arena, void *ptr);
+void arena_cancel(arena_t *arena, void *ptr);
 
 size_t arena_ext_defer(arena_t *arena, arena_defer_fn *fn, const void *data);
 void arena_ext_redefer(arena_t *arena, size_t slot, arena_defer_fn *fn, const void *data);
@@ -43,5 +44,5 @@ static void *arealloc_size(arena_t *arena, size_t size, size_t count, void *ptr)
 }
 #define arealloc(arena, type, count, ptr) ((type*)arealloc_size((arena), sizeof(type), (count), (ptr)))
 
-void afree(void *ptr);
+void afree(arena_t *arena, void *ptr);
 

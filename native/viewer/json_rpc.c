@@ -196,7 +196,8 @@ char *rpc_call(const char *input)
 			args.error.line, args.error.column, args.error.description);
 	}
 
-	arena_t tmp = { 0 };
+	arena_t tmp;
+	arena_init(&tmp, NULL);
 	char *result = rpc_handle(&tmp, value);
 	arena_free(&tmp);
 
