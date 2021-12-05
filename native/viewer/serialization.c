@@ -322,10 +322,11 @@ void serialize_element(jso_stream *s, ufbx_element *elem)
 
 void serialize_scene(jso_stream *s, ufbx_scene *scene)
 {
+	jso_object(s);
+
 	jso_prop_object(s, "settings");
 	jso_prop(s, "props");
 	serialize_props(s, &scene->settings.props);
-	jso_end_object(s);
 	jso_end_object(s);
 
 	jso_prop_array(s, "elements");
@@ -333,4 +334,6 @@ void serialize_scene(jso_stream *s, ufbx_scene *scene)
 		serialize_element(s, scene->elements.data[i]);
 	}
 	jso_end_array(s);
+
+	jso_end_object(s);
 }

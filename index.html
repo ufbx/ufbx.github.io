@@ -5,21 +5,9 @@
 </head>
 
 <body>
-
-    <div id="root"></div>
-
-    <input type="file" id="file-input" name="file-input" accept=".fbx">
-
-    <div>
-    <canvas class="potential-canvas" id="canvas-a" width="800" height="600"></canvas>
-    <canvas class="potential-canvas" id="canvas-b" width="800" height="600"></canvas>
-    <canvas class="potential-canvas" id="canvas-c" width="800" height="600"></canvas>
-    <canvas class="potential-canvas" id="canvas-d" width="800" height="600"></canvas>
-    </div>
-
-    <canvas id="render-canvas" width="800" height="600"></canvas>
-    <script src="/build/viewer.js"></script>
-    <script src="/build/components.js"></script>
+    <canvas id="ufbx-render-canvas" width="800" height="600"></canvas>
+    <script defer src="/native/build/js_viewer/js_viewer.js"></script>
+    <script defer src="/script/build/bundle.js"></script>
 </body>
 
 </html>

@@ -8,6 +8,7 @@
 #include "ufbx.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #if defined(_WIN32)
 	#define NOMINMAX
@@ -233,7 +234,7 @@ char *rpc_handle(arena_t *tmp, jsi_value *value)
 	}
 }
 
-char *rpc_call(const char *input)
+char *rpc_call(char *input)
 {
 	if (g_verbose) {
 		log_printf("RPC request: %s\n", input);
@@ -243,6 +244,7 @@ char *rpc_call(const char *input)
 		.store_integers_as_int64 = true,
 	};
 	jsi_value *value = jsi_parse_string(input, &args);
+	free(input);
 
 	cputime_begin_init();
 	g_start_cpu_tick = cputime_cpu_tick();

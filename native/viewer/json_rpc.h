@@ -1,4 +1,4 @@
 #pragma once
 
-char *rpc_call(const char *input);
+char *rpc_call(char *input);
 
