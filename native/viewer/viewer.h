@@ -29,3 +29,4 @@ void vi_free_scene(vi_scene *scene);
 
 void vi_render(vi_scene *scene, const vi_target *target, const vi_desc *desc);
 void vi_present(uint32_t target_index, uint32_t width, uint32_t height);
+bool vi_get_pixels(uint32_t target_index, uint32_t width, uint32_t height, void *dst);

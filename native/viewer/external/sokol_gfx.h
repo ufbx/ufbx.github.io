@@ -15664,7 +15664,7 @@ SOKOL_API_IMPL sg_pass_info sg_query_pass_info(sg_pass pass_id) {
         info.slot.res_id = pass->slot.id;
         info.slot.ctx_id = pass->slot.ctx_id;
 
-        #if defined(SOKOL_GLES3)
+        #if defined(_SOKOL_ANY_GL)
             info.hack_gl_fb = pass->gl.fb;
         #endif
     }

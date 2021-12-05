@@ -90,6 +90,7 @@ typedef alist_t(rpc_scene) rpc_scene_list;
 
 typedef struct {
 	rpc_scene_list scenes;
+	void *pixel_buffer;
 } rpc_globals;
 
 static rpc_globals rpcg;
@@ -215,6 +216,28 @@ char *rpc_cmd_present(arena_t *tmp, jsi_obj *args)
 	return end_response(&s);
 }
 
+char *rpc_cmd_get_pixels(arena_t *tmp, jsi_obj *args)
+{
+	uint32_t target = (uint32_t)jsi_get_int(args, "targetIndex", 0);
+	uint32_t width = (uint32_t)jsi_get_int(args, "width", 0);
+	uint32_t height = (uint32_t)jsi_get_int(args, "height", 0);
+
+	size_t required_size = (size_t)width * (size_t)height * 4;
+	size_t capacity = aalloc_capacity_bytes(rpcg.pixel_buffer);
+	if (capacity < required_size) {
+		afree(NULL, rpcg.pixel_buffer);
+		rpcg.pixel_buffer = aalloc(NULL, char, required_size);
+	}
+
+	if (!vi_get_pixels(target, width, height, rpcg.pixel_buffer)) {
+		return fmt_error("Failed to get pixels");
+	}
+
+	jso_stream s = begin_response();
+	jso_prop_int64(&s, "dataPointer", (int64_t)(uintptr_t)rpcg.pixel_buffer);
+	return end_response(&s);
+}
+
 char *rpc_handle(arena_t *tmp, jsi_value *value)
 {
 	jsi_obj *obj = jsi_as_obj(value);
@@ -229,6 +252,8 @@ char *rpc_handle(arena_t *tmp, jsi_value *value)
 		return rpc_cmd_render(tmp, obj);
 	} else if (!strcmp(cmd, "present")) {
 		return rpc_cmd_present(tmp, obj);
+	} else if (!strcmp(cmd, "getPixels")) {
+		return rpc_cmd_get_pixels(tmp, obj);
 	} else {
 		return fmt_error("Unknown cmd: '%s'\n", cmd);
 	}

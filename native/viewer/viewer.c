@@ -5,6 +5,13 @@
 #include "shaders/copy.h"
 #include "shaders/mesh.h"
 
+#if defined(SOKOL_GLES3) || defined(SOKOL_GLES2)
+	#define HAS_GL 1
+	#include <GLES3/gl3.h>
+#else
+	#define HAS_GL 0
+#endif
+
 // static um_vec2 fbx_to_um_vec2(ufbx_vec2 v) { return um_v2((float)v.x, (float)v.y); }
 static um_vec3 fbx_to_um_vec3(ufbx_vec3 v) { return um_v3((float)v.x, (float)v.y, (float)v.z); }
 um_quat fbx_to_um_quat(ufbx_quat v) { return um_quat_xyzw((float)v.x, (float)v.y, (float)v.z, (float)v.w); }
@@ -541,4 +548,21 @@ void vi_present(uint32_t target_index, uint32_t width, uint32_t height)
 	vi_draw_present(src_fb);
 
 	sg_end_pass();
+}
+
+bool vi_get_pixels(uint32_t target_index, uint32_t width, uint32_t height, void *dst)
+{
+#if HAS_GL
+	vi_framebuffer *src_fb = &vig.framebuffers[target_index];
+	sg_pass_info info = sg_query_pass_info(src_fb->pass);
+
+	GLint prev_fb;
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fb);
+	glBindFramebuffer(GL_FRAMEBUFFER, info.hack_gl_fb);
+	glReadPixels(0, 0, (GLsizei)width, (GLsizei)height, GL_RGBA, GL_UNSIGNED_BYTE, dst);
+	glBindFramebuffer(GL_FRAMEBUFFER, prev_fb);
+	return true;
+#else
+	return false;
+#endif
 }
