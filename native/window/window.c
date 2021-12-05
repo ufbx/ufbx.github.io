@@ -81,7 +81,7 @@ float cam_yaw = 0.0f;
 float cam_pitch = 0.0f;
 float cam_distance = 5.0f;
 
-void event(sapp_event *ev)
+void event(const sapp_event *ev)
 {
     switch (ev->type) {
 
