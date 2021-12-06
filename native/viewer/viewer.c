@@ -38,30 +38,35 @@ static void *defer_destroy_pass(arena_t *a, sg_pass pass) { return arena_defer(a
 
 static sg_image make_image(arena_t *a, void **p_defer, const sg_image_desc *desc) {
 	sg_image image = sg_make_image(desc);
+	assert(image.id);
 	if (image.id) defer_destroy_image(a, image);
 	return image;
 }
 
 static sg_buffer make_buffer(arena_t *a, void **p_defer, const sg_buffer_desc *desc) {
 	sg_buffer buffer = sg_make_buffer(desc);
+	assert(buffer.id);
 	if (buffer.id) defer_destroy_buffer(a, buffer);
 	return buffer;
 }
 
 static sg_shader make_shader(arena_t *a, void **p_defer, const sg_shader_desc *desc) {
 	sg_shader shader = sg_make_shader(desc);
+	assert(shader.id);
 	if (shader.id) defer_destroy_shader(a, shader);
 	return shader;
 }
 
 static sg_pipeline make_pipeline(arena_t *a, void **p_defer, const sg_pipeline_desc *desc) {
 	sg_pipeline pipe = sg_make_pipeline(desc);
+	assert(pipe.id);
 	if (pipe.id) defer_destroy_pipeline(a, pipe);
 	return pipe;
 }
 
 static sg_pass make_pass(arena_t *a, void **p_defer, const sg_pass_desc *desc) {
 	sg_pass pass = sg_make_pass(desc);
+	assert(pass.id);
 	if (pass.id) defer_destroy_pass(a, pass);
 	return pass;
 }
@@ -143,6 +148,7 @@ typedef struct {
 	sg_pipeline post_pipe;
 	sg_pipeline present_pipe;
 
+	arena_t *fb_arena;
 	vi_framebuffer render_buffer;
 	vi_framebuffer framebuffers[MAX_FRAMEBUFFERS];
 
@@ -220,6 +226,14 @@ void vi_shutdown()
 {
 	arena_free(&vig.arena);
 	memset(&vig, 0, sizeof(vig));
+}
+
+void vi_free_targets()
+{
+	arena_free(vig.fb_arena);
+	vig.fb_arena = NULL;
+	memset(&vig.render_buffer, 0, sizeof(vig.render_buffer));
+	memset(&vig.framebuffers, 0, sizeof(vig.framebuffers));
 }
 
 static void vi_init_node(vi_scene *vs, vi_node *node, ufbx_node *fbx_node)
@@ -323,6 +337,7 @@ vi_scene *vi_make_scene(const ufbx_scene *fbx_scene)
 
 void vi_free_scene(vi_scene *scene)
 {
+	if (!scene) return;
 	arena_free(scene->arena);
 }
 
@@ -339,9 +354,13 @@ static void vi_init_framebuffer(vi_framebuffer *fb, const vi_framebuffer_desc *d
 	if (desc->width <= fb->max_width && desc->height <= fb->max_height && desc->msaa == fb->msaa) return;
 	fb->msaa = desc->msaa;
 
-	arena_cancel(&vig.arena, fb->defer_pass);
-	arena_cancel(&vig.arena, fb->defer_color);
-	arena_cancel(&vig.arena, fb->defer_depth);
+	if (!vig.fb_arena) {
+		vig.fb_arena = arena_create(&vig.arena);
+	}
+
+	arena_cancel(vig.fb_arena, fb->defer_pass);
+	arena_cancel(vig.fb_arena, fb->defer_color);
+	arena_cancel(vig.fb_arena, fb->defer_depth);
 	fb->defer_pass = NULL;
 	fb->defer_color = NULL;
 	fb->defer_depth = NULL;
@@ -351,7 +370,7 @@ static void vi_init_framebuffer(vi_framebuffer *fb, const vi_framebuffer_desc *d
 	fb->max_width = new_width;
 	fb->max_height = new_height;
 
-	fb->color_target = make_image(&vig.arena, &fb->defer_color, &(sg_image_desc){
+	fb->color_target = make_image(vig.fb_arena, &fb->defer_color, &(sg_image_desc){
 		.width = (int)new_width,
 		.height = (int)new_height,
 		.sample_count = (int)desc->msaa,
@@ -362,7 +381,7 @@ static void vi_init_framebuffer(vi_framebuffer *fb, const vi_framebuffer_desc *d
 	});
 
 	if (desc->has_depth) {
-		fb->depth_target = make_image(&vig.arena, &fb->defer_depth, &(sg_image_desc){
+		fb->depth_target = make_image(vig.fb_arena, &fb->defer_depth, &(sg_image_desc){
 			.width = (int)new_width,
 			.height = (int)new_height,
 			.sample_count = (int)desc->msaa,
@@ -373,7 +392,7 @@ static void vi_init_framebuffer(vi_framebuffer *fb, const vi_framebuffer_desc *d
 		fb->depth_target.id = 0;
 	}
 
-	fb->pass = make_pass(&vig.arena, &fb->defer_pass, &(sg_pass_desc){
+	fb->pass = make_pass(vig.fb_arena, &fb->defer_pass, &(sg_pass_desc){
 		.color_attachments[0].image = fb->color_target,
 		.depth_stencil_attachment.image = fb->depth_target,
 	});

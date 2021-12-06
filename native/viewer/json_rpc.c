@@ -141,7 +141,6 @@ char *rpc_cmd_load_scene(arena_t *tmp, jsi_obj *args)
 	}
 
 	scene->fbx_scene = fbx_scene;
-	scene->vi_scene = vi_make_scene(fbx_scene);
 
 	jso_stream s = begin_response();
 	jso_prop(&s, "scene");
@@ -187,6 +186,10 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 	}
 	if (!scene) {
 		return fmt_error("Scene not found: '%s'", name);
+	}
+
+	if (!scene->vi_scene) {
+		scene->vi_scene = vi_make_scene(scene->fbx_scene);
 	}
 
 	jsi_obj *camera = jsi_get_obj(desc, "camera");
@@ -238,6 +241,27 @@ char *rpc_cmd_get_pixels(arena_t *tmp, jsi_obj *args)
 	return end_response(&s);
 }
 
+char *rpc_cmd_free_resources(arena_t *tmp, jsi_obj *args)
+{
+	bool scenes = jsi_get_bool(args, "scenes", false);
+	bool targets = jsi_get_bool(args, "targets", false);
+
+	if (scenes) {
+		for (size_t i = 0; i < rpcg.scenes.count; i++) {
+			rpc_scene *scene = &rpcg.scenes.data[i];
+			vi_free_scene(scene->vi_scene);
+			scene->vi_scene = NULL;
+		}
+	}
+
+	if (targets) {
+		vi_free_targets();
+	}
+
+	jso_stream s = begin_response();
+	return end_response(&s);
+}
+
 char *rpc_handle(arena_t *tmp, jsi_value *value)
 {
 	jsi_obj *obj = jsi_as_obj(value);
@@ -254,6 +278,8 @@ char *rpc_handle(arena_t *tmp, jsi_value *value)
 		return rpc_cmd_present(tmp, obj);
 	} else if (!strcmp(cmd, "getPixels")) {
 		return rpc_cmd_get_pixels(tmp, obj);
+	} else if (!strcmp(cmd, "freeResources")) {
+		return rpc_cmd_free_resources(tmp, obj);
 	} else {
 		return fmt_error("Unknown cmd: '%s'\n", cmd);
 	}

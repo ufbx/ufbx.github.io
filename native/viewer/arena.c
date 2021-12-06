@@ -338,18 +338,18 @@ void *aalloc_uninit_size(arena_t *arena, size_t size, size_t count)
                 if (next_size > ARENAIMP_MAX_PAGE_SIZE) next_size = ARENAIMP_MAX_PAGE_SIZE;
                 a->next_size = next_size;
 
-                size_t page_size = next_size - sizeof(arenaimp_small_header);
-                if (page_size < total) page_size = total;
+                size_t page_size = next_size;
+                if (page_size < total_small) page_size = total_small;
                 assert(page_size > ARENAIMP_LARGEST_SIZECLASS);
                 void *new_page = aalloc_uninit_size((arena_t*)a, 1, page_size);
                 if (!new_page) return NULL;
 
 				arenaimp_small_header *alloc = (arenaimp_small_header*)new_page;
-                alloc->active.capacity = total;
+                alloc->active.capacity = total_small;
 
-                if (page_size - total > a->size - a->pos) {
+                if (page_size - total_small > a->size - a->pos) {
 					a->page = (char*)new_page;
-					a->pos = total;
+					a->pos = total_small;
 					a->size = page_size;
                 }
                 return alloc + 1;

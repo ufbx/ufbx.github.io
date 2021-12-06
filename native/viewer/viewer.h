@@ -23,6 +23,7 @@ typedef struct vi_desc {
 
 void vi_setup();
 void vi_shutdown();
+void vi_free_targets();
 
 vi_scene *vi_make_scene(const ufbx_scene *fbx_scene);
 void vi_free_scene(vi_scene *scene);

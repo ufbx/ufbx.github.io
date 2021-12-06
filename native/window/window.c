@@ -107,6 +107,20 @@ void event(const sapp_event *ev)
         }
         break;
 
+    case SAPP_EVENTTYPE_KEY_DOWN:
+        if (!ev->key_repeat) {
+            if (ev->key_code == SAPP_KEYCODE_T) {
+				jso_stream s = begin_request("freeResources");
+				jso_prop_boolean(&s, "targets", true);
+				free(submit_request(&s));
+            } else if (ev->key_code == SAPP_KEYCODE_R) {
+				jso_stream s = begin_request("freeResources");
+				jso_prop_boolean(&s, "scenes", true);
+				free(submit_request(&s));
+            }
+        }
+        break;
+
     default:
         break;
     
@@ -117,6 +131,15 @@ void frame(void)
 {
     int width = sapp_width();
     int height = sapp_height();
+
+#if 0
+    {
+		jso_stream s = begin_request("freeResources");
+		jso_prop_boolean(&s, "targets", true);
+		jso_prop_boolean(&s, "scenes", true);
+		free(submit_request(&s));
+    }
+#endif
 
     {
 		jso_stream s = begin_request("render");
