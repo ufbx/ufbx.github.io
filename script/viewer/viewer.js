@@ -38,15 +38,19 @@ let dirtyQueue = []
 let dirtySet = new Set()
 let sceneState = { }
 let scenesToLoad = new Set()
+let requestedInteractiveId = null
+let interactiveId = null
+let prevInteractiveId = null
 
+let latestRenders = []
 let renderTargets = []
+let interactiveTarget = null
 
 const symId = Symbol("viewer-id")
 
-let rafToken = null
+let animationFrameRequestId = null
 
 function log(str) {
-    return
     console.log(str)
 }
 
@@ -58,8 +62,8 @@ function fetchScene(url) {
 }
 
 function somethingChanged() {
-    if (rafToken === null) {
-        rafToken = requestAnimationFrame(renderCycle)
+    if (animationFrameRequestId === null) {
+        animationFrameRequestId = requestAnimationFrame(renderCycle)
     }
 }
 
@@ -99,7 +103,7 @@ const resizeObserver = new ResizeObserver(() => {
     }
 })
 
-export function renderViewer(id, root, desc) {
+export function renderViewer(id, root, desc, opts={}) {
 
     // Find or create a viewer state
     let viewer = viewers[id]
@@ -133,6 +137,10 @@ export function renderViewer(id, root, desc) {
         fetchScene(desc.sceneName)
         viewer.desc = desc
         markDirty(viewer.id)
+    }
+
+    if (opts.interactive) {
+        requestedInteractiveId = id
     }
 }
 
@@ -172,7 +180,7 @@ function readyToRender(id) {
 }
 
 function renderCycle() {
-    rafToken = null
+    animationFrameRequestId = null
     if (!rpcInitialized) return
 
     if (scenesToLoad.size > 0) {
@@ -189,11 +197,37 @@ function renderCycle() {
         scenesToLoad.clear()
     }
 
+    if (requestedInteractiveId) {
+        if (interactiveId !== requestedInteractiveId) {
+            if (!renderTargets.some(t => t.id === interactiveId)) {
+                if (interactiveTarget && interactiveTarget.id === interactiveId) {
+                    log(`${interactiveId}: Compositing from interactive ${interactiveTarget.targetIndex}`)
+                    renderTargets.push(interactiveTarget)
+                }
+            }
+            interactiveId = requestedInteractiveId
+            renderCanvas.style.opacity = "0%"
+        }
+        requestedInteractiveId = null
+        interactiveTarget = null
+    }
+
     if (renderTargets.length > 0) {
         for (const { id, targetIndex, width, height } of renderTargets) {
-            log(`${id}: Compositing`)
             const viewer = viewers[id]
             if (!viewer) continue
+
+            if (interactiveId === id) {
+                if (prevInteractiveId === id) {
+                    viewer.canvas.style.opacity = "0%"
+                    renderCanvas.style.opacity = "100%"
+                    continue
+                } else {
+                    prevInteractiveId = interactiveId
+                }
+            }
+
+            log(`${id}: Compositing from ${targetIndex}`)
 
             const result = rpcCall({
                 cmd: "getPixels",
@@ -225,6 +259,7 @@ function renderCycle() {
                 })
             }
 
+            canvas.style.opacity = "100%"
             if (canvas.width !== width || canvas.height !== height) {
                 log(`${id}: Resizing canvas ${width}x${height}`)
                 canvas.width = width
@@ -237,20 +272,62 @@ function renderCycle() {
 
     renderTargets.length = 0
 
+    let idsToRender = []
+
+    if (dirtySet.has(interactiveId) && readyToRender(interactiveId)) {
+        idsToRender.push(interactiveId)
+        let interactiveIx = dirtyQueue.indexOf(interactiveId)
+        dirtyQueue.splice(interactiveIx, 1)
+        dirtySet.delete(interactiveId)
+    }
+
     let reqIx = dirtyQueue.findIndex(readyToRender)
     if (reqIx >= 0) {
-        const id = dirtyQueue.splice(reqIx, 1)[0]
+        const id = dirtyQueue[reqIx]
+        idsToRender.push(id)
+        dirtyQueue.splice(reqIx, 1)
         dirtySet.delete(id)
-        log(`${id}: Rendering`)
+    }
+
+    for (const id of idsToRender) {
         const viewer = viewers[id]
         const { width, height } = viewer.resolution
-        const targetIndex = 0
+
+        const interactive = id === interactiveId
+        const targetIndex = interactive ? 1 : 0
+
+        log(`${id}: Rendering to ${targetIndex}`)
+
         rpcCall({
             cmd: "render",
             target: { targetIndex, width, height },
             desc: viewer.desc,
         })
-        renderTargets.push({ id, targetIndex, width, height })
+
+        const target = { id, targetIndex, width, height }
+        if (interactive) {
+            log(`${id}: Presenting ${targetIndex}`)
+            rpcCall({
+                cmd: "present",
+                targetIndex,
+                width,
+                height,
+            })
+
+            const rect = viewer.root.getBoundingClientRect()
+            renderCanvas.style.left = `${rect.left}px`
+            renderCanvas.style.top = `${rect.top}px`
+            renderCanvas.style.width = `${rect.right-rect.left}px`
+            renderCanvas.style.height = `${rect.bottom-rect.top}px`
+            renderCanvas.width = width
+            renderCanvas.height = height
+            interactiveTarget = target
+        }
+
+        renderTargets.push(target)
+    }
+
+    if (idsToRender.length > 0) {
         somethingChanged()
     }
 }
@@ -296,6 +373,7 @@ function initializeNativeViewer() {
     renderCanvas.id = "ufbx-render-canvas"
     renderCanvas.width = 800
     renderCanvas.height = 600
+    renderCanvas.style.position = "absolute"
     document.body.appendChild(renderCanvas)
 
     Module._js_setup()

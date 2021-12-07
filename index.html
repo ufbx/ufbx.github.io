@@ -6,6 +6,9 @@
 
 <body>
     <style>
+        body {
+            position: relative;
+        }
         .viewer {
             width: 400;
             height: 300;
@@ -14,6 +17,12 @@
         .ufbx-canvas {
             width: 100%;
             height: 100%;
+            pointer-events: none;
+        }
+        #ufbx-render-canvas {
+            pointer-events: none;
+            z-index: 1;
+            filter: hue-rotate(90deg);
         }
     </style>
     <div id="a" class="viewer"></div>
