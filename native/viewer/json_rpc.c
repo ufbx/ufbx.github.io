@@ -169,7 +169,7 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 	if (!desc) return fmt_error("Missing field: 'desc'");
 
 	vi_target vtarget = {
-		.target_index = (uint32_t)jsi_get_int(target, "index", 0),
+		.target_index = (uint32_t)jsi_get_int(target, "targetIndex", 0),
 		.width = (uint32_t)jsi_get_int(target, "width", 256),
 		.height = (uint32_t)jsi_get_int(target, "height", 256),
 		.samples = (uint32_t)jsi_get_int(target, "samples", 1),

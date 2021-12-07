@@ -5,7 +5,21 @@
 </head>
 
 <body>
-    <canvas id="copy-canvas" width="800" height="600"></canvas>
+    <style>
+        .viewer {
+            width: 400;
+            height: 300;
+            display: inline-block;
+        }
+        .ufbx-canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <div id="a" class="viewer"></div>
+    <div id="b" class="viewer"></div>
+    <div id="c" class="viewer"></div>
+    <div id="d" class="viewer"></div>
     <script defer src="/native/build/js_viewer/js_viewer.js"></script>
     <script defer src="/script/build/bundle.js"></script>
 </body>
