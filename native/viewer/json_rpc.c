@@ -245,6 +245,7 @@ char *rpc_cmd_free_resources(arena_t *tmp, jsi_obj *args)
 {
 	bool scenes = jsi_get_bool(args, "scenes", false);
 	bool targets = jsi_get_bool(args, "targets", false);
+	bool globals = jsi_get_bool(args, "globals", false);
 
 	if (scenes) {
 		for (size_t i = 0; i < rpcg.scenes.count; i++) {
@@ -256,6 +257,10 @@ char *rpc_cmd_free_resources(arena_t *tmp, jsi_obj *args)
 
 	if (targets) {
 		vi_free_targets();
+	}
+
+	if (globals) {
+		vi_shutdown();
 	}
 
 	jso_stream s = begin_response();

@@ -11,15 +11,13 @@
 
 EMSCRIPTEN_WEBGL_CONTEXT_HANDLE g_webgl_ctx;
 
-JS_ABI void js_setup()
+static void js_create_context()
 {
     g_webgl_ctx = emscripten_webgl_create_context("#ufbx-render-canvas", &(EmscriptenWebGLContextAttributes){
         .powerPreference = EM_WEBGL_POWER_PREFERENCE_LOW_POWER,
         .majorVersion = 2,
         .enableExtensionsByDefault = true,
     });
-
-    printf("Setup canvas: %d\n", g_webgl_ctx);
 
     emscripten_webgl_make_context_current(g_webgl_ctx);
 
@@ -31,6 +29,18 @@ JS_ABI void js_setup()
             .gl.force_gles2 = false,
         },
 	});
+}
+
+JS_ABI void js_setup()
+{
+    js_create_context();
+}
+
+JS_ABI void js_recreate_context()
+{
+    sg_shutdown();
+    emscripten_webgl_destroy_context(g_webgl_ctx);
+    js_create_context();
 }
 
 JS_ABI char *js_rpc(char *input)

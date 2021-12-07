@@ -16,7 +16,7 @@ function rpcCall(input) {
     const output = JSON.parse(outStr)
     // console.log("<", output)
 
-    console.log(`${input.cmd}: ${end-begin}ms`)
+    // console.log(`${input.cmd}: ${end-begin}ms`)
 
     if (output.error) {
         console.error(output.error)
@@ -34,7 +34,20 @@ function loadScene(name, buffer) {
     Module._free(dataPointer)
 }
 
+let g_canvas = null
+
+function recreateCanvas() {
+    if (g_canvas) document.body.removeChild(g_canvas)
+    g_canvas = document.createElement("canvas")
+    g_canvas.id = "ufbx-render-canvas"
+    g_canvas.width = 800
+    g_canvas.height = 600
+    document.body.appendChild(g_canvas)
+}
+
 function initializeNativeViewer() {
+    recreateCanvas()
+
     Module._js_setup()
     rpcCall({ cmd: "init" })
 
@@ -45,6 +58,20 @@ function initializeNativeViewer() {
     function render() {
         time += 0.005
         phase++
+
+        if (GLctx.isContextLost() && Math.random() < 0.6) {
+            rpcCall({
+                cmd: "freeResources",
+                scenes: true,
+                targets: true,
+                globals: true,
+            })
+
+            recreateCanvas()
+            Module._js_recreate_context()
+
+            rpcCall({ cmd: "init" })
+        }
 
         if (phase % 2 == 1) {
             rpcCall({
@@ -86,9 +113,26 @@ function initializeNativeViewer() {
             ctx.putImageData(imageData, 0, 0)
         }
 
-        if (++count < 60) {
-            window.setTimeout(render, 100)
+        if (Math.random() <= 0.15) {
+            rpcCall({
+                cmd: "freeResources",
+                scenes: true,
+                targets: true,
+            })
         }
+
+        if (Math.random() <= 0.1) {
+            const ext = GLctx.getExtension('WEBGL_lose_context')
+            if (ext) ext.loseContext()
+        } else if (Math.random() <= 0.2) {
+            rpcCall({
+                cmd: "freeResources",
+                scenes: true,
+                targets: true,
+            })
+        }
+
+        window.requestAnimationFrame(render)
     }
 
     fetch("/static/models/barbarian.fbx")
