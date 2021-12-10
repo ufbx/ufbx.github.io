@@ -243,6 +243,7 @@ function idleCycle() {
         viewer.root.appendChild(img)
 
         const canvas = viewer.canvas
+        const root = viewer.root
         viewer.canvas = null
 
         img.onload = () => {
@@ -250,7 +251,7 @@ function idleCycle() {
             setTimeout(() => {
                 canvas.width = 1
                 canvas.height = 1
-                viewer.root.removeChild(canvas)
+                root.removeChild(canvas)
             }, 100)
         }
 
