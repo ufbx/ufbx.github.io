@@ -4,13 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild index.js --minify --bundle --outfile=build/bundle.js --jsx-factory=h --jsx-fragment=Fragment",
-    "watch": "esbuild index.js --watch --bundle --outfile=build/bundle.js --jsx-factory=h --jsx-fragment=Fragment"
+    "build": "esbuild index.jsx --minify --bundle --outfile=build/bundle.js --jsx-factory=h --jsx-fragment=Fragment",
+    "watch": "esbuild index.jsx --watch --bundle --outfile=build/bundle.js --jsx-factory=h --jsx-fragment=Fragment"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "esbuild": "^0.14.2",
-    "kaiku": "^1.19.2"
+    "kaiku": "^1.19.4"
   }
 }

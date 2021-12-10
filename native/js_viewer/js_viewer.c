@@ -11,8 +11,13 @@
 
 EMSCRIPTEN_WEBGL_CONTEXT_HANDLE g_webgl_ctx;
 
+static bool has_context = false;
+
 static void js_create_context()
 {
+    if (has_context) return;
+    has_context = true;
+
     g_webgl_ctx = emscripten_webgl_create_context("#ufbx-render-canvas", &(EmscriptenWebGLContextAttributes){
         .powerPreference = EM_WEBGL_POWER_PREFERENCE_LOW_POWER,
         .majorVersion = 2,
@@ -36,10 +41,16 @@ JS_ABI void js_setup()
     js_create_context();
 }
 
-JS_ABI void js_recreate_context()
+JS_ABI void js_destroy_context()
 {
+    if (!has_context) return;
+    has_context = false;
     sg_shutdown();
     emscripten_webgl_destroy_context(g_webgl_ctx);
+}
+
+JS_ABI void js_reload_context()
+{
     js_create_context();
 }
 

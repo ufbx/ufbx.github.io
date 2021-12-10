@@ -10,14 +10,23 @@
             position: relative;
         }
         .viewer {
-            width: 400;
-            height: 300;
+            width: 800;
+            height: 600;
             display: inline-block;
         }
+        .ufbx-canvas-container {
+            position: relative;
+        }
         .ufbx-canvas {
+            position: absolute;
+            top: 0px;
+            left: 0px;
             width: 100%;
             height: 100%;
             pointer-events: none;
+        }
+        img.ufbx-canvas {
+            filter: grayscale(1);
         }
         #ufbx-render-canvas {
             pointer-events: none;
@@ -25,10 +34,7 @@
             filter: hue-rotate(90deg);
         }
     </style>
-    <div id="a" class="viewer"></div>
-    <div id="b" class="viewer"></div>
-    <div id="c" class="viewer"></div>
-    <div id="d" class="viewer"></div>
+    <div id="root"></div>
     <script defer src="/native/build/js_viewer/js_viewer.js"></script>
     <script defer src="/script/build/bundle.js"></script>
 </body>

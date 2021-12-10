@@ -32,6 +32,12 @@ function deepEqual(a, b) {
     }
 }
 
+const timeScale = 1.0
+function getTime() {
+    const time = performance.now() / 1000.0
+    return time * timeScale
+}
+
 let rpcInitialized = false
 let viewers = { }
 let dirtyQueue = []
@@ -39,18 +45,27 @@ let dirtySet = new Set()
 let sceneState = { }
 let scenesToLoad = new Set()
 let requestedInteractiveId = null
-let interactiveId = null
+let interactiveId = ""
 let prevInteractiveId = null
+let allocatedResources = {
+    targets: true,
+    scenes: true,
+    globals: true,
+}
 
 let latestRenders = []
 let renderTargets = []
 let interactiveTarget = null
+
+let idleTimeoutId = null
+let lastRenderTime = getTime()
 
 const symId = Symbol("viewer-id")
 
 let animationFrameRequestId = null
 
 function log(str) {
+    return;
     console.log(str)
 }
 
@@ -64,6 +79,9 @@ function fetchScene(url) {
 function somethingChanged() {
     if (animationFrameRequestId === null) {
         animationFrameRequestId = requestAnimationFrame(renderCycle)
+    }
+    if (idleTimeoutId === null) {
+        idleTimeoutId = setTimeout(idleCycle, 1000 / timeScale)
     }
 }
 
@@ -108,7 +126,7 @@ export function renderViewer(id, root, desc, opts={}) {
     // Find or create a viewer state
     let viewer = viewers[id]
     if (!viewer) {
-        viewer = { id }
+        viewer = { id, lastRenderTime: getTime() }
         viewers[id] = viewer
     }
 
@@ -135,7 +153,7 @@ export function renderViewer(id, root, desc, opts={}) {
     // Update the render desc
     if (!deepEqual(viewer.desc, desc)) {
         fetchScene(desc.sceneName)
-        viewer.desc = desc
+        viewer.desc = JSON.parse(JSON.stringify(desc))
         markDirty(viewer.id)
     }
 
@@ -179,9 +197,106 @@ function readyToRender(id) {
     return true
 }
 
+function idleCycle() {
+    const currentTime = getTime()
+    const timeSinceLastRender = currentTime - lastRenderTime
+
+    if (timeSinceLastRender > 2.0 && interactiveId !== "") {
+        console.log("Converting interactive target to non-interactive")
+        requestedInteractiveId = ""
+        somethingChanged()
+    }
+
+    if (interactiveId === "") {
+        if (timeSinceLastRender > 5.0 && allocatedResources.targets) {
+            allocatedResources.targets = false
+            console.log("Freeing targets")
+            rpcCall({
+                cmd: "freeResources",
+                targets: true,
+            })
+        }
+        if (timeSinceLastRender > 10.0 && allocatedResources.scenes) {
+            allocatedResources.scenes = false
+            console.log("Freeing scenes")
+            rpcCall({
+                cmd: "freeResources",
+                scenes: true,
+            })
+        }
+    }
+
+    let allUnloaded = true
+    for (const id in viewers) {
+        const viewer = viewers[id]
+        if (!viewer.canvas) continue
+        const timeSinceLastViewerRender = currentTime - viewer.lastRenderTime
+        if (timeSinceLastViewerRender < 5.0) continue
+
+        console.log(`Converting ${viewer.id} to <img>`)
+
+        const url = viewer.canvas.toDataURL()
+
+        const img = document.createElement("img")
+        img.classList.add("ufbx-canvas")
+        viewer.img = img
+        viewer.root.appendChild(img)
+
+        const canvas = viewer.canvas
+        viewer.canvas = null
+
+        img.onload = () => {
+            // Firefox bug
+            setTimeout(() => {
+                canvas.width = 1
+                canvas.height = 1
+                viewer.root.removeChild(canvas)
+            }, 100)
+        }
+
+        img.src = url
+
+        allUnloaded = false
+        break
+    }
+
+    if (allUnloaded && timeSinceLastRender > 120.0 && allocatedResources.globals) {
+            console.log("Dropping context")
+            allocatedResources.targets = false
+            allocatedResources.scenes = false
+            allocatedResources.globals = false
+            rpcCall({
+                cmd: "freeResources",
+                targets: true,
+                scenes: true,
+                globals: true,
+            })
+            Module._js_destroy_context()
+
+            const ext = GLctx.getExtension('WEBGL_lose_context')
+            if (ext) ext.loseContext()
+
+            globalRenderCanvas.width = 1
+            globalRenderCanvas.height = 1
+            document.body.removeChild(globalRenderCanvas)
+            globalRenderCanvas = null
+    }
+
+    idleTimeoutId = setTimeout(idleCycle, 1000 / timeScale)
+}
+
 function renderCycle() {
     animationFrameRequestId = null
     if (!rpcInitialized) return
+    const renderCanvas = getRenderCanvas()
+
+    if (!allocatedResources.globals) {
+        allocatedResources.globals = true
+        Module._js_reload_context()
+        rpcCall({ cmd: "init" })
+    }
+
+    const currentTime = getTime()
 
     if (scenesToLoad.size > 0) {
         for (const url of scenesToLoad) {
@@ -197,7 +312,31 @@ function renderCycle() {
         scenesToLoad.clear()
     }
 
-    if (requestedInteractiveId) {
+    if (!requestedInteractiveId) {
+        const cutoffTime = currentTime - 0.5
+        latestRenders = latestRenders.filter(r => r.time >= cutoffTime)
+        const renderCounts = { }
+        for (const { id } of latestRenders) {
+            renderCounts[id] = (renderCounts[id] ?? 0) + 1
+        }
+
+        let interactiveCount = renderCounts[interactiveId] ?? 0
+        let maxCount = 0
+        let maxId = 0
+        for (let id in renderCounts) {
+            const count = renderCounts[id]
+            if (count > maxCount) {
+                maxCount = count
+                maxId = id
+            }
+        }
+
+        if (maxCount >= 2 && maxCount >= interactiveCount * 1.5) {
+            requestedInteractiveId = maxId
+        }
+    }
+
+    if (requestedInteractiveId !== null) {
         if (interactiveId !== requestedInteractiveId) {
             if (!renderTargets.some(t => t.id === interactiveId)) {
                 if (interactiveTarget && interactiveTarget.id === interactiveId) {
@@ -295,12 +434,13 @@ function renderCycle() {
 
         const interactive = id === interactiveId
         const targetIndex = interactive ? 1 : 0
+        const samples = 4
 
         log(`${id}: Rendering to ${targetIndex}`)
 
         rpcCall({
             cmd: "render",
-            target: { targetIndex, width, height },
+            target: { targetIndex, width, height, samples },
             desc: viewer.desc,
         })
 
@@ -324,8 +464,14 @@ function renderCycle() {
             interactiveTarget = target
         }
 
+        viewer.lastRenderTime = currentTime
+        latestRenders.push({ id, time: currentTime })
         renderTargets.push(target)
     }
+
+    lastRenderTime = currentTime
+    allocatedResources.scenes = true
+    allocatedResources.targets = true
 
     if (idsToRender.length > 0) {
         somethingChanged()
@@ -366,16 +512,47 @@ function loadSceneFromBuffer(name, buffer) {
     Module._free(dataPointer)
 }
 
-let renderCanvas = null
+let globalRenderCanvas = null
 
-function initializeNativeViewer() {
-    renderCanvas = document.createElement("canvas")
+function getRenderCanvas()
+{
+    let recreate = false
+    if (allocatedResources.globals && window.GLctx && window.GLctx.isContextLost()) {
+        console.log("Recreating lost context")
+
+        rpcCall({
+            cmd: "freeResources",
+            scenes: true,
+            targets: true,
+            globals: true,
+        })
+
+        Module._js_destroy_context()
+        recreate = true
+    }
+
+    if (globalRenderCanvas) return globalRenderCanvas
+    console.log("Creating new canvas")
+    const renderCanvas = document.createElement("canvas")
     renderCanvas.id = "ufbx-render-canvas"
     renderCanvas.width = 800
     renderCanvas.height = 600
     renderCanvas.style.position = "absolute"
+    renderCanvas.style.opacity = "0%"
     document.body.appendChild(renderCanvas)
+    globalRenderCanvas = renderCanvas
 
+    if (recreate || !allocatedResources.globals) {
+        allocatedResources.globals = true
+        Module._js_reload_context()
+        rpcCall({ cmd: "init" })
+    }
+
+    return renderCanvas
+}
+
+function initializeNativeViewer() {
+    getRenderCanvas()
     Module._js_setup()
     rpcCall({ cmd: "init" })
     rpcInitialized = true

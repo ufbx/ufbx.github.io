@@ -39,7 +39,7 @@ out vec4 o_color;
 
 void main()
 {
-    vec3 l = normalize(vec3(1.0));
+    vec3 l = normalize(vec3(1.0, 1.7, 1.4));
     vec3 n = normalize(v_normal);
     float x = dot(n, l) * 0.5 + 0.5;
     o_color = vec4(vec3(x), 1.0);
