@@ -12,24 +12,10 @@ const state = createState({
 export function Top() {
     const topState = useState({})
 
-    useEffect(() => {
-        const time = state.time
-        const time2 = state.time2
-        topState.desc = {
-            sceneName: "/static/models/barbarian.fbx",
-            camera: {
-                position: [20 * Math.sin(time), 10, 20 * Math.cos(time)],
-                target: [0, 3, 0],
-                fieldOfView: 30,
-            },
-        }
-    })
-
     return (
         <div>
             <FbxViewer id="barb" />
             <FbxViewer id="barb2" />
-            <FbxViewer id="barb3" />
         </div>
     )
 }

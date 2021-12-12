@@ -121,6 +121,11 @@ const resizeObserver = new ResizeObserver(() => {
     }
 })
 
+export function queryResolution(id) {
+    const viewer = viewers[id]
+    return viewer?.resolution
+}
+
 export function renderViewer(id, root, desc, opts={}) {
 
     // Find or create a viewer state

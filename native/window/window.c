@@ -69,11 +69,11 @@ void init(void)
 static void serialize_vec3(jso_stream *s, um_vec3 v)
 {
     jso_single_line(s);
-    jso_array(s);
-    jso_double(s, v.x);
-    jso_double(s, v.y);
-    jso_double(s, v.z);
-    jso_end_array(s);
+    jso_object(s);
+    jso_prop_double(s, "x", v.x);
+    jso_prop_double(s, "y", v.y);
+    jso_prop_double(s, "z", v.z);
+    jso_end_object(s);
 }
 
 uint32_t mouse_buttons = 0;

@@ -148,14 +148,14 @@ char *rpc_cmd_load_scene(arena_t *tmp, jsi_obj *args)
 	return end_response(&s);
 }
 
-static um_vec3 get_vec3(jsi_obj *obj, const char *name, um_vec3 def)
+static um_vec3 get_vec3(jsi_obj *parent, const char *name, um_vec3 def)
 {
-	jsi_arr *arr = jsi_get_arr(obj, name);
-	if (arr && arr->num_values == 3) {
+	jsi_obj *obj = jsi_get_obj(parent, name);
+	if (obj) {
 		return um_v3(
-			(float)jsi_as_double(&arr->values[0], def.x),
-			(float)jsi_as_double(&arr->values[1], def.y),
-			(float)jsi_as_double(&arr->values[2], def.z));
+			(float)jsi_get_double(obj, "x", def.x),
+			(float)jsi_get_double(obj, "y", def.y),
+			(float)jsi_get_double(obj, "z", def.z));
 	} else {
 		return def;
 	}
