@@ -7,6 +7,7 @@ const elementTypeCategory = {
     light: "attrib",
     camera: "attrib",
     bone: "attrib",
+    empty: "attrib",
     material: "shading",
     texture: "shading",
     skin_deformer: "deformer",
@@ -45,6 +46,7 @@ function TreeNode({ state, info, id, level=0 }) {
 
     const category = elementTypeCategory[element.type]
     const catClass = `cat-${category}`
+    const structName = `ufbx_${element.type}`
 
     return <li className="ol-node">
         <div
@@ -55,8 +57,9 @@ function TreeNode({ state, info, id, level=0 }) {
             }}
             style={{paddingLeft: padding}}
             onClick={onClick}>
-            <img className="ol-icon" src={icon} title={`ufbx_${element.type}`} alt={element.type} />
+            <img className="ol-icon" src={icon} title={structName} alt={element.type} />
             <span>{element.name}</span>
+            <span className="ol-type">{element.type}</span>
         </div>
         <ul className="ol-list ol-nested">
             {children.map(c => <TreeNode state={state} info={info} id={c} level={level+1} />)}
