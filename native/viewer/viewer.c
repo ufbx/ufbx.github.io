@@ -112,7 +112,7 @@ typedef struct {
 typedef struct {
 	um_vec3 position;
 	um_vec3 normal;
-	uint8_t info[4];
+	int32_t vertex_id;
 } vi_vertex;
 
 typedef struct {
@@ -203,7 +203,7 @@ static void vi_init_pipelines(vi_pipelines *ps)
 		.index_type = SG_INDEXTYPE_UINT32,
 		.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3,
 		.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3,
-		.layout.attrs[2].format = SG_VERTEXFORMAT_UBYTE4,
+		.layout.attrs[2].format = SG_VERTEXFORMAT_UFBX_INT,
 		.cull_mode = SG_CULLMODE_BACK,
 		.face_winding = SG_FACEWINDING_CCW,
 	});
@@ -351,14 +351,12 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 
 				for (size_t ci = 0; ci < 3; ci++) {
 					size_t index = tri_ix[ti * 3 + ci];
+					int32_t vertex_id = fbx_mesh->vertex_indices[index];
 					ufbx_vec3 position = ufbx_get_vertex_vec3(&fbx_mesh->vertex_position, index);
 					ufbx_vec3 normal = ufbx_get_vertex_vec3(&fbx_mesh->vertex_normal, index);
 					vert->position = fbx_to_um_vec3(position);
 					vert->normal = fbx_to_um_vec3(normal);
-					vert->info[0] = vert_ids[ci];
-					vert->info[1] = 0;
-					vert->info[2] = 0;
-					vert->info[3] = 0;
+					vert->vertex_id = vert_ids[ci] | vertex_id << 2;
 					vert++;
 				}
 			}
@@ -543,9 +541,10 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 				}
 
 				ubo_mesh_vertex_t vu = {
-					.geometry_to_world = node->geometry_to_world,
-					.world_to_clip = vs->world_to_clip,
-					.highlight = highlight,
+					.u_geometry_to_world = node->geometry_to_world,
+					.u_world_to_clip = vs->world_to_clip,
+					.u_highlight = highlight,
+					.ui_highlight_cluster = -1,
 				};
 				sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE_REF(vu));
 

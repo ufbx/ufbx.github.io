@@ -1172,6 +1172,7 @@ typedef enum sg_vertex_format {
     SG_VERTEXFORMAT_SHORT4N,
     SG_VERTEXFORMAT_USHORT4N,
     SG_VERTEXFORMAT_UINT10_N2,
+    SG_VERTEXFORMAT_UFBX_INT,
     _SG_VERTEXFORMAT_NUM,
     _SG_VERTEXFORMAT_FORCE_U32 = 0x7FFFFFFF
 } sg_vertex_format;
@@ -4106,6 +4107,7 @@ _SOKOL_PRIVATE int _sg_vertexformat_bytesize(sg_vertex_format fmt) {
         case SG_VERTEXFORMAT_SHORT4N:   return 8;
         case SG_VERTEXFORMAT_USHORT4N:  return 8;
         case SG_VERTEXFORMAT_UINT10_N2: return 4;
+        case SG_VERTEXFORMAT_UFBX_INT:  return 4;
         case SG_VERTEXFORMAT_INVALID:   return 0;
         default:
             SOKOL_UNREACHABLE;
@@ -4865,6 +4867,7 @@ _SOKOL_PRIVATE GLint _sg_gl_vertexformat_size(sg_vertex_format fmt) {
         case SG_VERTEXFORMAT_SHORT4N:   return 4;
         case SG_VERTEXFORMAT_USHORT4N:  return 4;
         case SG_VERTEXFORMAT_UINT10_N2: return 4;
+        case SG_VERTEXFORMAT_UFBX_INT:  return 4;
         default: SOKOL_UNREACHABLE; return 0;
     }
 }
@@ -4892,6 +4895,8 @@ _SOKOL_PRIVATE GLenum _sg_gl_vertexformat_type(sg_vertex_format fmt) {
             return GL_UNSIGNED_SHORT;
         case SG_VERTEXFORMAT_UINT10_N2:
             return GL_UNSIGNED_INT_2_10_10_10_REV;
+        case SG_VERTEXFORMAT_UFBX_INT:
+            return GL_INT;
         default:
             SOKOL_UNREACHABLE; return 0;
     }
@@ -7283,9 +7288,14 @@ _SOKOL_PRIVATE void _sg_gl_apply_bindings(
                 (cache_attr->gl_attr.divisor != attr->divisor))
             {
                 _sg_gl_cache_bind_buffer(GL_ARRAY_BUFFER, gl_vb);
-                glVertexAttribPointer(attr_index, attr->size, attr->type,
-                    attr->normalized, attr->stride,
-                    (const GLvoid*)(GLintptr)vb_offset);
+                if (attr->type == GL_INT) {
+                    glVertexAttribIPointer(attr_index, attr->size, attr->type, attr->stride,
+                        (const GLvoid*)(GLintptr)vb_offset);
+                } else {
+                    glVertexAttribPointer(attr_index, attr->size, attr->type,
+                        attr->normalized, attr->stride,
+                        (const GLvoid*)(GLintptr)vb_offset);
+                }
                 #if defined(_SOKOL_GL_INSTANCING_ENABLED)
                     if (_sg.features.instancing) {
                         glVertexAttribDivisor(attr_index, (GLuint)attr->divisor);

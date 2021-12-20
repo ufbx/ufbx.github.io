@@ -570,9 +570,11 @@ function getRenderCanvas()
     console.log("Creating new canvas")
     const renderCanvas = document.createElement("canvas")
     renderCanvas.id = "ufbx-render-canvas"
-    renderCanvas.width = 800
-    renderCanvas.height = 600
+    renderCanvas.width = 10
+    renderCanvas.height = 10
     renderCanvas.style.position = "absolute"
+    renderCanvas.style.top = "0px"
+    renderCanvas.style.left = "0px"
     renderCanvas.style.opacity = "0%"
     document.body.appendChild(renderCanvas)
     globalRenderCanvas = renderCanvas
