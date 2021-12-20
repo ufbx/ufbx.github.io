@@ -6,8 +6,15 @@ add_executable(js_viewer WIN32 ${SRC_FILES})
 target_link_libraries(js_viewer viewer)
 
 if(MSVC)
-  target_compile_options(viewer PRIVATE /W3 /WX)
+  target_compile_options(js_viewer PRIVATE /W3 /WX)
 else()
-  target_compile_options(viewer PRIVATE -Wall -Werror)
+  target_compile_options(js_viewer PRIVATE -Wall -Werror)
+endif()
+
+if(EMSCRIPTEN)
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_link_options(js_viewer PRIVATE -g4 --source-map-base http://localhost:5000/native/build/js_viewer/)
+    target_compile_options(js_viewer PRIVATE -g3)
+  endif()
 endif()
 

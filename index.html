@@ -10,9 +10,9 @@
             position: relative;
         }
         .viewer {
-            width: 800;
-            height: 600;
             display: inline-block;
+            width: 100%;
+            height: 100%;
         }
         .ufbx-canvas-container {
             position: relative;
@@ -32,6 +32,43 @@
             pointer-events: none;
             z-index: 1;
             filter: hue-rotate(90deg);
+        }
+        .ol-top {
+            font-size: 1.2em;
+            background-color: #222;
+            color: #ddd;
+            padding-left: 0.25em;
+        }
+        .ol-icon {
+            height: 1.5em;
+            margin-right: 0.25em;
+        }
+        .ol-list {
+            list-style: none;
+        }
+        .ol-nested {
+            padding-left: 1.5em;
+        }
+        .ol-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .sp-top {
+            display: flex;
+            height: 400px;
+        }
+        .sp-pane {
+            width: 50%;
+            height: 100%;
+        }
+        .sp-outliner {
+            overflow-x: hidden;
+            overflow-y: scroll;
+        }
+        .sp-viewer {
+            overflow: hidden;
         }
     </style>
     <div id="root"></div>

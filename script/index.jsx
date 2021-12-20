@@ -2,6 +2,7 @@ import { renderViewer, setupViewers } from "./viewer/viewer"
 import FbxViewer from "./components/fbx-viewer"
 import globalState from "./components/global-state"
 import { h, Fragment, useState, useEffect, render, createState } from "../../ext/kaiku/dist/kaiku.dev"
+import Outliner from "./components/outliner"
 
 setupViewers()
 
@@ -14,8 +15,23 @@ export function Top() {
 
     return (
         <div>
-            <FbxViewer id="barb" />
-            <FbxViewer id="barb2" />
+        <div className="sp-top">
+            <div className="sp-pane sp-outliner">
+                <Outliner id="barb" />
+            </div>
+            <div className="sp-pane sp-viewer">
+                <FbxViewer id="barb" />
+            </div>
+        </div>
+        <div className="sp-top">
+            <div className="sp-pane sp-outliner">
+                <Outliner id="barb2" />
+            </div>
+            <div className="sp-pane sp-viewer">
+                <FbxViewer id="barb2" />
+            </div>
+        </div>
+
         </div>
     )
 }

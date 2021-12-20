@@ -30,35 +30,35 @@ const char *element_type_str(ufbx_element_type type)
 	case UFBX_ELEMENT_CAMERA: return "camera";
 	case UFBX_ELEMENT_BONE: return "bone";
 	case UFBX_ELEMENT_EMPTY: return "empty";
-	case UFBX_ELEMENT_LINE_CURVE: return "lineCurve";
-	case UFBX_ELEMENT_NURBS_CURVE: return "nurbsCurve";
-	case UFBX_ELEMENT_PATCH_SURFACE: return "patchSurface";
-	case UFBX_ELEMENT_NURBS_SURFACE: return "nurbsSurface";
-	case UFBX_ELEMENT_NURBS_TRIM_SURFACE: return "nurbsTrimSurface";
-	case UFBX_ELEMENT_NURBS_TRIM_BOUNDARY: return "nurbsTrimBoundary";
-	case UFBX_ELEMENT_PROCEDURAL_GEOMETRY: return "proceduralGeometry";
-	case UFBX_ELEMENT_CAMERA_STEREO: return "cameraStereo";
-	case UFBX_ELEMENT_CAMERA_SWITCHER: return "cameraSwitcher";
-	case UFBX_ELEMENT_LOD_GROUP: return "lodGroup";
-	case UFBX_ELEMENT_SKIN_DEFORMER: return "skinDeformer";
-	case UFBX_ELEMENT_SKIN_CLUSTER: return "skinCluster";
-	case UFBX_ELEMENT_BLEND_DEFORMER: return "blendDeformer";
-	case UFBX_ELEMENT_BLEND_CHANNEL: return "blendChannel";
-	case UFBX_ELEMENT_BLEND_SHAPE: return "blendShape";
-	case UFBX_ELEMENT_CACHE_DEFORMER: return "cacheDeformer";
+	case UFBX_ELEMENT_LINE_CURVE: return "line_curve";
+	case UFBX_ELEMENT_NURBS_CURVE: return "nurbs_curve";
+	case UFBX_ELEMENT_PATCH_SURFACE: return "patch_surface";
+	case UFBX_ELEMENT_NURBS_SURFACE: return "nurbs_surface";
+	case UFBX_ELEMENT_NURBS_TRIM_SURFACE: return "nurbs_trim_surface";
+	case UFBX_ELEMENT_NURBS_TRIM_BOUNDARY: return "nurbs_trim_boundary";
+	case UFBX_ELEMENT_PROCEDURAL_GEOMETRY: return "procedural_geometry";
+	case UFBX_ELEMENT_CAMERA_STEREO: return "camera_stereo";
+	case UFBX_ELEMENT_CAMERA_SWITCHER: return "camera_switcher";
+	case UFBX_ELEMENT_LOD_GROUP: return "lod_group";
+	case UFBX_ELEMENT_SKIN_DEFORMER: return "skin_deformer";
+	case UFBX_ELEMENT_SKIN_CLUSTER: return "skin_cluster";
+	case UFBX_ELEMENT_BLEND_DEFORMER: return "blend_deformer";
+	case UFBX_ELEMENT_BLEND_CHANNEL: return "blend_channel";
+	case UFBX_ELEMENT_BLEND_SHAPE: return "blend_shape";
+	case UFBX_ELEMENT_CACHE_DEFORMER: return "cache_deformer";
 	case UFBX_ELEMENT_CACHE_FILE: return "cache_file";
 	case UFBX_ELEMENT_MATERIAL: return "material";
 	case UFBX_ELEMENT_TEXTURE: return "texture";
 	case UFBX_ELEMENT_VIDEO: return "video";
 	case UFBX_ELEMENT_SHADER: return "shader";
-	case UFBX_ELEMENT_SHADER_BINDING: return "shaderBinding";
+	case UFBX_ELEMENT_SHADER_BINDING: return "shader_binding";
 	case UFBX_ELEMENT_ANIM_STACK: return "anim_stack";
 	case UFBX_ELEMENT_ANIM_LAYER: return "anim_layer";
 	case UFBX_ELEMENT_ANIM_VALUE: return "anim_value";
 	case UFBX_ELEMENT_ANIM_CURVE: return "anim_curve";
-	case UFBX_ELEMENT_DISPLAY_LAYER: return "displayLayer";
-	case UFBX_ELEMENT_SELECTION_SET: return "selectionSet";
-	case UFBX_ELEMENT_SELECTION_NODE: return "selectionNode";
+	case UFBX_ELEMENT_DISPLAY_LAYER: return "display_layer";
+	case UFBX_ELEMENT_SELECTION_SET: return "selection_set";
+	case UFBX_ELEMENT_SELECTION_NODE: return "selection_node";
 	case UFBX_ELEMENT_CHARACTER: return "character";
 	case UFBX_ELEMENT_CONSTRAINT: return "constraint";
 	case UFBX_ELEMENT_POSE: return "pose";
@@ -116,6 +116,13 @@ void serialize_element_node(jso_stream *s, ufbx_node* elem)
 
 void serialize_element_mesh(jso_stream *s, ufbx_mesh* elem)
 {
+    jso_prop_array(s, "materials");
+	for (size_t i = 0; i < elem->materials.count; i++) {
+		if (elem->materials.data[i].material) {
+			jso_int(s, (int)elem->materials.data[i].material->element_id);
+		}
+    }
+    jso_end_array(s);
 }
 
 void serialize_element_light(jso_stream *s, ufbx_light* elem)
@@ -204,6 +211,11 @@ void serialize_element_cache_file(jso_stream *s, ufbx_cache_file* elem)
 
 void serialize_element_material(jso_stream *s, ufbx_material* elem)
 {
+    jso_prop_array(s, "textures");
+	for (size_t i = 0; i < elem->textures.count; i++) {
+        jso_int(s, (int)elem->textures.data[i].texture->element_id);
+    }
+    jso_end_array(s);
 }
 
 void serialize_element_texture(jso_stream *s, ufbx_texture* elem)
@@ -328,6 +340,10 @@ void serialize_scene(jso_stream *s, ufbx_scene *scene)
 	jso_prop(s, "props");
 	serialize_props(s, &scene->settings.props);
 	jso_end_object(s);
+
+	if (scene->root_node) {
+		jso_prop_int(s, "rootNode", (int)scene->root_node->element_id);
+	}
 
 	jso_prop_array(s, "elements");
 	for (size_t i = 0; i < scene->elements.count; i++) {

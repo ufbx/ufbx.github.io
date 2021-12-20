@@ -10,6 +10,9 @@ const globalState = createState({
                 distance: 30,
                 offset: { x: 0, y: 0, z: 0 },
             },
+            outliner: {
+                includeRoot: false,
+            }
         },
         barb2: {
             scene: "/static/models/barbarian.fbx",
@@ -19,8 +22,14 @@ const globalState = createState({
                 distance: 30,
                 offset: { x: 0, y: 0, z: 0 },
             },
+            outliner: {
+                includeRoot: true,
+            }
         },
-    }
+    },
+    infos: { },
 })
+
+window.globalState = globalState
 
 export default globalState

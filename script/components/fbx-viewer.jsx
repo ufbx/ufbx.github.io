@@ -1,6 +1,6 @@
-import { h, Fragment, useRef, useEffect, unwrap } from  "../../../ext/kaiku/dist/kaiku.dev"
+import { h, Fragment, useRef, useEffect, unwrap, immutable } from  "../../../ext/kaiku/dist/kaiku.dev"
 import { mad3, cross3, normalize3, v3, add3 } from "../common/vec3"
-import { renderViewer, removeViewer, queryResolution } from "../viewer/viewer"
+import { renderViewer, removeViewer, queryResolution, addSceneInfoListener } from "../viewer/viewer"
 import globalState from "./global-state"
 
 function yawPitch(yaw, pitch, radius=1) {
@@ -54,7 +54,7 @@ function resetDrag() {
 function handleDrag(id, pixelDx, pixelDy, action) {
     const resolution = queryResolution(id)
     if (!resolution) return false
-    const scale = 1.0 / Math.min(resolution.width, resolution.height)
+    const scale = 1.0 / Math.min(resolution.elementWidth, resolution.elementHeight)
     let dx = pixelDx * scale
     let dy = pixelDy * scale
     const state = globalState.scenes[id]
@@ -79,6 +79,10 @@ function handleDrag(id, pixelDx, pixelDy, action) {
 
 let hasCallbacks = false
 function initializeCallbacks() {
+    addSceneInfoListener((name, info) => {
+        console.log(name, info)
+        globalState.infos[name] = immutable(info)
+    })
     window.addEventListener("mousemove", (e) => {
         if (!currentDrag) return
         const buttons = currentDrag.buttons & e.buttons

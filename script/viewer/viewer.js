@@ -43,6 +43,8 @@ let viewers = { }
 let dirtyQueue = []
 let dirtySet = new Set()
 let sceneState = { }
+let sceneInfos = { }
+let sceneInfoListeners = []
 let scenesToLoad = new Set()
 let requestedInteractiveId = null
 let interactiveId = ""
@@ -92,18 +94,21 @@ function markDirty(id) {
     somethingChanged()
 }
 
-let maximumResolution = 1024
+let maximumResolution = 256
 
 function getRenderResolution(root) {
-    const { clientWidth, clientHeight } = root
-    const maxExtent = Math.max(clientWidth, clientHeight)
+    const { width, height } = root.getBoundingClientRect()
+    const elementWidth = Math.ceil(width)
+    const elementHeight = Math.ceil(height)
+    const maxExtent = Math.max(elementWidth, elementHeight)
     let scale = 1.0
     if (maxExtent > maximumResolution) {
         scale = scale = maximumResolution / maxExtent
     }
     return {
-        width: Math.round(clientWidth * scale),
-        height: Math.round(clientHeight * scale)
+        elementWidth, elementHeight,
+        renderWidth: Math.round(elementWidth * scale),
+        renderHeight: Math.round(elementHeight * scale)
     }
 }
 
@@ -124,6 +129,13 @@ const resizeObserver = new ResizeObserver(() => {
 export function queryResolution(id) {
     const viewer = viewers[id]
     return viewer?.resolution
+}
+
+export function addSceneInfoListener(cb) {
+    sceneInfoListeners.push(cb)
+    for (const name in sceneInfos) {
+        cb(name, sceneInfos[name])
+    }
 }
 
 export function renderViewer(id, root, desc, opts={}) {
@@ -235,6 +247,8 @@ function idleCycle() {
     for (const id in viewers) {
         const viewer = viewers[id]
         if (!viewer.canvas) continue
+        const canvas = viewer.canvas
+
         const timeSinceLastViewerRender = currentTime - viewer.lastRenderTime
         if (timeSinceLastViewerRender < 5.0) continue
 
@@ -244,10 +258,11 @@ function idleCycle() {
 
         const img = document.createElement("img")
         img.classList.add("ufbx-canvas")
+        img.style.width = canvas.style.width
+        img.style.height = canvas.style.height
         viewer.img = img
         viewer.root.appendChild(img)
 
-        const canvas = viewer.canvas
         const root = viewer.root
         viewer.canvas = null
 
@@ -358,7 +373,7 @@ function renderCycle() {
     }
 
     if (renderTargets.length > 0) {
-        for (const { id, targetIndex, width, height } of renderTargets) {
+        for (const { id, targetIndex, renderWidth, renderHeight, elementWidth, elementHeight } of renderTargets) {
             const viewer = viewers[id]
             if (!viewer) continue
 
@@ -377,12 +392,12 @@ function renderCycle() {
             const result = rpcCall({
                 cmd: "getPixels",
                 targetIndex,
-                width,
-                height,
+                width: renderWidth,
+                height: renderHeight,
             })
             const ptr = result.dataPointer
-            const pixels = new Uint8ClampedArray(Module.HEAPU8.buffer, ptr, width*height*4)
-            const imageData = new ImageData(pixels, width, height)
+            const pixels = new Uint8ClampedArray(Module.HEAPU8.buffer, ptr, renderWidth*renderHeight*4)
+            const imageData = new ImageData(pixels, renderWidth, renderHeight)
 
             if (viewer.img) {
                 viewer.img.src = ""
@@ -392,11 +407,13 @@ function renderCycle() {
 
             let canvas = viewer.canvas
             if (!canvas) {
-                log(`${id}: Creating canvas ${width}x${height}`)
+                log(`${id}: Creating canvas ${renderWidth}x${renderHeight}`)
                 canvas = document.createElement("canvas")
                 canvas.classList.add("ufbx-canvas")
-                canvas.width = width
-                canvas.height = height
+                canvas.width = renderWidth
+                canvas.height = renderHeight
+                canvas.style.width = `${elementWidth}px`
+                canvas.style.height = `${elementHeight}px`
                 viewer.root.appendChild(canvas)
                 viewer.canvas = canvas
                 viewer.ctx = canvas.getContext("2d", {
@@ -405,11 +422,13 @@ function renderCycle() {
             }
 
             canvas.style.opacity = "100%"
-            if (canvas.width !== width || canvas.height !== height) {
-                log(`${id}: Resizing canvas ${width}x${height}`)
-                canvas.width = width
-                canvas.height = height
+            if (canvas.width !== renderWidth || canvas.height !== renderHeight) {
+                log(`${id}: Resizing canvas ${renderWidth}x${renderHeight}`)
+                canvas.width = renderWidth
+                canvas.height = renderHeight
             }
+            canvas.style.width = `${elementWidth}px`
+            canvas.style.height = `${elementHeight}px`
 
             viewer.ctx.putImageData(imageData, 0, 0)
         }
@@ -436,7 +455,7 @@ function renderCycle() {
 
     for (const id of idsToRender) {
         const viewer = viewers[id]
-        const { width, height } = viewer.resolution
+        const { renderWidth, renderHeight, elementWidth, elementHeight } = viewer.resolution
 
         const interactive = id === interactiveId
         const targetIndex = interactive ? 1 : 0
@@ -446,28 +465,31 @@ function renderCycle() {
 
         rpcCall({
             cmd: "render",
-            target: { targetIndex, width, height, samples },
+            target: { targetIndex, width: renderWidth, height: renderHeight, samples },
             desc: viewer.desc,
         })
 
-        const target = { id, targetIndex, width, height }
+        const target = { id, targetIndex, renderWidth, renderHeight, elementWidth, elementHeight }
         if (interactive) {
             log(`${id}: Presenting ${targetIndex}`)
-            rpcCall({
-                cmd: "present",
-                targetIndex,
-                width,
-                height,
-            })
-
             const rect = viewer.root.getBoundingClientRect()
             renderCanvas.style.left = `${rect.left}px`
             renderCanvas.style.top = `${rect.top}px`
-            renderCanvas.style.width = `${rect.right-rect.left}px`
-            renderCanvas.style.height = `${rect.bottom-rect.top}px`
-            renderCanvas.width = width
-            renderCanvas.height = height
+            renderCanvas.style.width = `${elementWidth}px`
+            renderCanvas.style.height = `${elementHeight}px`
+            if (renderCanvas.width !== renderWidth || renderCanvas.height !== renderHeight) {
+                log(`${id}: Resizing render canvas ${renderWidth}x${renderHeight}`)
+                renderCanvas.width = renderWidth
+                renderCanvas.height = renderHeight
+            }
             interactiveTarget = target
+
+            rpcCall({
+                cmd: "present",
+                targetIndex,
+                width: renderWidth,
+                height: renderHeight,
+            })
         }
 
         viewer.lastRenderTime = currentTime
@@ -514,8 +536,15 @@ function loadSceneFromBuffer(name, buffer) {
     const dataPointer = Module._malloc(size)
     if (!dataPointer) throw new Error("Out of memory!")
     HEAPU8.set(new Uint8Array(buffer), dataPointer)
-    rpcCall({ cmd: "loadScene", name, dataPointer, size })
+    const scene = rpcCall({ cmd: "loadScene", name, dataPointer, size })
     Module._free(dataPointer)
+    const info = scene.scene
+    if (info) {
+        sceneInfos[name] = info
+        for (const cb of sceneInfoListeners) {
+            cb(name, info)
+        }
+    }
 }
 
 let globalRenderCanvas = null

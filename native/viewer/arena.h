@@ -19,12 +19,12 @@ void arena_free(arena_t *arena);
 
 void *arena_defer_size(arena_t *arena, arena_defer_fn *fn, size_t size, const void *data);
 #define arena_defer(arena, fn, type, data) (type*)arena_defer_size((arena), (fn), sizeof(type), (data))
-void arena_cancel_retain(arena_t *arena, void *ptr);
-void arena_cancel(arena_t *arena, void *ptr);
+void arena_cancel_retain(arena_t *arena, void *ptr, bool run_defer);
+void arena_cancel(arena_t *arena, void *ptr, bool run_defer);
 
 size_t arena_ext_defer(arena_t *arena, arena_defer_fn *fn, const void *data);
 void arena_ext_redefer(arena_t *arena, size_t slot, arena_defer_fn *fn, const void *data);
-void arena_ext_cancel(arena_t *arena, size_t slot);
+void arena_ext_cancel(arena_t *arena, size_t slot, bool run_defer);
 
 void *aalloc_uninit_size(arena_t *arena, size_t size, size_t count);
 void *aalloc_size(arena_t *arena, size_t size, size_t count);

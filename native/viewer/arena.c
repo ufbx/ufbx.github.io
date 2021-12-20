@@ -40,7 +40,7 @@ typedef struct {
     size_t prev, next;
 } arenaimp_defer_slot;
 
-typedef union {
+typedef struct {
     size_t magic;
     size_t slot;
 } arenaimp_defer_header;
@@ -184,7 +184,7 @@ void arena_free(arena_t *arena)
     if (a->allocated) {
 		if (a->parent) {
 			arena_t *parent = (arena_t*)a->parent;
-			arena_ext_cancel(parent, a->parent_slot);
+			arena_ext_cancel(parent, a->parent_slot, false);
 			afree(parent, a);
 		} else {
 			free(a);
@@ -216,22 +216,22 @@ void *arena_defer_size(arena_t *arena, arena_defer_fn *fn, size_t size, const vo
     return copy;
 }
 
-void arena_cancel_retain(arena_t *arena, void *ptr)
+void arena_cancel_retain(arena_t *arena, void *ptr, bool run_defer)
 {
     if (!ptr) return;
     arenaimp_defer_header *dh = (arenaimp_defer_header*)ptr - 1;
     assert(dh->magic == ARENAIMP_MAGIC_DEFER);
 
-    arena_ext_cancel(arena, dh->slot);
+    arena_ext_cancel(arena, dh->slot, run_defer);
 
 	dh->slot = SIZE_MAX;
     dh->magic = ARENAIMP_MAGIC_FREE;
 }
 
-void arena_cancel(arena_t *arena, void *ptr)
+void arena_cancel(arena_t *arena, void *ptr, bool run_defer)
 {
     if (!ptr) return;
-    arena_cancel_retain(arena, ptr);
+    arena_cancel_retain(arena, ptr, run_defer);
     arenaimp_defer_header *dh = (arenaimp_defer_header*)ptr - 1;
     afree(arena, dh);
 }
@@ -278,13 +278,17 @@ void arena_ext_redefer(arena_t *arena, size_t slot, arena_defer_fn *fn, const vo
     ds->user = (void*)data;
 }
 
-void arena_ext_cancel(arena_t *arena, size_t slot)
+void arena_ext_cancel(arena_t *arena, size_t slot, bool run_defer)
 {
 	arenaimp_t *a = (arenaimp_t*)arena;
     assert(a);
     assert(a->magic == ARENAIMP_MAGIC_ARENA);
 
     arenaimp_defer_slot *ds = &a->defers[slot];
+    if (run_defer) {
+        ds->fn(ds->user);
+    }
+
     if (ds->prev != SIZE_MAX) {
         a->defers[ds->prev].next = ds->next;
     } else {
@@ -324,6 +328,7 @@ void *aalloc_uninit_size(arena_t *arena, size_t size, size_t count)
         arenaimp_small_header *next = a->next_free[sizeclass];
         if (next) {
             a->next_free[sizeclass] = next->freed.next_free;
+            next->active.capacity = total;
             return next + 1;
         } else {
             size_t chunk = (size_t)arenaimp_size_classes[sizeclass] * ARENAIMP_SIZECLASS_QUANTIZATION;

@@ -39,35 +39,45 @@ static void *defer_destroy_pass(arena_t *a, sg_pass pass) { return arena_defer(a
 static sg_image make_image(arena_t *a, void **p_defer, const sg_image_desc *desc) {
 	sg_image image = sg_make_image(desc);
 	assert(image.id);
-	if (image.id) defer_destroy_image(a, image);
+	void *defer = NULL;
+	if (image.id) defer = defer_destroy_image(a, image);
+	if (p_defer) *p_defer = defer;
 	return image;
 }
 
 static sg_buffer make_buffer(arena_t *a, void **p_defer, const sg_buffer_desc *desc) {
 	sg_buffer buffer = sg_make_buffer(desc);
 	assert(buffer.id);
-	if (buffer.id) defer_destroy_buffer(a, buffer);
+	void *defer = NULL;
+	if (buffer.id) defer = defer_destroy_buffer(a, buffer);
+	if (p_defer) *p_defer = defer;
 	return buffer;
 }
 
 static sg_shader make_shader(arena_t *a, void **p_defer, const sg_shader_desc *desc) {
 	sg_shader shader = sg_make_shader(desc);
 	assert(shader.id);
-	if (shader.id) defer_destroy_shader(a, shader);
+	void *defer = NULL;
+	if (shader.id) defer = defer_destroy_shader(a, shader);
+	if (p_defer) *p_defer = defer;
 	return shader;
 }
 
 static sg_pipeline make_pipeline(arena_t *a, void **p_defer, const sg_pipeline_desc *desc) {
 	sg_pipeline pipe = sg_make_pipeline(desc);
 	assert(pipe.id);
-	if (pipe.id) defer_destroy_pipeline(a, pipe);
+	void *defer = NULL;
+	if (pipe.id) defer = defer_destroy_pipeline(a, pipe);
+	if (p_defer) *p_defer = defer;
 	return pipe;
 }
 
 static sg_pass make_pass(arena_t *a, void **p_defer, const sg_pass_desc *desc) {
 	sg_pass pass = sg_make_pass(desc);
 	assert(pass.id);
-	if (pass.id) defer_destroy_pass(a, pass);
+	void *defer = NULL;
+	if (pass.id) defer = defer_destroy_pass(a, pass);
+	if (p_defer) *p_defer = defer;
 	return pass;
 }
 
@@ -144,6 +154,7 @@ typedef struct {
 	arena_t arena;
 
 	sg_backend backend;
+	bool origin_top_left;
 	sg_buffer quad_buffer;
 	sg_pipeline post_pipe;
 	sg_pipeline present_pipe;
@@ -200,6 +211,17 @@ void vi_setup()
 	arena_init(&vig.arena, NULL);
 
 	vig.backend = sg_query_backend();
+	switch (vig.backend) {
+	case SG_BACKEND_GLCORE33: vig.origin_top_left = false; break;
+    case SG_BACKEND_GLES2: vig.origin_top_left = false; break;
+    case SG_BACKEND_GLES3: vig.origin_top_left = false; break;
+    case SG_BACKEND_D3D11: vig.origin_top_left = true; break;
+    case SG_BACKEND_METAL_IOS: vig.origin_top_left = true; break;
+    case SG_BACKEND_METAL_MACOS: vig.origin_top_left = true; break;
+    case SG_BACKEND_METAL_SIMULATOR: vig.origin_top_left = true; break;
+    case SG_BACKEND_WGPU: vig.origin_top_left = true; break;
+	case SG_BACKEND_DUMMY: vig.origin_top_left = true; break;
+	}
 
 	um_vec2 quad_data[] = { um_v2(0.0f, 0.0f), um_v2(2.0f, 0.0f), um_v2(0.0f, 2.0f) };
 	vig.quad_buffer = make_buffer(&vig.arena, NULL, &(sg_buffer_desc){
@@ -358,9 +380,9 @@ static void vi_init_framebuffer(vi_framebuffer *fb, const vi_framebuffer_desc *d
 		vig.fb_arena = arena_create(&vig.arena);
 	}
 
-	arena_cancel(vig.fb_arena, fb->defer_pass);
-	arena_cancel(vig.fb_arena, fb->defer_color);
-	arena_cancel(vig.fb_arena, fb->defer_depth);
+	arena_cancel(vig.fb_arena, fb->defer_pass, true);
+	arena_cancel(vig.fb_arena, fb->defer_color, true);
+	arena_cancel(vig.fb_arena, fb->defer_depth, true);
 	fb->defer_pass = NULL;
 	fb->defer_color = NULL;
 	fb->defer_depth = NULL;
@@ -402,15 +424,15 @@ static um_mat vi_mat_perspective(float fov, float aspect, float near_z, float fa
 {
 	bool use_d3d = false;
 	switch (vig.backend) {
-	case SG_BACKEND_GLCORE33: use_d3d = false;
-    case SG_BACKEND_GLES2: use_d3d = false;
-    case SG_BACKEND_GLES3: use_d3d = false;
-    case SG_BACKEND_D3D11: use_d3d = true;
-    case SG_BACKEND_METAL_IOS: use_d3d = true;
-    case SG_BACKEND_METAL_MACOS: use_d3d = true;
-    case SG_BACKEND_METAL_SIMULATOR: use_d3d = true;
-    case SG_BACKEND_WGPU: use_d3d = true;
-	case SG_BACKEND_DUMMY: use_d3d = true;
+	case SG_BACKEND_GLCORE33: use_d3d = false; break;
+    case SG_BACKEND_GLES2: use_d3d = false; break;
+    case SG_BACKEND_GLES3: use_d3d = false; break;
+    case SG_BACKEND_D3D11: use_d3d = true; break;
+    case SG_BACKEND_METAL_IOS: use_d3d = true; break;
+    case SG_BACKEND_METAL_MACOS: use_d3d = true; break;
+    case SG_BACKEND_METAL_SIMULATOR: use_d3d = true; break;
+    case SG_BACKEND_WGPU: use_d3d = true; break;
+	case SG_BACKEND_DUMMY: use_d3d = true; break;
 	}
 
 	if (use_d3d) {
@@ -540,7 +562,7 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 		.depth.value = 1.0f,
 	});
 
-	sg_apply_viewport(0, 0, (int)render_fb->cur_width, (int)render_fb->cur_height, true);
+	sg_apply_viewport(0, 0, (int)render_fb->cur_width, (int)render_fb->cur_height, vig.origin_top_left);
 
 	vi_draw_meshes(ps, vs);
 
@@ -550,7 +572,7 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 		.colors[0].action = SG_ACTION_DONTCARE,
 	});
 
-	sg_apply_viewport(0, 0, (int)dst_fb->cur_width, (int)dst_fb->cur_height, true);
+	sg_apply_viewport(0, 0, (int)dst_fb->cur_width, (int)dst_fb->cur_height, vig.origin_top_left);
 	vi_draw_postprocess(dst_fb->cur_width, dst_fb->cur_height, render_fb);
 
 	sg_end_pass();
