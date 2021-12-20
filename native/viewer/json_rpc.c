@@ -199,6 +199,7 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		.field_of_view = (float)jsi_get_double(camera, "fieldOfView", 50.0f),
 		.near_plane = (float)jsi_get_double(camera, "nearPlane", 0.01f),
 		.far_plane = (float)jsi_get_double(camera, "farPlane", 100.0f),
+		.selected_element_id = (uint32_t)jsi_get_int(desc, "selectedElement", -1),
 	};
 
 	vi_render(scene->vi_scene, &vtarget, &vdesc);

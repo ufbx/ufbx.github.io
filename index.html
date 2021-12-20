@@ -36,23 +36,29 @@
         .ol-top {
             font-size: 1.2em;
             background-color: #222;
-            color: #ddd;
+            color: #c8c8c8;
             padding-left: 0.25em;
+            user-select: none;
         }
         .ol-icon {
             height: 1.5em;
             margin-right: 0.25em;
+            -webkit-user-drag: none;
         }
         .ol-list {
             list-style: none;
-        }
-        .ol-nested {
-            padding-left: 1.5em;
         }
         .ol-row {
             display: flex;
             flex-direction: row;
             align-items: center;
+        }
+        .ol-row:hover {
+            background-color: #2c2c2c;
+        }
+        .ol-row.ol-selected {
+            background-color: rgb(94, 88, 82);
+            color: rgb(255, 229, 208);
         }
 
         .sp-top {
@@ -60,12 +66,12 @@
             height: 400px;
         }
         .sp-pane {
-            width: 50%;
-            height: 100%;
+            width: 100%;
         }
         .sp-outliner {
             overflow-x: hidden;
             overflow-y: scroll;
+            width: 50%;
         }
         .sp-viewer {
             overflow: hidden;

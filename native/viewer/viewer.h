@@ -19,6 +19,7 @@ typedef struct vi_desc {
 	float field_of_view;
 	float near_plane;
 	float far_plane;
+	uint32_t selected_element_id;
 } vi_desc;
 
 void vi_setup();

@@ -2,6 +2,7 @@
 #include "arena.h"
 #include "external/sokol_config.h"
 #include "external/sokol_gfx.h"
+#include "external/sokol_gl.h"
 #include "shaders/copy.h"
 #include "shaders/mesh.h"
 
@@ -29,12 +30,14 @@ static void ad_sg_destroy_buffer(void *user) { sg_destroy_buffer(*(sg_buffer*)us
 static void ad_sg_destroy_shader(void *user) { sg_destroy_shader(*(sg_shader*)user); }
 static void ad_sg_destroy_pipeline(void *user) { sg_destroy_pipeline(*(sg_pipeline*)user); }
 static void ad_sg_destroy_pass(void *user) { sg_destroy_pass(*(sg_pass*)user); }
+static void ad_sg_destroy_sgl_context(void *user) { sgl_destroy_context(*(sgl_context*)user); }
 
 static void *defer_destroy_image(arena_t *a, sg_image image) { return arena_defer(a, &ad_sg_destroy_image, sg_image, &image); }
 static void *defer_destroy_buffer(arena_t *a, sg_buffer buffer) { return arena_defer(a, &ad_sg_destroy_buffer, sg_buffer, &buffer); }
 static void *defer_destroy_shader(arena_t *a, sg_shader shader) { return arena_defer(a, &ad_sg_destroy_shader, sg_shader, &shader); }
 static void *defer_destroy_pipeline(arena_t *a, sg_pipeline pipe) { return arena_defer(a, &ad_sg_destroy_pipeline, sg_pipeline, &pipe); }
 static void *defer_destroy_pass(arena_t *a, sg_pass pass) { return arena_defer(a, &ad_sg_destroy_pass, sg_pass, &pass); }
+static void *defer_destroy_sgl_context(arena_t *a, sgl_context ctx) { return arena_defer(a, &ad_sg_destroy_sgl_context, sgl_context, &ctx); }
 
 static sg_image make_image(arena_t *a, void **p_defer, const sg_image_desc *desc) {
 	sg_image image = sg_make_image(desc);
@@ -79,6 +82,15 @@ static sg_pass make_pass(arena_t *a, void **p_defer, const sg_pass_desc *desc) {
 	if (pass.id) defer = defer_destroy_pass(a, pass);
 	if (p_defer) *p_defer = defer;
 	return pass;
+}
+
+static sgl_context make_sgl_context(arena_t *a, void **p_defer, const sgl_context_desc_t *desc) {
+	sgl_context ctx = sgl_make_context(desc);
+	assert(ctx.id);
+	void *defer = NULL;
+	if (ctx.id) defer = defer_destroy_sgl_context(a, ctx);
+	if (p_defer) *p_defer = defer;
+	return ctx;
 }
 
 typedef struct {
@@ -147,6 +159,7 @@ typedef struct {
 typedef struct {
 	vi_pipelines_desc desc;
 
+	sgl_context gl_context;
 	sg_pipeline mesh_pipe;
 } vi_pipelines;
 
@@ -188,6 +201,12 @@ static void vi_init_pipelines(vi_pipelines *ps)
 		.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3,
 		.cull_mode = SG_CULLMODE_BACK,
 		.face_winding = SG_FACEWINDING_CCW,
+	});
+
+	ps->gl_context = make_sgl_context(&vig.arena, NULL, &(sgl_context_desc_t){
+		.color_format = color_format,
+		.depth_format = depth_format,
+		.sample_count = samples,
 	});
 }
 
@@ -474,6 +493,18 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs)
 	}
 }
 
+static void vi_draw_debug(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
+{
+	if (desc->selected_element_id < vs->fbx.elements.count) {
+		ufbx_element *elem = vs->fbx.elements.data[desc->selected_element_id];
+
+		if (elem->type == UFBX_ELEMENT_NODE) {
+			ufbx_node *node = (ufbx_node*)elem;
+
+		}
+	}
+}
+
 static void vi_draw_postprocess(uint32_t width, uint32_t height, vi_framebuffer *src)
 {
 	sg_apply_pipeline(vig.post_pipe);
@@ -542,6 +573,13 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 		.samples = target->samples,
 	});
 
+	sgl_set_context(ps->gl_context);
+
+	sgl_matrix_mode_projection();
+	sgl_load_matrix(vs->view_to_clip.m);
+	sgl_matrix_mode_modelview();
+	sgl_load_matrix(vs->world_to_view.m);
+
 	vi_init_framebuffer(render_fb, &(vi_framebuffer_desc){
 		.width = target->width,
 		.height = target->height,
@@ -565,6 +603,9 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 	sg_apply_viewport(0, 0, (int)render_fb->cur_width, (int)render_fb->cur_height, vig.origin_top_left);
 
 	vi_draw_meshes(ps, vs);
+	vi_draw_debug(ps, vs, desc);
+
+	sgl_draw();
 
 	sg_end_pass();
 
@@ -576,6 +617,8 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 	vi_draw_postprocess(dst_fb->cur_width, dst_fb->cur_height, render_fb);
 
 	sg_end_pass();
+
+	sgl_set_context(sgl_default_context());
 }
 
 void vi_present(uint32_t target_index, uint32_t width, uint32_t height)

@@ -12,7 +12,8 @@ const globalState = createState({
             },
             outliner: {
                 includeRoot: false,
-            }
+            },
+            selectedElement: -1,
         },
         barb2: {
             scene: "/static/models/barbarian.fbx",
@@ -24,7 +25,8 @@ const globalState = createState({
             },
             outliner: {
                 includeRoot: true,
-            }
+            },
+            selectedElement: -1,
         },
     },
     infos: { },

@@ -30,6 +30,7 @@ function stateToDesc(state) {
             nearPlane: Math.min(Math.max(radius*0.1, 0.01), 1.0),
             farPlane: Math.max(radius*2.0, 100.0),
         },
+        selectedElement: state.selectedElement,
     }
 }
 

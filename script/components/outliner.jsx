@@ -1,9 +1,10 @@
 import globalState from "./global-state"
 import { h, Fragment } from "../../../ext/kaiku/dist/kaiku.dev"
 
-function TreeNode({ state, info, id }) {
+function TreeNode({ state, info, id, level=0 }) {
     const element = info.elements[id]
     const icon = `/static/icons/element/${element.type}.svg`
+    const padding = `${level}em`
 
     let children = []
     if (element.type === "node") {
@@ -14,13 +15,24 @@ function TreeNode({ state, info, id }) {
         children = element.textures
     }
 
+    const onClick = () => {
+        state.selectedElement = id
+    }
+    const selected = state.selectedElement === id
+
     return <li className="ol-node">
-        <div className="ol-row">
+        <div
+            className={{
+                "ol-row": true,
+                "ol-selected": selected,
+            }}
+            style={{paddingLeft: padding}}
+            onClick={onClick}>
             <img className="ol-icon" src={icon} title={`ufbx_${element.type}`} alt={element.type} />
             <span>{element.name}</span>
         </div>
         <ul className="ol-list ol-nested">
-            {children.map(c => <TreeNode state={state} info={info} id={c} />)}
+            {children.map(c => <TreeNode state={state} info={info} id={c} level={level+1} />)}
         </ul>
     </li>
 }

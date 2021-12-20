@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include "external/sokol_gfx.h"
+#include "external/sokol_gl.h"
 
 #include <emscripten/emscripten.h>
 #include <emscripten/html5_webgl.h>
@@ -34,6 +35,8 @@ static void js_create_context()
             .gl.force_gles2 = false,
         },
 	});
+
+    sgl_setup(&(sgl_desc_t){ 0 });
 }
 
 JS_ABI void js_setup()
@@ -45,6 +48,7 @@ JS_ABI void js_destroy_context()
 {
     if (!has_context) return;
     has_context = false;
+    sgl_shutdown();
     sg_shutdown();
     emscripten_webgl_destroy_context(g_webgl_ctx);
 }
