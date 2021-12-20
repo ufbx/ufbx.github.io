@@ -41,6 +41,10 @@ void main()
 
 #extension GL_OES_standard_derivatives : enable
 
+uniform ubo_mesh_pixel {
+    vec3 highlight_color;
+};
+
 in vec3 v_normal;
 in vec2 v_barycentric;
 in float v_highlight;
@@ -63,7 +67,7 @@ void main()
     float x = dot(n, l) * 0.4 + 0.4;
     vec3 col = vec3(x);
     float wire = wireframeWeight(1.2);
-    col = mix(col, vec3(1.0, 0.8, 0.7), v_highlight * mix(wire, 1.0, 0.3));
+    col = mix(col, highlight_color, v_highlight * mix(wire, 1.0, 0.3));
     o_color = vec4(col, 1.0);
 }
 @end

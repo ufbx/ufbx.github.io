@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg width="128" height="128" version="1.1" viewBox="0 0 33.867 33.867" xmlns="http://www.w3.org/2000/svg">
+ <g transform="matrix(.7315 0 0 .7315 -20.227 -94.547)">
+  <path d="m44.45 158.75 12.7-12.7" fill="none" stroke="#df91e8" stroke-width="5.8208"/>
+  <g fill="#df91e8">
+   <ellipse cx="56.356" cy="143.14" rx="3.4396" ry="3.4396" stop-color="#000000" style="font-variation-settings:normal"/>
+   <ellipse cx="60.06" cy="146.84" rx="3.4396" ry="3.4396" stop-color="#000000" style="font-variation-settings:normal"/>
+   <ellipse cx="41.54" cy="157.96" rx="3.4396" ry="3.4396" stop-color="#000000" style="font-variation-settings:normal"/>
+   <ellipse cx="45.244" cy="161.66" rx="3.4396" ry="3.4396" stop-color="#000000" style="font-variation-settings:normal"/>
+  </g>
+ </g>
+ <path d="m21.772 4.2322a7.8626 7.8626 0 0 0-5.5594 2.302l-9.6777 9.6777a7.8626 7.8626 0 0 0 0 11.119 7.8626 7.8626 0 0 0 11.119 0l9.6777-9.6759a7.8626 7.8626 0 0 0 0-11.121 7.8626 7.8626 0 0 0-5.5594-2.302z" color="#000000" fill="none" stroke="#df91e8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.1167"/>
+</svg>

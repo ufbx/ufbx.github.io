@@ -123,6 +123,12 @@ void serialize_element_mesh(jso_stream *s, ufbx_mesh* elem)
 		}
     }
     jso_end_array(s);
+
+    jso_prop_array(s, "deformers");
+	for (size_t i = 0; i < elem->all_deformers.count; i++) {
+		jso_int(s, (int)elem->all_deformers.data[i]->element_id);
+    }
+    jso_end_array(s);
 }
 
 void serialize_element_light(jso_stream *s, ufbx_light* elem)
@@ -183,18 +189,34 @@ void serialize_element_lod_group(jso_stream *s, ufbx_lod_group* elem)
 
 void serialize_element_skin_deformer(jso_stream *s, ufbx_skin_deformer* elem)
 {
+    jso_prop_array(s, "clusters");
+	for (size_t i = 0; i < elem->clusters.count; i++) {
+		jso_int(s, (int)elem->clusters.data[i]->element_id);
+    }
+    jso_end_array(s);
 }
 
 void serialize_element_skin_cluster(jso_stream *s, ufbx_skin_cluster* elem)
 {
+	jso_prop_int(s, "bone", elem->bone_node->element_id);
 }
 
 void serialize_element_blend_deformer(jso_stream *s, ufbx_blend_deformer* elem)
 {
+    jso_prop_array(s, "channels");
+	for (size_t i = 0; i < elem->channels.count; i++) {
+		jso_int(s, (int)elem->channels.data[i]->element_id);
+    }
+    jso_end_array(s);
 }
 
 void serialize_element_blend_channel(jso_stream *s, ufbx_blend_channel* elem)
 {
+    jso_prop_array(s, "keyframes");
+	for (size_t i = 0; i < elem->keyframes.count; i++) {
+		jso_int(s, (int)elem->keyframes.data[i].shape->element_id);
+    }
+    jso_end_array(s);
 }
 
 void serialize_element_blend_shape(jso_stream *s, ufbx_blend_shape* elem)

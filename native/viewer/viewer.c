@@ -501,6 +501,14 @@ static um_mat vi_mat_perspective(float fov, float aspect, float near_z, float fa
 	}
 }
 
+static um_vec3 hex_to_um3(uint32_t hex)
+{
+	return um_v3(
+		(float)((hex>>16)&0xff)/255.0f,
+		(float)((hex>> 8)&0xff)/255.0f,
+		(float)((hex>> 0)&0xff)/255.0f);
+}
+
 static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 {
 	for (size_t mesh_ix = 0; mesh_ix < vs->fbx.meshes.count; mesh_ix++) {
@@ -508,17 +516,30 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 		vi_mesh *mesh = &vs->meshes[mesh_ix];
 
 		for (size_t inst_ix = 0; inst_ix < fbx_mesh->instances.count; inst_ix++) {
-			uint32_t node_ix = fbx_mesh->instances.data[inst_ix]->id;
-			vi_node *node = &vs->nodes[node_ix];
+			ufbx_node *fbx_node = fbx_mesh->instances.data[inst_ix];
+			vi_node *node = &vs->nodes[fbx_node->id];
 
 			for (size_t part_ix = 0; part_ix < mesh->num_parts; part_ix++) {
 				vi_part *part = &mesh->parts[part_ix];
 
 				sg_apply_pipeline(ps->mesh_pipe);
 
+				ufbx_material *fbx_material = NULL;
+				if (part->material_id < vs->fbx.materials.count) {
+					fbx_material = vs->fbx.materials.data[part->material_id];
+				}
+
+				um_vec3 highlight_color = um_zero3;
 				float highlight = 0.0f;
 				if (fbx_mesh->element_id == desc->selected_element_id) {
 					highlight = 1.0f;
+					highlight_color = hex_to_um3(0xf4bf6e);
+				} else if (fbx_material && fbx_material->element_id == desc->selected_element_id) {
+					highlight = 1.0f;
+					highlight_color = hex_to_um3(0x6cdaa2);
+				} else if (fbx_node->element_id == desc->selected_element_id) {
+					highlight = 0.5f;
+					highlight_color = hex_to_um3(0x6cb9da);
 				}
 
 				ubo_mesh_vertex_t vu = {
@@ -527,6 +548,12 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 					.highlight = highlight,
 				};
 				sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE_REF(vu));
+
+
+				ubo_mesh_pixel_t pu = {
+					.highlight_color = highlight_color,
+				};
+				sg_apply_uniforms(SG_SHADERSTAGE_FS, 0, SG_RANGE_REF(pu));
 
 				sg_apply_bindings(&(sg_bindings){
 					.vertex_buffers[0] = part->vertex_buffer,

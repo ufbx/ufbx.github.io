@@ -1,6 +1,23 @@
 import globalState from "./global-state"
 import { h, Fragment } from "../../../ext/kaiku/dist/kaiku.dev"
 
+const elementTypeCategory = {
+    node: "node",
+    mesh: "attrib",
+    light: "attrib",
+    camera: "attrib",
+    bone: "attrib",
+    material: "shading",
+    texture: "shading",
+    skin_deformer: "deformer",
+    skin_cluster: "deformer",
+    blend_deformer: "deformer",
+    blend_channel: "deformer",
+    blend_shape: "deformer",
+    cache_deformer: "deformer",
+    cache_file: "deformer",
+}
+
 function TreeNode({ state, info, id, level=0 }) {
     const element = info.elements[id]
     const icon = `/static/icons/element/${element.type}.svg`
@@ -10,9 +27,15 @@ function TreeNode({ state, info, id, level=0 }) {
     if (element.type === "node") {
         children = [...element.attribs, ...element.children]
     } else if (element.type === "mesh") {
-        children = element.materials
+        children = [...element.materials, ...element.deformers]
     } else if (element.type === "material") {
         children = element.textures
+    } else if (element.type === "skin_deformer") {
+        children = element.clusters
+    } else if (element.type === "blend_deformer") {
+        children = element.channels
+    } else if (element.type === "blend_channel") {
+        children = element.keyframes
     }
 
     const onClick = () => {
@@ -20,11 +43,15 @@ function TreeNode({ state, info, id, level=0 }) {
     }
     const selected = state.selectedElement === id
 
+    const category = elementTypeCategory[element.type]
+    const catClass = `cat-${category}`
+
     return <li className="ol-node">
         <div
             className={{
                 "ol-row": true,
                 "ol-selected": selected,
+                [catClass]: true,
             }}
             style={{paddingLeft: padding}}
             onClick={onClick}>
