@@ -94,7 +94,7 @@ function markDirty(id) {
     somethingChanged()
 }
 
-let maximumResolution = 256
+let maximumResolution = 1024
 
 function getRenderResolution(root) {
     const { width, height } = root.getBoundingClientRect()
