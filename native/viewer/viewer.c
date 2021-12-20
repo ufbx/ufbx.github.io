@@ -13,6 +13,9 @@
 	#define HAS_GL 0
 #endif
 
+// TEMPT MEP
+#include <stdio.h>
+
 // static um_vec2 fbx_to_um_vec2(ufbx_vec2 v) { return um_v2((float)v.x, (float)v.y); }
 static um_vec3 fbx_to_um_vec3(ufbx_vec3 v) { return um_v3((float)v.x, (float)v.y, (float)v.z); }
 um_quat fbx_to_um_quat(ufbx_quat v) { return um_quat_xyzw((float)v.x, (float)v.y, (float)v.z, (float)v.w); }
@@ -109,6 +112,7 @@ typedef struct {
 typedef struct {
 	um_vec3 position;
 	um_vec3 normal;
+	uint8_t info[4];
 } vi_vertex;
 
 typedef struct {
@@ -199,6 +203,7 @@ static void vi_init_pipelines(vi_pipelines *ps)
 		.index_type = SG_INDEXTYPE_UINT32,
 		.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3,
 		.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3,
+		.layout.attrs[2].format = SG_VERTEXFORMAT_UBYTE4,
 		.cull_mode = SG_CULLMODE_BACK,
 		.face_winding = SG_FACEWINDING_CCW,
 	});
@@ -288,6 +293,8 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 	vi_part *parts = aalloc(vs->arena, vi_part, fbx_mesh->materials.count);
 	mesh->parts = parts;
 
+	uint8_t *vertex_ids = aalloc(NULL, uint8_t, fbx_mesh->num_vertices);
+
 	size_t num_parts = 0;
 	for (size_t pi = 0; pi < fbx_mesh->materials.count; pi++) {
 		ufbx_mesh_material *fbx_mesh_mat = &fbx_mesh->materials.data[pi];
@@ -315,13 +322,45 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 		for (size_t fi = 0; fi < fbx_mesh_mat->num_faces; fi++) {
 			ufbx_face face = fbx_mesh->faces[fbx_mesh_mat->face_indices[fi]];
 			size_t num_tris = ufbx_triangulate_face(tri_ix, num_tri_ix, fbx_mesh, face);
-			for (size_t ci = 0; ci < num_tris * 3; ci++) {
-				size_t index = tri_ix[ci];
-				ufbx_vec3 position = ufbx_get_vertex_vec3(&fbx_mesh->vertex_position, index);
-				ufbx_vec3 normal = ufbx_get_vertex_vec3(&fbx_mesh->vertex_normal, index);
-				vert->position = fbx_to_um_vec3(position);
-				vert->normal = fbx_to_um_vec3(normal);
-				vert++;
+			for (size_t ti = 0; ti < num_tris; ti++) {
+				uint8_t vert_ids[3] = { 0 };
+				bool id_used[4] = { 0 };
+
+				for (size_t ci = 0; ci < 3; ci++) {
+					size_t index = tri_ix[ti * 3 + ci];
+					uint32_t vertex = fbx_mesh->vertex_indices[index];
+					uint8_t existing_id = vertex_ids[vertex];
+					if (!id_used[existing_id]) {
+						id_used[existing_id] = true;
+						vert_ids[ci] = existing_id;
+					}
+				}
+
+				// Assign unique vertex indices
+				for (size_t ci = 0; ci < 3; ci++) {
+					if (vert_ids[ci] == 0) {
+						size_t index = tri_ix[ti * 3 + ci];
+						uint32_t vertex = fbx_mesh->vertex_indices[index];
+						uint8_t unused_id = 1;
+						while (id_used[unused_id]) unused_id++;
+						vert_ids[ci] = unused_id;
+						id_used[unused_id] = true;
+						vertex_ids[vertex] = unused_id;
+					}
+				}
+
+				for (size_t ci = 0; ci < 3; ci++) {
+					size_t index = tri_ix[ti * 3 + ci];
+					ufbx_vec3 position = ufbx_get_vertex_vec3(&fbx_mesh->vertex_position, index);
+					ufbx_vec3 normal = ufbx_get_vertex_vec3(&fbx_mesh->vertex_normal, index);
+					vert->position = fbx_to_um_vec3(position);
+					vert->normal = fbx_to_um_vec3(normal);
+					vert->info[0] = vert_ids[ci];
+					vert->info[1] = 0;
+					vert->info[2] = 0;
+					vert->info[3] = 0;
+					vert++;
+				}
 			}
 		}
 
@@ -343,6 +382,7 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 		arena_free(&tmp);
 	}
 
+	afree(NULL, vertex_ids);
 	mesh->num_parts = num_parts;
 }
 
@@ -461,7 +501,7 @@ static um_mat vi_mat_perspective(float fov, float aspect, float near_z, float fa
 	}
 }
 
-static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs)
+static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 {
 	for (size_t mesh_ix = 0; mesh_ix < vs->fbx.meshes.count; mesh_ix++) {
 		ufbx_mesh *fbx_mesh = vs->fbx.meshes.data[mesh_ix];
@@ -476,9 +516,15 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs)
 
 				sg_apply_pipeline(ps->mesh_pipe);
 
+				float highlight = 0.0f;
+				if (fbx_mesh->element_id == desc->selected_element_id) {
+					highlight = 1.0f;
+				}
+
 				ubo_mesh_vertex_t vu = {
 					.geometry_to_world = node->geometry_to_world,
 					.world_to_clip = vs->world_to_clip,
+					.highlight = highlight,
 				};
 				sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE_REF(vu));
 
@@ -493,6 +539,11 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs)
 	}
 }
 
+static void sgl_v3(um_vec3 v)
+{
+	sgl_v3f(v.x, v.y, v.z);
+}
+
 static void vi_draw_debug(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 {
 	if (desc->selected_element_id < vs->fbx.elements.count) {
@@ -501,6 +552,16 @@ static void vi_draw_debug(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 		if (elem->type == UFBX_ELEMENT_NODE) {
 			ufbx_node *node = (ufbx_node*)elem;
 
+			um_mat node_to_world = fbx_to_um_mat(node->node_to_world);
+			um_vec3 c = node_to_world.cols[3].xyz;
+
+			sgl_begin_lines();
+			sgl_c3f(1.0f, 0.0f, 0.0f);
+			for (size_t i = 0; i < 3; i++) {
+				sgl_v3(c);
+				sgl_v3(um_add3(c, node_to_world.cols[i].xyz));
+			}
+			sgl_end();
 		}
 	}
 }
@@ -602,7 +663,7 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 
 	sg_apply_viewport(0, 0, (int)render_fb->cur_width, (int)render_fb->cur_height, vig.origin_top_left);
 
-	vi_draw_meshes(ps, vs);
+	vi_draw_meshes(ps, vs, desc);
 	vi_draw_debug(ps, vs, desc);
 
 	sgl_draw();
@@ -619,6 +680,7 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 	sg_end_pass();
 
 	sgl_set_context(sgl_default_context());
+	sg_commit();
 }
 
 void vi_present(uint32_t target_index, uint32_t width, uint32_t height)

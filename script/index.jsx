@@ -23,7 +23,6 @@ export function Top() {
                 <FbxViewer id="barb" />
             </div>
         </div>
-        {/*
         <div className="sp-top">
             <div className="sp-pane sp-outliner">
                 <Outliner id="barb2" />
@@ -32,7 +31,6 @@ export function Top() {
                 <FbxViewer id="barb2" />
             </div>
         </div>
-        */}
 
         </div>
     )

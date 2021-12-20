@@ -7,12 +7,16 @@
 
 layout(location=0) in vec3 a_position;
 layout(location=1) in vec3 a_normal;
+layout(location=2) in vec4 a_info;
 
 out vec3 v_normal;
+out vec2 v_barycentric;
+out float v_highlight;
 
 uniform ubo_mesh_vertex {
     mat4 geometry_to_world;
     mat4 world_to_clip;
+    float highlight;
 };
 
 void main()
@@ -27,22 +31,40 @@ void main()
 
     gl_Position = clip_pos;
     v_normal = normalize(world_normal);
+    v_barycentric = vec2(int(a_info.x) == 1 ? 1.0 : 0.0, int(a_info.x) == 2.0 ? 1.0 : 0.0);
+    v_highlight = highlight;
 }
 
 @end
 
 @fs mesh_pixel
 
+#extension GL_OES_standard_derivatives : enable
+
 in vec3 v_normal;
+in vec2 v_barycentric;
+in float v_highlight;
 
 out vec4 o_color;
 
+float wireframeWeight(float width)
+{
+    vec3 bary = vec3(v_barycentric, 1.0 - v_barycentric.x - v_barycentric.y);
+    vec3 dbary = fwidth(bary);
+    vec3 wire = bary * (1.0 / dbary);
+    return 1.0 - clamp(min(min(wire.x, wire.y), wire.z) - (width - 1.0), 0.0, 1.0);
+}
+
 void main()
 {
+    vec2 pixelPos = gl_FragCoord.xy;
     vec3 l = normalize(vec3(1.0, 1.7, 1.4));
     vec3 n = normalize(v_normal);
-    float x = dot(n, l) * 0.5 + 0.5;
-    o_color = vec4(vec3(x), 1.0);
+    float x = dot(n, l) * 0.4 + 0.4;
+    vec3 col = vec3(x);
+    float wire = wireframeWeight(1.2);
+    col = mix(col, vec3(1.0, 0.8, 0.7), v_highlight * mix(wire, 1.0, 0.3));
+    o_color = vec4(col, 1.0);
 }
 @end
 

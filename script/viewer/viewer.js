@@ -225,7 +225,7 @@ function idleCycle() {
     }
 
     if (interactiveId === "") {
-        if (timeSinceLastRender > 5.0 && allocatedResources.targets) {
+        if (timeSinceLastRender > 10.0 && allocatedResources.targets) {
             allocatedResources.targets = false
             console.log("Freeing targets")
             rpcCall({
@@ -233,7 +233,7 @@ function idleCycle() {
                 targets: true,
             })
         }
-        if (timeSinceLastRender > 10.0 && allocatedResources.scenes) {
+        if (timeSinceLastRender > 20.0 && allocatedResources.scenes) {
             allocatedResources.scenes = false
             console.log("Freeing scenes")
             rpcCall({
@@ -250,7 +250,7 @@ function idleCycle() {
         const canvas = viewer.canvas
 
         const timeSinceLastViewerRender = currentTime - viewer.lastRenderTime
-        if (timeSinceLastViewerRender < 5.0) continue
+        if (timeSinceLastViewerRender < 30.0) continue
 
         console.log(`Converting ${viewer.id} to <img>`)
 
