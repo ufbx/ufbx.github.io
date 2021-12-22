@@ -1148,7 +1148,7 @@ struct ufbx_skin_cluster {
 	// not generally needed for skinning, use `geometry_to_bone` instead.
 	ufbx_matrix bind_to_world;
 
-	// Precomputed matrix/transform that accounts for the current bbone transform
+	// Precomputed matrix/transform that accounts for the current bone transform
 	// ie. `ufbx_matrix_mul(&cluster->bone->node_to_world, &cluster->geometry_to_bone)`
 	ufbx_matrix geometry_to_world;
 	ufbx_transform geometry_to_world_transform;

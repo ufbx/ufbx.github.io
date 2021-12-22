@@ -29,9 +29,9 @@ target_include_directories(viewer PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen")
 target_include_directories(viewer INTERFACE ".")
 
 if(MSVC)
-  target_compile_options(viewer PRIVATE /W4 /WX)
+  target_compile_options(viewer PRIVATE /W3 /WX)
 else()
-  target_compile_options(viewer PRIVATE -Wall -Werror)
+  target_compile_options(viewer PRIVATE -Wall -Werror -Wno-unused-function -Wno-unused-variable)
 endif()
 
 if(EMSCRIPTEN)

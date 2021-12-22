@@ -5,6 +5,7 @@
 #include "external/json_output.h"
 #include "external/sokol_config.h"
 #include "external/sokol_gfx.h"
+#include "external/sokol_gl.h"
 #include "external/sokol_app.h"
 #include "external/sokol_glue.h"
 #include "external/umath.h"
@@ -37,10 +38,12 @@ void init(void)
 		.context = sapp_sgcontext()
 	});
 
+    sgl_setup(&(sgl_desc_t){ 0 });
+
     {
         jso_stream s = begin_request("init");
         jso_prop_boolean(&s, "pretty", true);
-        jso_prop_boolean(&s, "verbose", true);
+        jso_prop_boolean(&s, "verbose", false);
         free(submit_request(&s));
     }
 
@@ -169,6 +172,15 @@ void frame(void)
         serialize_vec3(&s, center);
         jso_prop_double(&s, "fieldOfView", 40.0);
         jso_end_object(&s); // camera
+
+        static double time = 0.0f;
+        time += 1.0f / 144.0f;
+        if (time > 2.8f)
+            time = 0.0f;
+
+        jso_prop_object(&s, "animation");
+        jso_prop_double(&s, "time", time);
+        jso_end_object(&s);
 
 		jso_end_object(&s); // desc
 

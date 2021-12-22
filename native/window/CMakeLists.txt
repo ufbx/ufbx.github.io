@@ -8,7 +8,7 @@ target_link_libraries(window viewer)
 if(MSVC)
   target_compile_options(window PRIVATE /W3 /WX)
 else()
-  target_compile_options(window PRIVATE -Wall -Werror)
+  target_compile_options(window PRIVATE -Wall -Werror -Wno-unused-function)
 endif()
 
 if(EMSCRIPTEN)

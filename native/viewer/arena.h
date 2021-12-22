@@ -48,7 +48,7 @@ void *alist_push_size(arena_t *arena, size_t size, void *p_list, void *p_item);
 void *alist_pop_size(size_t size, void *p_list);
 bool alist_remove_size(size_t size, void *p_list, size_t index);
 
-#define alist_push_zero(arena, type, p_list) ((type*)alist_push_size((arena), sizeof(type), (p_list), NULL))
+#define alist_push(arena, type, p_list) ((type*)alist_push_size((arena), sizeof(type), (p_list), NULL))
 #define alist_push_ptr(arena, type, p_list, p_item) ((type*)alist_push_size((arena), sizeof(type), (p_list), (p_item)))
 #define alist_pop(type, p_list) ((type*)alist_push_size(sizeof(type), (p_list)))
 #define alist_remove(type, p_list) (alist_remove_size(sizeof(type), (p_list)))

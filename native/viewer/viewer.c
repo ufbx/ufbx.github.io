@@ -96,6 +96,45 @@ static sgl_context make_sgl_context(arena_t *a, void **p_defer, const sgl_contex
 	return ctx;
 }
 
+static size_t get_buffer_size(size_t size)
+{
+	size_t elements = (size + 15) / 16;
+	size_t min_rows = (elements + 511) / 512;
+	size_t rows = 1;
+	while (rows < min_rows) rows *= 2;
+	return rows * 512 * 16;
+}
+
+static sg_image make_static_buffer(arena_t *a, void **p_defer, const void *data, size_t size)
+{
+	size_t rows = size / (512 * 16);
+	return make_image(a, p_defer, &(sg_image_desc){
+		.width = 512,
+		.height = (int)rows,
+		.usage = SG_USAGE_IMMUTABLE,
+		.pixel_format = SG_PIXELFORMAT_RGBA32F,
+		.data.subimage[0][0] = { data, size },
+	});
+}
+
+static sg_image make_dynamic_buffer(arena_t *a, void **p_defer, size_t size)
+{
+	size_t rows = size / (512 * 16);
+	return make_image(a, p_defer, &(sg_image_desc){
+		.width = 512,
+		.height = (int)rows,
+		.usage = SG_USAGE_DYNAMIC,
+		.pixel_format = SG_PIXELFORMAT_RGBA32F,
+	});
+}
+
+static void update_dynamic_buffer(sg_image buffer, const void *data, size_t size)
+{
+	sg_update_image(buffer, &(sg_image_data){
+		.subimage[0][0] = { data, size },
+	});
+}
+
 typedef struct {
 	uint32_t max_width, max_height;
 	uint32_t cur_width, cur_height;
@@ -114,6 +153,37 @@ typedef struct {
 	um_vec3 normal;
 	int32_t vertex_id;
 } vi_vertex;
+
+typedef struct {
+	float f_num_bones;
+	float f_bone_begin;
+	float f_num_blends;
+	float f_blend_begin;
+} vi_deform_vertex;
+
+typedef struct {
+	float f_cluster_index;
+	float weight;
+} vi_deform_bone;
+
+typedef struct {
+	float f_keyframe_index;
+	um_vec3 offset;
+} vi_deform_blend;
+
+typedef struct {
+	float weight;
+	float f_channel_id;
+	float f_shape_id;
+	float pad;
+} vi_blend_keyframe_info;
+
+typedef struct {
+	um_mat geometry_to_bone;
+	um_quat q0;
+	um_quat qe;
+	um_vec4 qs;
+} vi_cluster_info;
 
 typedef struct {
 	uint32_t material_id;
@@ -135,7 +205,12 @@ typedef struct {
 typedef struct {
 	vi_part *parts;
 	size_t num_parts;
+	sg_image deform_buffer;
 } vi_mesh;
+
+typedef struct {
+	size_t keyframe_offset;
+} vi_blend_channel;
 
 struct vi_scene {
 	arena_t *arena;
@@ -144,6 +219,15 @@ struct vi_scene {
 	vi_node *nodes;
 	vi_mesh *meshes;
 	vi_material *materials;
+	vi_blend_channel *blend_channels;
+
+	size_t global_buffer_size;
+	size_t global_cluster_offset;
+	size_t global_keyframe_offset;
+	sg_image global_buffer;
+	void *global_buffer_cpu;
+	vi_cluster_info *global_clusters;
+	vi_blend_keyframe_info *global_keyframes;
 
 	um_mat world_to_view;
 	um_mat view_to_clip;
@@ -224,7 +308,7 @@ static vi_pipelines *vi_get_pipelines(const vi_pipelines_desc *desc)
 		}
 	}
 
-	vi_pipelines *ps = alist_push_zero(&vig.arena, vi_pipelines, &vig.pipelines);
+	vi_pipelines *ps = alist_push(&vig.arena, vi_pipelines, &vig.pipelines);
 	memcpy(&ps->desc, desc, sizeof(vi_pipelines_desc));
 	vi_init_pipelines(ps);
 	return ps;
@@ -293,7 +377,107 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 	vi_part *parts = aalloc(vs->arena, vi_part, fbx_mesh->materials.count);
 	mesh->parts = parts;
 
-	uint8_t *vertex_ids = aalloc(NULL, uint8_t, fbx_mesh->num_vertices);
+	arena_t tmp;
+	arena_init(&tmp, NULL);
+
+	uint8_t *vertex_ids = aalloc(&tmp, uint8_t, fbx_mesh->num_vertices);
+
+	vi_deform_vertex *d_verts = aalloc(&tmp, vi_deform_vertex, fbx_mesh->num_vertices);
+	alist_t(vi_deform_bone) d_bones = { 0 };
+	alist_t(vi_deform_blend) d_blends = { 0 };
+
+	for (size_t di = 0; di < fbx_mesh->skin_deformers.count; di++) {
+		ufbx_skin_deformer *deformer = fbx_mesh->skin_deformers.data[di];
+		for (size_t vi = 0; vi < fbx_mesh->num_vertices; vi++) {
+			ufbx_skin_vertex vert = deformer->vertices.data[vi];
+			ufbx_skin_weight *weights = deformer->weights.data + vert.weight_begin;
+			for (size_t i = 0; i < vert.num_weights; i++) {
+				ufbx_skin_cluster *cluster = deformer->clusters.data[weights[i].cluster_index];
+				vi_deform_bone *d_bone = alist_push(&tmp, vi_deform_bone, &d_bones);
+				d_bone->f_cluster_index = (float)cluster->id;
+				d_bone->weight = (float)weights[i].weight;
+			}
+			// We need to keep bones paired for the GPU
+			if (d_bones.count % 2 != 0) {
+				vi_deform_bone *d_bone = alist_push(&tmp, vi_deform_bone, &d_bones);
+				d_bone->f_cluster_index = d_bones.data[d_bones.count - 2].f_cluster_index;
+				d_bone->weight = 0.0f;
+			}
+
+
+			float f_num = (float)((vert.num_weights + 1) / 2);
+			if (d_verts[vi].f_num_bones == 0.0f) {
+				float dq_weight = (float)vert.dq_weight;
+				d_verts[vi].f_num_bones = f_num + um_min(um_max(dq_weight, 0.0f), 1.0f) * 0.5f;
+			} else {
+				d_verts[vi].f_num_bones += f_num;
+			}
+		}
+	}
+
+	for (size_t di = 0; di < fbx_mesh->blend_deformers.count; di++) {
+		ufbx_blend_deformer *deformer = fbx_mesh->blend_deformers.data[di];
+		for (size_t ci = 0; ci < deformer->channels.count; ci++) {
+			ufbx_blend_channel *channel = deformer->channels.data[ci];	
+			for (size_t ki = 0; ki < channel->keyframes.count; ki++) {
+				ufbx_blend_shape *shape = channel->keyframes.data[ki].shape;
+				float f_keyframe_index = (float)(vs->blend_channels[channel->id].keyframe_offset + ki);
+				for (size_t vi = 0; vi < fbx_mesh->num_vertices; vi++) {
+					ufbx_vec3 offset = ufbx_get_blend_shape_vertex_offset(shape, vi);
+					if (offset.x == 0.0f && offset.y == 0.0f && offset.z == 0.0f) continue;
+
+					vi_deform_blend *d_blend = alist_push(&tmp, vi_deform_blend, &d_blends);
+					d_blend->f_keyframe_index = f_keyframe_index;
+					d_blend->offset = fbx_to_um_vec3(offset);
+					d_verts[vi].f_num_blends += 1.0f;
+				}
+			}
+		}
+	}
+
+	size_t deform_buf_size = 0;
+	const size_t d_vertex_offset = 0;
+	deform_buf_size += fbx_mesh->num_vertices * sizeof(vi_deform_vertex);
+	const size_t d_bone_offset = deform_buf_size;
+	deform_buf_size += d_bones.count * sizeof(vi_deform_bone);
+	const size_t d_blend_offset = deform_buf_size;
+	deform_buf_size += d_blends.count * sizeof(vi_deform_blend);
+	assert(deform_buf_size % 16 == 0);
+	deform_buf_size = get_buffer_size(deform_buf_size);
+	char *deform_buf = aalloc(&tmp, char, deform_buf_size);
+
+	size_t bone_ix = 0;
+	size_t d_bone_pos = d_bone_offset;
+	size_t d_blend_pos = d_blend_offset;
+	for (size_t vi = 0; vi < fbx_mesh->num_vertices; vi++) {
+		vi_deform_vertex *d_vert = &d_verts[vi];
+
+		float total_weight = 0.0f;
+		size_t num_bones = (size_t)d_vert->f_num_bones * 2;
+		vi_deform_bone *vert_bones = d_bones.data + bone_ix;
+		bone_ix += num_bones;
+		for (size_t i = 0; i < num_bones; i++) {
+			total_weight += vert_bones[i].weight;
+		}
+		if (total_weight <= 0.0f) {
+			d_vert->f_num_bones = 0.0f;
+		} else {
+			for (size_t i = 0; i < num_bones; i++) {
+				vert_bones[i].weight /= total_weight;
+			}
+		}
+
+		d_vert->f_bone_begin = (float)(d_bone_pos / 16);
+		d_vert->f_blend_begin = (float)(d_blend_pos / 16);
+		d_bone_pos += num_bones * sizeof(vi_deform_bone);
+		d_blend_pos += (size_t)d_vert->f_num_blends * sizeof(vi_deform_blend);
+	}
+
+	memcpy(deform_buf + d_vertex_offset, d_verts, fbx_mesh->num_vertices * sizeof(vi_deform_vertex));
+	memcpy(deform_buf + d_bone_offset, d_bones.data, d_bones.count * sizeof(vi_deform_bone));
+	memcpy(deform_buf + d_blend_offset, d_blends.data, d_blends.count * sizeof(vi_deform_blend));
+
+	mesh->deform_buffer = make_static_buffer(vs->arena, NULL, deform_buf, deform_buf_size);
 
 	size_t num_parts = 0;
 	for (size_t pi = 0; pi < fbx_mesh->materials.count; pi++) {
@@ -308,15 +492,15 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 			part->material_id = (uint32_t)vs->fbx.materials.count;
 		}
 
-		arena_t tmp;
-		arena_init(&tmp, NULL);
+		arena_t tmp_inner;
+		arena_init(&tmp_inner, NULL);
 		
 		size_t num_tri_ix = fbx_mesh->max_face_triangles * 3;
-		uint32_t *tri_ix = aalloc_uninit(&tmp, uint32_t, num_tri_ix);
+		uint32_t *tri_ix = aalloc_uninit(&tmp_inner, uint32_t, num_tri_ix);
 
 		size_t num_indices = fbx_mesh_mat->num_triangles * 3;
-		vi_vertex *vertices = aalloc_uninit(&tmp, vi_vertex, num_indices);
-		uint32_t *indices = aalloc_uninit(&tmp, uint32_t, num_indices);
+		vi_vertex *vertices = aalloc_uninit(&tmp_inner, vi_vertex, num_indices);
+		uint32_t *indices = aalloc_uninit(&tmp_inner, uint32_t, num_indices);
 
 		vi_vertex *vert = vertices;
 		for (size_t fi = 0; fi < fbx_mesh_mat->num_faces; fi++) {
@@ -377,11 +561,67 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 		part->num_indices = (uint32_t)num_indices;
 		part->num_vertices = (uint32_t)num_vertices;
 
-		arena_free(&tmp);
+		arena_free(&tmp_inner);
 	}
 
-	afree(NULL, vertex_ids);
+	arena_free(&tmp);
 	mesh->num_parts = num_parts;
+}
+
+void vi_init_globals(vi_scene *vs)
+{
+	size_t num_blend_keyframes = 0;
+	for (size_t i = 0; i < vs->fbx.blend_channels.count; i++) {
+		ufbx_blend_channel *fbx_channel = vs->fbx.blend_channels.data[i];
+		vs->blend_channels[i].keyframe_offset = num_blend_keyframes;
+		num_blend_keyframes += fbx_channel->keyframes.count;
+	}
+
+	size_t global_buffer_size = 0;
+	vs->global_cluster_offset = global_buffer_size;
+	global_buffer_size += vs->fbx.skin_clusters.count * sizeof(vi_cluster_info);
+	vs->global_keyframe_offset = global_buffer_size;
+	global_buffer_size += num_blend_keyframes * sizeof(vi_blend_keyframe_info);
+	global_buffer_size = get_buffer_size(global_buffer_size);
+	vs->global_buffer_size = global_buffer_size;
+	vs->global_buffer_cpu = aalloc(vs->arena, char, vs->global_buffer_size);
+	vs->global_clusters = (vi_cluster_info*)((char*)vs->global_buffer_cpu + vs->global_cluster_offset);
+	vs->global_keyframes = (vi_blend_keyframe_info*)((char*)vs->global_buffer_cpu + vs->global_keyframe_offset);
+	vs->global_buffer = make_dynamic_buffer(vs->arena, NULL, global_buffer_size);
+}
+
+static void vi_update_globals(vi_scene *vs, const ufbx_scene *fbx_scene)
+{
+	for (size_t chan_ix = 0; chan_ix < vs->fbx.blend_channels.count; chan_ix++) {
+		ufbx_blend_channel *channel = fbx_scene->blend_channels.data[chan_ix];
+		vi_blend_keyframe_info *infos = vs->global_keyframes + vs->blend_channels[chan_ix].keyframe_offset;
+		for (size_t i = 0; i < channel->keyframes.count; i++) {
+			ufbx_blend_keyframe key = channel->keyframes.data[i];
+			infos[i].weight = (float)key.effective_weight;
+			infos[i].f_channel_id = (float)channel->id;
+			infos[i].f_shape_id = (float)key.shape->id;
+			infos[i].pad = 0.0f;
+		}
+	}
+
+	for (size_t cluster_ix = 0; cluster_ix < vs->fbx.skin_clusters.count; cluster_ix++) {
+		ufbx_skin_cluster *cluster = fbx_scene->skin_clusters.data[cluster_ix];
+		vi_cluster_info *info = &vs->global_clusters[cluster_ix];
+		info->geometry_to_bone = fbx_to_um_mat(cluster->geometry_to_world);
+
+		um_quat q0, qe;
+		q0 = fbx_to_um_quat(cluster->geometry_to_world_transform.rotation);
+		qe.xyz = um_mul3(fbx_to_um_vec3(cluster->geometry_to_world_transform.translation), 0.5f);
+		qe.w = 0.0f;
+		qe = um_quat_mul(qe, q0);
+
+		info->q0 = q0;
+		info->qe = qe;
+		info->qs.xyz = fbx_to_um_vec3(cluster->geometry_to_world_transform.scale);
+		info->qs.w = 0.0f;
+	}
+
+	update_dynamic_buffer(vs->global_buffer, vs->global_buffer_cpu, vs->global_buffer_size);
 }
 
 vi_scene *vi_make_scene(const ufbx_scene *fbx_scene)
@@ -396,6 +636,9 @@ vi_scene *vi_make_scene(const ufbx_scene *fbx_scene)
 	vs->meshes = aalloc(vs->arena, vi_mesh, fbx_scene->meshes.count);
 	vs->nodes = aalloc(vs->arena, vi_node, fbx_scene->nodes.count);
 	vs->materials = aalloc(vs->arena, vi_material, fbx_scene->materials.count + 1); // + NULL
+	vs->blend_channels = aalloc(vs->arena, vi_blend_channel, fbx_scene->blend_channels.count);
+
+	vi_init_globals(vs);
 
 	for (size_t i = 0; i < vs->fbx.nodes.count; i++) {
 		vi_init_node(vs, &vs->nodes[i], vs->fbx.nodes.data[i]);
@@ -410,6 +653,10 @@ vi_scene *vi_make_scene(const ufbx_scene *fbx_scene)
 		vi_material *mat = &vs->materials[vs->fbx.materials.count];
 		mat->albedo_color = um_dup3(0.8f);
 	}
+
+	vi_update_globals(vs, fbx_scene);
+
+	sg_commit();
 
 	return vs;
 }
@@ -509,6 +756,10 @@ static um_vec3 hex_to_um3(uint32_t hex)
 
 static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 {
+	ufbx_element *selected_element = NULL;
+	if (desc->selected_element_id < vs->fbx.elements.count) {
+		selected_element = vs->fbx.elements.data[desc->selected_element_id];
+	}
 	for (size_t mesh_ix = 0; mesh_ix < vs->fbx.meshes.count; mesh_ix++) {
 		ufbx_mesh *fbx_mesh = vs->fbx.meshes.data[mesh_ix];
 		vi_mesh *mesh = &vs->meshes[mesh_ix];
@@ -527,6 +778,10 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 					fbx_material = vs->fbx.materials.data[part->material_id];
 				}
 
+				int highlight_cluster = -1;
+				int highlight_channel = -1;
+				int highlight_shape = -1;
+
 				um_vec3 highlight_color = um_zero3;
 				float highlight = 0.0f;
 				if (fbx_mesh->element_id == desc->selected_element_id) {
@@ -540,11 +795,26 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 					highlight_color = hex_to_um3(0x6cb9da);
 				}
 
+				if (selected_element && selected_element->type == UFBX_ELEMENT_SKIN_CLUSTER) {
+					highlight_cluster = selected_element->typed_id;
+					highlight_color = hex_to_um3(0xdf91e8);
+				} else if (selected_element && selected_element->type == UFBX_ELEMENT_BLEND_CHANNEL) {
+					highlight_channel = selected_element->typed_id;
+					highlight_color = hex_to_um3(0xdf91e8);
+				} else if (selected_element && selected_element->type == UFBX_ELEMENT_BLEND_SHAPE) {
+					highlight_shape = selected_element->typed_id;
+					highlight_color = hex_to_um3(0xdf91e8);
+				}
+
 				ubo_mesh_vertex_t vu = {
 					.u_geometry_to_world = node->geometry_to_world,
 					.u_world_to_clip = vs->world_to_clip,
 					.u_highlight = highlight,
-					.ui_highlight_cluster = -1,
+					.ui_highlight_cluster = (float)highlight_cluster,
+					.ui_highlight_channel = (float)highlight_channel,
+					.ui_highlight_shape = (float)highlight_shape,
+					.ui_g_cluster_begin = (float)(vs->global_cluster_offset / 16),
+					.ui_g_keyframe_begin = (float)(vs->global_keyframe_offset / 16),
 				};
 				sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE_REF(vu));
 
@@ -555,6 +825,8 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 				sg_apply_uniforms(SG_SHADERSTAGE_FS, 0, SG_RANGE_REF(pu));
 
 				sg_apply_bindings(&(sg_bindings){
+					.vs_images[SLOT_u_deform_buffer] = mesh->deform_buffer,
+					.vs_images[SLOT_u_global_buffer] = vs->global_buffer,
 					.vertex_buffers[0] = part->vertex_buffer,
 					.index_buffer = part->index_buffer,
 				});
@@ -632,16 +904,23 @@ static void vi_update(vi_scene *vs, const vi_target *target, const vi_desc *desc
 {
 	float aspect = (float)target->width / (float)target->height;
 
+	// TODO: Cache
+	ufbx_scene *fbx_state = ufbx_evaluate_scene(&vs->fbx, &vs->fbx.anim, desc->time, NULL, NULL);
+
 	vs->world_to_view = um_mat_look_at(desc->camera_pos, desc->camera_target, um_v3(0,1,0));
 	vs->view_to_clip = vi_mat_perspective(desc->field_of_view * UM_DEG_TO_RAD, aspect, desc->near_plane, desc->far_plane);
 	vs->world_to_clip = um_mat_mulrev(vs->world_to_view, vs->view_to_clip);
 
 	for (size_t i = 0; i < vs->fbx.nodes.count; i++) {
-		ufbx_node *fbx_node = vs->fbx.nodes.data[i];
+		ufbx_node *fbx_node = fbx_state->nodes.data[i];
 		vi_node *node = &vs->nodes[i];
 		node->node_to_world = fbx_to_um_mat(fbx_node->node_to_world);
 		node->geometry_to_world = fbx_to_um_mat(fbx_node->geometry_to_world);
 	}
+
+	vi_update_globals(vs, fbx_state);
+
+	ufbx_free_scene(fbx_state);
 }
 
 void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)

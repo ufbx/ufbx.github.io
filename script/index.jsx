@@ -32,6 +32,12 @@ export function Top() {
             </div>
         </div>
 
+        <div>
+            <input type="range" min="0.0" max="2.8" step="0.01" style={{ width: "800px" }}
+                onChange={(e) => globalState.scenes.barb.animation.time = e.target.valueAsNumber}
+                onInput={(e) => globalState.scenes.barb.animation.time = e.target.valueAsNumber} />
+        </div>
+
         </div>
     )
 }

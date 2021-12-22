@@ -12,7 +12,7 @@ function yawPitch(yaw, pitch, radius=1) {
 }
 
 function stateToDesc(state) {
-    const { camera } = state
+    const { camera, animation } = state
     const yaw = camera.yaw * (Math.PI/180.0)
     const pitch = camera.pitch * (Math.PI/180.0)
     const radius = camera.distance
@@ -29,6 +29,9 @@ function stateToDesc(state) {
             fieldOfView: 30,
             nearPlane: Math.min(Math.max(radius*0.1, 0.01), 1.0),
             farPlane: Math.max(radius*2.0, 100.0),
+        },
+        animation: {
+            time: animation.time,
         },
         selectedElement: state.selectedElement,
     }

@@ -13,6 +13,9 @@ const globalState = createState({
             outliner: {
                 includeRoot: false,
             },
+            animation: {
+                time: 0.0,
+            },
             selectedElement: -1,
         },
         barb2: {
@@ -25,6 +28,9 @@ const globalState = createState({
             },
             outliner: {
                 includeRoot: true,
+            },
+            animation: {
+                time: 0.0,
             },
             selectedElement: -1,
         },

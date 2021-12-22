@@ -20,6 +20,7 @@ typedef struct vi_desc {
 	float near_plane;
 	float far_plane;
 	uint32_t selected_element_id;
+	double time;
 } vi_desc;
 
 void vi_setup();

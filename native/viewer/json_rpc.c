@@ -124,7 +124,7 @@ char *rpc_cmd_load_scene(arena_t *tmp, jsi_obj *args)
 		}
 	}
 	if (!scene) {
-		scene = alist_push_zero(NULL, rpc_scene, &rpcg.scenes);
+		scene = alist_push(NULL, rpc_scene, &rpcg.scenes);
 		scene->arena = arena_create(NULL);
 		scene->name = aalloc_copy_str(scene->arena, name);
 	}
@@ -193,6 +193,7 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 	}
 
 	jsi_obj *camera = jsi_get_obj(desc, "camera");
+	jsi_obj *animation = jsi_get_obj(desc, "animation");
 	vi_desc vdesc = {
 		.camera_pos = get_vec3(camera, "position", um_v3(4.0f, 4.0f, 4.0f)),
 		.camera_target = get_vec3(camera, "target", um_zero3),
@@ -200,6 +201,7 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		.near_plane = (float)jsi_get_double(camera, "nearPlane", 0.01f),
 		.far_plane = (float)jsi_get_double(camera, "farPlane", 100.0f),
 		.selected_element_id = (uint32_t)jsi_get_int(desc, "selectedElement", -1),
+		.time = jsi_get_double(animation, "time", 0.0),
 	};
 
 	vi_render(scene->vi_scene, &vtarget, &vdesc);

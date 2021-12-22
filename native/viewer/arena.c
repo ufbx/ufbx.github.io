@@ -350,7 +350,7 @@ void *aalloc_uninit_size(arena_t *arena, size_t size, size_t count)
                 if (!new_page) return NULL;
 
 				arenaimp_small_header *alloc = (arenaimp_small_header*)new_page;
-                alloc->active.capacity = total_small;
+                alloc->active.capacity = total;
 
                 if (page_size - total_small > a->size - a->pos) {
 					a->page = (char*)new_page;
