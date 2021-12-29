@@ -1,6 +1,7 @@
 import { h, Fragment, useRef, useEffect, unwrap, immutable } from  "../../../ext/kaiku/dist/kaiku.dev"
 import { mad3, cross3, normalize3, v3, add3 } from "../common/vec3"
 import { renderViewer, removeViewer, queryResolution, addSceneInfoListener } from "../viewer/viewer"
+import { beginDrag, buttonToButtons } from "./global-drag"
 import globalState from "./global-state"
 
 function yawPitch(yaw, pitch, radius=1) {
@@ -12,7 +13,9 @@ function yawPitch(yaw, pitch, radius=1) {
 }
 
 function stateToDesc(state) {
-    const { camera, animation } = state
+    const { camera, animation, fieldOverrides } = state
+    const info = globalState.infos[state.scene]
+
     const yaw = camera.yaw * (Math.PI/180.0)
     const pitch = camera.pitch * (Math.PI/180.0)
     const radius = camera.distance
@@ -20,6 +23,30 @@ function stateToDesc(state) {
     const delta = yawPitch(yaw, pitch, radius)
     const target = camera.offset
     const position = add3(target, delta)
+
+    const overrides = []
+
+    for (const key in fieldOverrides) {
+        const value = fieldOverrides[key]
+        const [elementIdStr, name] = key.split(".", 2)
+        const elementId = parseInt(elementIdStr)
+        const type = info.elements[elementId].type
+        if (type === "node") {
+            if (name === "translation") {
+                overrides.push({ elementId, name: "Lcl Translation", value: [value.x, value.y, value.z] })
+            } else if (name === "rotation") {
+                overrides.push({ elementId, name: "Lcl Rotation", value: [value.x, value.y, value.z] })
+            } else if (name === "scale") {
+                overrides.push({ elementId, name: "Lcl Scaling", value: [value.x, value.y, value.z] })
+            } else if (name === "geo_translation") {
+                overrides.push({ elementId, name: "GeometricTranslation", value: [value.x, value.y, value.z] })
+            } else if (name === "geo_rotation") {
+                overrides.push({ elementId, name: "GeometricRotation", value: [value.x, value.y, value.z] })
+            } else if (name === "geo_scale") {
+                overrides.push({ elementId, name: "GeometricScaling", value: [value.x, value.y, value.z] })
+            }
+        }
+    }
 
     return {
         sceneName: state.scene,
@@ -34,28 +61,16 @@ function stateToDesc(state) {
             time: animation.time,
         },
         selectedElement: state.selectedElement,
-    }
-}
-
-function buttonToButtons(button) {
-    if (button === 0) {
-        return 0x1
-    } else if (button === 1) {
-        return 0x4
-    } else if (button === 2) {
-        return 0x2
-    } else {
-        return 0
+        overrides,
     }
 }
 
 let currentDrag = null
 
-function resetDrag() {
-    currentDrag = null
-}
+function handleDrag(event, { id, action }) {
+    const pixelDx = event.movementX
+    const pixelDy = event.movementY
 
-function handleDrag(id, pixelDx, pixelDy, action) {
     const resolution = queryResolution(id)
     if (!resolution) return false
     const scale = 1.0 / Math.min(resolution.elementWidth, resolution.elementHeight)
@@ -81,14 +96,30 @@ function handleDrag(id, pixelDx, pixelDy, action) {
     return true
 }
 
+/*
 let hasCallbacks = false
+let bodyHasMouseup = true
+
 function initializeCallbacks() {
+    document.body.classList.toggle("mouseup", true)
+
     addSceneInfoListener((name, info) => {
         console.log(name, info)
         globalState.infos[name] = immutable(info)
     })
     window.addEventListener("mousemove", (e) => {
-        if (!currentDrag) return
+        if (!currentDrag) {
+            if (!bodyHasMouseup) {
+                document.body.classList.toggle("mouseup", true)
+                bodyHasMouseup = true
+            }
+            return
+        }
+        if (bodyHasMouseup) {
+            document.body.classList.toggle("mouseup", false)
+            bodyHasMouseup = false
+        }
+
         const buttons = currentDrag.buttons & e.buttons
         currentDrag.buttons = buttons
         if (buttons) {
@@ -110,10 +141,15 @@ function initializeCallbacks() {
         currentDrag.buttons = currentDrag.buttons & ~buttons
         if (!currentDrag.buttons) {
             currentDrag = null
+            if (!bodyHasMouseup) {
+                document.body.classList.toggle("mouseup", true)
+                bodyHasMouseup = true
+            }
         }
     })
     window.addEventListener("blur", resetDrag)
 }
+*/
 
 function getDragAction(buttons, shift) {
     if (shift) return "pan"
@@ -124,11 +160,6 @@ function getDragAction(buttons, shift) {
 export default function FbxViewer({ id }) {
     const ref = useRef()
     const state = globalState.scenes[id]
-
-    if (!hasCallbacks) {
-        initializeCallbacks()
-        hasCallbacks = true
-    }
 
     const wheel = (e) => {
         let scale = 0.1
@@ -147,7 +178,7 @@ export default function FbxViewer({ id }) {
         const buttons = buttonToButtons(e.button) & 0x5
         const action = getDragAction(buttons, e.shiftKey)
         if (buttons && action) {
-            currentDrag = { id, buttons, action }
+            beginDrag(buttons, handleDrag, { id, action })
             e.preventDefault()
         }
     }
@@ -167,3 +198,7 @@ export default function FbxViewer({ id }) {
         onWheel={wheel}
     ></div>
 }
+
+addSceneInfoListener((name, info) => {
+    globalState.infos[name] = immutable(info)
+})

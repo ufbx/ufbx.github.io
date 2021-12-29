@@ -215,6 +215,8 @@ typedef struct {
 struct vi_scene {
 	arena_t *arena;
 	ufbx_scene fbx;
+	ufbx_scene *fbx_state;
+	void *fbx_state_defer;
 
 	vi_node *nodes;
 	vi_mesh *meshes;
@@ -806,6 +808,13 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 					highlight_color = hex_to_um3(0xdf91e8);
 				}
 
+				for (size_t i = 0; i < fbx_mesh->all_deformers.count; i++) {
+					if (fbx_mesh->all_deformers.data[i]->element_id == desc->selected_element_id) {
+						highlight = 1.0f;
+						highlight_color = hex_to_um3(0xdf91e8);
+					}
+				}
+
 				ubo_mesh_vertex_t vu = {
 					.u_geometry_to_world = node->geometry_to_world,
 					.u_world_to_clip = vs->world_to_clip,
@@ -845,12 +854,12 @@ static void sgl_v3(um_vec3 v)
 static void vi_draw_debug(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 {
 	if (desc->selected_element_id < vs->fbx.elements.count) {
-		ufbx_element *elem = vs->fbx.elements.data[desc->selected_element_id];
+		ufbx_element *fbx_elem = vs->fbx.elements.data[desc->selected_element_id];
 
-		if (elem->type == UFBX_ELEMENT_NODE) {
-			ufbx_node *node = (ufbx_node*)elem;
+		if (fbx_elem->type == UFBX_ELEMENT_NODE) {
+			vi_node *node = &vs->nodes[fbx_elem->typed_id];
 
-			um_mat node_to_world = fbx_to_um_mat(node->node_to_world);
+			um_mat node_to_world = node->node_to_world;
 			um_vec3 c = node_to_world.cols[3].xyz;
 
 			sgl_begin_lines();
@@ -900,12 +909,24 @@ static void vi_draw_present(vi_framebuffer *src)
 	sg_draw(0, 3, 1);
 }
 
+static void ad_free_ufbx_scene(void *user) { ufbx_free_scene(*(ufbx_scene**)user); }
+
 static void vi_update(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 {
 	float aspect = (float)target->width / (float)target->height;
 
+	ufbx_anim anim = vs->fbx.anim;
+	anim.prop_overrides.data = desc->overrides;
+	anim.prop_overrides.count = desc->num_overrides;
+
 	// TODO: Cache
-	ufbx_scene *fbx_state = ufbx_evaluate_scene(&vs->fbx, &vs->fbx.anim, desc->time, NULL, NULL);
+	if (vs->fbx_state) {
+		arena_cancel(vs->arena, vs->fbx_state_defer, false);
+		ufbx_free_scene(vs->fbx_state);
+	}
+	ufbx_scene *fbx_state = ufbx_evaluate_scene(&vs->fbx, &anim, desc->time, NULL, NULL);
+	vs->fbx_state = fbx_state;
+	arena_defer(vs->arena, ad_free_ufbx_scene, ufbx_scene*, &vs->fbx_state);
 
 	vs->world_to_view = um_mat_look_at(desc->camera_pos, desc->camera_target, um_v3(0,1,0));
 	vs->view_to_clip = vi_mat_perspective(desc->field_of_view * UM_DEG_TO_RAD, aspect, desc->near_plane, desc->far_plane);
@@ -919,8 +940,6 @@ static void vi_update(vi_scene *vs, const vi_target *target, const vi_desc *desc
 	}
 
 	vi_update_globals(vs, fbx_state);
-
-	ufbx_free_scene(fbx_state);
 }
 
 void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)

@@ -3,6 +3,7 @@ import FbxViewer from "./components/fbx-viewer"
 import globalState from "./components/global-state"
 import { h, Fragment, useState, useEffect, render, createState } from "../../ext/kaiku/dist/kaiku.dev"
 import Outliner from "./components/outliner"
+import PropertySheet from "./components/property-sheet"
 
 setupViewers()
 
@@ -15,6 +16,7 @@ export function Top() {
 
     return (
         <div>
+            {/*
         <div className="sp-top">
             <div className="sp-pane sp-outliner">
                 <Outliner id="barb" />
@@ -31,12 +33,26 @@ export function Top() {
                 <FbxViewer id="barb2" />
             </div>
         </div>
-
         <div>
             <input type="range" min="0.0" max="2.8" step="0.01" style={{ width: "800px" }}
                 onChange={(e) => globalState.scenes.barb.animation.time = e.target.valueAsNumber}
                 onInput={(e) => globalState.scenes.barb.animation.time = e.target.valueAsNumber} />
         </div>
+            */}
+
+        <div style={{width:"50vw"}}>
+        <div className="sp-top">
+            <div className="sp-pane sp-outliner">
+                <Outliner id="defaultCube" />
+                <PropertySheet id="defaultCube" />
+            </div>
+            <div className="sp-pane sp-viewer">
+                <FbxViewer id="defaultCube" />
+            </div>
+        </div>
+
+        </div>
+
 
         </div>
     )

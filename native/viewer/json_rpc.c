@@ -192,6 +192,34 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		scene->vi_scene = vi_make_scene(scene->fbx_scene);
 	}
 
+	ufbx_prop_override *overrides = NULL;
+	size_t num_overrides = 0;
+	jsi_arr *js_overrides = jsi_get_arr(desc, "overrides");
+	if (js_overrides) {
+		num_overrides = js_overrides->num_values;
+		overrides = aalloc(tmp, ufbx_prop_override, num_overrides);
+
+		for (size_t i = 0; i < num_overrides; i++) {
+			jsi_obj *obj = jsi_as_obj(&js_overrides->values[i]);
+			jsi_value *val = jsi_get(obj, "value");
+			if (!obj || !val) continue;
+
+			overrides[i].element_id = (uint32_t)jsi_get_int(obj, "elementId", 0);
+			overrides[i].prop_name = jsi_get_str(obj, "name", 0);
+			if (val->type == jsi_type_array) {
+				for (size_t ci = 0; ci < 3; ci++) {
+					if (ci < val->array->num_values) {
+						overrides[i].value.v[ci] = jsi_as_double(&val->array->values[ci], 0.0);
+					}
+				}
+			} else if (val->type == jsi_type_number) {
+				overrides[i].value.x = jsi_as_double(val, 0.0);
+			}
+		}
+
+		ufbx_prepare_prop_overrides(overrides, num_overrides);
+	}
+
 	jsi_obj *camera = jsi_get_obj(desc, "camera");
 	jsi_obj *animation = jsi_get_obj(desc, "animation");
 	vi_desc vdesc = {
@@ -202,6 +230,8 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		.far_plane = (float)jsi_get_double(camera, "farPlane", 100.0f),
 		.selected_element_id = (uint32_t)jsi_get_int(desc, "selectedElement", -1),
 		.time = jsi_get_double(animation, "time", 0.0),
+		.overrides = overrides,
+		.num_overrides = num_overrides,
 	};
 
 	vi_render(scene->vi_scene, &vtarget, &vdesc);

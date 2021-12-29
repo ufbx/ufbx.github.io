@@ -669,7 +669,6 @@ struct ufbx_mesh {
 	size_t num_indices;   // < Number of combiend vertex/attribute tuples
 	size_t num_triangles; // < Number of triangles
 
-
 	// Faces and optional per-face extra data
 	size_t num_faces;
 	ufbx_face *faces;          // < Face index range

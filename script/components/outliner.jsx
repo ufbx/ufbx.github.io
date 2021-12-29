@@ -1,27 +1,10 @@
 import globalState from "./global-state"
 import { h, Fragment } from "../../../ext/kaiku/dist/kaiku.dev"
-
-const elementTypeCategory = {
-    node: "node",
-    mesh: "attrib",
-    light: "attrib",
-    camera: "attrib",
-    bone: "attrib",
-    empty: "attrib",
-    material: "shading",
-    texture: "shading",
-    skin_deformer: "deformer",
-    skin_cluster: "deformer",
-    blend_deformer: "deformer",
-    blend_channel: "deformer",
-    blend_shape: "deformer",
-    cache_deformer: "deformer",
-    cache_file: "deformer",
-}
+import { elementTypeCategory, typeToIconUrl } from "./common"
 
 function TreeNode({ state, info, id, level=0 }) {
     const element = info.elements[id]
-    const icon = `/static/icons/element/${element.type}.svg`
+    const icon = typeToIconUrl(element.type)
     const padding = `${level}em`
 
     let children = []

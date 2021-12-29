@@ -21,6 +21,9 @@ typedef struct vi_desc {
 	float far_plane;
 	uint32_t selected_element_id;
 	double time;
+
+	const ufbx_prop_override *overrides;
+	size_t num_overrides;
 } vi_desc;
 
 void vi_setup();

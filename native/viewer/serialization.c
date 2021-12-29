@@ -66,6 +66,14 @@ const char *element_type_str(ufbx_element_type type)
 	default: return "";
     }
 }
+static void jso_prop_vec3(jso_stream *s, const char *name, ufbx_vec3 value)
+{
+	jso_prop_object(s, name);
+	jso_prop_double(s, "x", value.x);
+	jso_prop_double(s, "y", value.y);
+	jso_prop_double(s, "z", value.z);
+	jso_end_object(s);
+}
 
 static void jso_prop_ustring(jso_stream *s, const char *key, ufbx_string str)
 {
@@ -112,6 +120,18 @@ void serialize_element_node(jso_stream *s, ufbx_node* elem)
         jso_int(s, (int)elem->children.data[i]->element_id);
     }
     jso_end_array(s);
+
+	jso_prop_object(s, "fields");
+	jso_prop_vec3(s, "translation", elem->local_transform.translation);
+	jso_prop_vec3(s, "rotation", elem->euler_rotation);
+	jso_prop_vec3(s, "scale", elem->local_transform.scale);
+
+	ufbx_vec3 geo_euler = ufbx_quat_to_euler(elem->geometry_transform.rotation, UFBX_ROTATION_XYZ);
+	jso_prop_vec3(s, "geo_translation", elem->geometry_transform.translation);
+	jso_prop_vec3(s, "geo_rotation", geo_euler);
+	jso_prop_vec3(s, "geo_scale", elem->geometry_transform.scale);
+
+    jso_end_object(s);
 }
 
 void serialize_element_mesh(jso_stream *s, ufbx_mesh* elem)
@@ -133,6 +153,10 @@ void serialize_element_mesh(jso_stream *s, ufbx_mesh* elem)
 
 void serialize_element_light(jso_stream *s, ufbx_light* elem)
 {
+	jso_prop_object(s, "fields");
+	jso_prop_vec3(s, "color", elem->color);
+	jso_prop_double(s, "intensity", elem->intensity);
+    jso_end_object(s);
 }
 
 void serialize_element_camera(jso_stream *s, ufbx_camera* elem)
@@ -306,6 +330,8 @@ void serialize_element(jso_stream *s, ufbx_element *elem)
 	jso_prop_ustring(s, "name", elem->name);
 	jso_prop_string(s, "type", element_type_str(elem->type));
 	jso_prop_int(s, "id", (int)elem->element_id);
+	jso_prop(s, "props");
+	serialize_props(s, &elem->props);
 
     switch (elem->type) {
 	case UFBX_ELEMENT_UNKNOWN: serialize_element_unknown(s, (ufbx_unknown*)elem); break;

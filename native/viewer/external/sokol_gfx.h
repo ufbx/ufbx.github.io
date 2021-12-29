@@ -4732,6 +4732,7 @@ _SOKOL_PRIVATE void _sg_dummy_update_image(_sg_image_t* img, const sg_image_data
     _SG_XMACRO(glDrawArrays,                      void, (GLenum mode, GLint first, GLsizei count)) \
     _SG_XMACRO(glDrawElementsInstanced,           void, (GLenum mode, GLsizei count, GLenum type, const void * indices, GLsizei instancecount)) \
     _SG_XMACRO(glVertexAttribPointer,             void, (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void * pointer)) \
+    _SG_XMACRO(glVertexAttribIPointer,             void, (GLuint index, GLint size, GLenum type, GLsizei stride, const void * pointer)) \
     _SG_XMACRO(glUniform1i,                       void, (GLint location, GLint v0)) \
     _SG_XMACRO(glDisable,                         void, (GLenum cap)) \
     _SG_XMACRO(glColorMask,                       void, (GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha)) \
@@ -4867,7 +4868,7 @@ _SOKOL_PRIVATE GLint _sg_gl_vertexformat_size(sg_vertex_format fmt) {
         case SG_VERTEXFORMAT_SHORT4N:   return 4;
         case SG_VERTEXFORMAT_USHORT4N:  return 4;
         case SG_VERTEXFORMAT_UINT10_N2: return 4;
-        case SG_VERTEXFORMAT_UFBX_INT:  return 4;
+        case SG_VERTEXFORMAT_UFBX_INT:  return 1;
         default: SOKOL_UNREACHABLE; return 0;
     }
 }
