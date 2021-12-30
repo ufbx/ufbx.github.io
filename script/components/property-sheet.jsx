@@ -1,6 +1,7 @@
 import { h, Fragment, useState, useRef, useEffect } from "../../../ext/kaiku/dist/kaiku.dev"
 import { typeToIconUrl } from "./common"
 import { beginDrag, buttonToButtons } from "./global-drag"
+import { deepEqual } from "../common"
 
 function getField(ctx, name) {
     const { state, info, elementId } = ctx
@@ -12,8 +13,11 @@ function getField(ctx, name) {
 }
 
 function setField(ctx, name, value) {
-    const { state, elementId } = ctx
-    state.fieldOverrides[`${elementId}.${name}`] = value
+    const { state, info, elementId } = ctx
+    const key = `${elementId}.${name}`
+    if (state.fieldOverrides.hasOwnProperty(key) || !deepEqual(value, info.elements[elementId].fields[name])) {
+        state.fieldOverrides[key] = value
+    }
 }
 
 function resetField(ctx, name) {
@@ -53,6 +57,10 @@ function NumberInput({ value, onInput, spec }) {
         useInput: false,
         inputValue: "",
         inputRef: { current: null },
+        currentDrag: false,
+        currentTime: 0,
+        prevDrag: false,
+        prevTime: 0,
     })
 
     useEffect(() => {
@@ -85,6 +93,12 @@ function NumberInput({ value, onInput, spec }) {
                 }
             }}
             onBlur={e => {
+                if (e.relatedTarget && e.relatedTarget.classList.contains("ps-input")) {
+                    const num = parseFloat(e.target.value)
+                    if (!isNaN(num)) {
+                        onInput(maybeRound(integer, num))
+                    }
+                }
                 state.useInput = false
             }}
         />
@@ -93,27 +107,50 @@ function NumberInput({ value, onInput, spec }) {
         const str = value.toFixed(precision)
         return <div
             className="ps-input ps-draggable"
+            tabIndex="0"
             onMouseDown={e => {
                 if (e.ctrlKey || e.shiftKey) return
                 const buttons = buttonToButtons(e.button)
                 if (buttons & 0x1) {
+                    let dragActivated = false
+                    const startTime = Date.now()
                     const x = e.clientX
+                    state.currentTime = startTime
                     beginDrag(buttons, (de) => {
                         const dx = (de.clientX - x) * 0.01 * scale
-                        onInput(maybeRound(integer, Math.min(Math.max(value + dx, min), max)))
-                    }, null, { cursor: "ew-resize" })
+                        const curTime = Date.now()
+                        if (Math.abs(de.clientX - x) > 4 || (curTime - startTime) > 100) {
+                            dragActivated = true
+                            state.currentDrag = true
+                        }
+                        if (dragActivated) {
+                            onInput(maybeRound(integer, Math.min(Math.max(value + dx, min), max)))
+                        }
+                    }, null, {
+                        cursor: "ew-resize",
+                        mouseUp: (de) => {
+                            const curTime = Date.now()
+                            if ((curTime - state.prevTime) < 300 && !state.prevDrag && !state.currentDrag) {
+                                state.useInput = true
+                                state.inputValue = parseFloat(str) === value ? str : value.toString()
+                            }
+
+                            state.prevTime = state.currentTime
+                            state.prevDrag = state.currentDrag
+                        },
+                    })
                     e.preventDefault()
                 }
             }}
             onClick={e => {
                 if (e.ctrlKey || e.shiftKey) {
                     state.useInput = true
-                    if (parseFloat(str) === value) {
-                        state.inputValue = str
-                    } else {
-                        state.inputValue = value.toString()
-                    }
+                    state.inputValue = parseFloat(str) === value ? str : value.toString()
                 }
+            }}
+            onFocus={e => {
+                state.useInput = true
+                state.inputValue = parseFloat(str) === value ? str : value.toString()
             }}
         >{str}</div>
     }
@@ -126,6 +163,8 @@ function OverrideIndicator({ override, onClick }) {
             "ps-override": override,
         }}
         onClick={onClick}
+        tabIndex={override ? 0 : -1}
+        title="Reset to default"
     />
 }
 
