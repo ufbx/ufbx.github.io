@@ -52,7 +52,7 @@ function maybeRound(flag, value) {
     return flag ? Math.round(value) : value
 }
 
-function NumberInput({ value, onInput, spec }) {
+function NumberInput({ label, value, onInput, spec }) {
     const state = useState({
         useInput: false,
         inputValue: "",
@@ -80,6 +80,7 @@ function NumberInput({ value, onInput, spec }) {
             ref={state.inputRef}
             className="ps-input ps-typing"
             value={state.inputValue}
+            aria-label={label}
             onKeyDown={e => {
                 const code = e.code
                 if (code == "Escape") {
@@ -116,6 +117,7 @@ function NumberInput({ value, onInput, spec }) {
                     const startTime = Date.now()
                     const x = e.clientX
                     state.currentTime = startTime
+                    state.currentDrag = false
                     beginDrag(buttons, (de) => {
                         const dx = (de.clientX - x) * 0.01 * scale
                         const curTime = Date.now()
@@ -165,19 +167,32 @@ function OverrideIndicator({ override, onClick }) {
         onClick={onClick}
         tabIndex={override ? 0 : -1}
         title="Reset to default"
+        enabled={override}
     />
+}
+
+function FieldVec2({ ctx, name, label, spec }) {
+    const { value, override } = getField(ctx, name)
+    const { x, y } = value
+
+    return <div className="ps-field" aria-label={name}>
+        <OverrideIndicator override={override} onClick={() => resetField(ctx, name)} />
+        <div className="ps-name">{label}</div>
+        <NumberInput label={`${name} X`} spec={spec} value={x} onInput={v => setField(ctx, name, { x:v, y }) } />
+        <NumberInput label={`${name} Y`} spec={spec} value={y} onInput={v => setField(ctx, name, { x, y:v }) } />
+    </div>
 }
 
 function FieldVec3({ ctx, name, label, spec }) {
     const { value, override } = getField(ctx, name)
     const { x, y, z } = value
 
-    return <div className="ps-field">
+    return <div className="ps-field" aria-label={name}>
         <OverrideIndicator override={override} onClick={() => resetField(ctx, name)} />
         <div className="ps-name">{label}</div>
-        <NumberInput spec={spec} value={x} onInput={v => setField(ctx, name, { x:v, y, z }) } />
-        <NumberInput spec={spec} value={y} onInput={v => setField(ctx, name, { x, y:v, z }) } />
-        <NumberInput spec={spec} value={z} onInput={v => setField(ctx, name, { x, y, z:v }) } />
+        <NumberInput label={`${name} X`} spec={spec} value={x} onInput={v => setField(ctx, name, { x:v, y, z }) } />
+        <NumberInput label={`${name} Y`} spec={spec} value={y} onInput={v => setField(ctx, name, { x, y:v, z }) } />
+        <NumberInput label={`${name} Z`} spec={spec} value={z} onInput={v => setField(ctx, name, { x, y, z:v }) } />
     </div>
 }
 
@@ -191,30 +206,30 @@ function FieldColor({ ctx, name, spec }) {
     const cssB = Math.min(Math.max(z * 256, 0), 255) | 0
     const cssColor = `rgb(${cssR}, ${cssG}, ${cssB})`
 
-    return <div className="ps-field">
+    return <div className="ps-field" aria-label={name}>
         <OverrideIndicator override={override} onClick={() => resetField(ctx, name)} />
         <div className="ps-name">{name}</div>
         <div className="ps-color-square" style={{
             backgroundColor: cssColor,
         }} />
-        <NumberInput spec={spec} value={x} onInput={v => setField(ctx, name, { x:v, y, z }) } />
-        <NumberInput spec={spec} value={y} onInput={v => setField(ctx, name, { x, y:v, z }) } />
-        <NumberInput spec={spec} value={z} onInput={v => setField(ctx, name, { x, y, z:v }) } />
+        <NumberInput label={`${name} red`} spec={spec} value={x} onInput={v => setField(ctx, name, { x:v, y, z }) } />
+        <NumberInput label={`${name} green`} spec={spec} value={y} onInput={v => setField(ctx, name, { x, y:v, z }) } />
+        <NumberInput label={`${name} blue`} spec={spec} value={z} onInput={v => setField(ctx, name, { x, y, z:v }) } />
     </div>
 }
 
 function FieldNumber({ ctx, name, spec }) {
     const { value, override } = getField(ctx, name)
 
-    return <div className="ps-field">
+    return <div className="ps-field" aria-label={name}>
         <OverrideIndicator override={override} onClick={() => resetField(ctx, name)} />
         <div className="ps-name">{name}</div>
-        <NumberInput spec={spec} value={value} onInput={v => setField(ctx, name, v) } />
+        <NumberInput label={`${name}`} spec={spec} value={value} onInput={v => setField(ctx, name, v) } />
     </div>
 }
 
 function FieldGroup({ name, children }) {
-    return <div>
+    return <div role="group" aria-label={name}>
         <div className="ps-group">{name}</div>
         {children}
     </div>
@@ -278,9 +293,22 @@ function LightSheet({ ctx }) {
     </>
 }
 
+function CameraSheet({ ctx }) {
+    return <>
+        <FieldVec2 ctx={ctx} name="resolution" label="resolution" spec={{ scale: 1.0 }} />
+        <FieldVec2 ctx={ctx} name="field_of_view_deg" label="field_of_view_deg" spec={{ scale: 1.0 }} />
+    </>
+}
+
+function NullSheet({ ctx }) {
+    return <>
+    </>
+}
+
 const sheetByType = {
     node: NodeSheet,
     light: LightSheet,
+    camera: CameraSheet,
 }
 
 export default function PropertySheet({ id }) {
@@ -291,8 +319,7 @@ export default function PropertySheet({ id }) {
 
     const elementId = state.selectedElement
     const element = info.elements[elementId]
-    const Sheet = sheetByType[element.type]
-    if (!Sheet || !element) return null
+    const Sheet = sheetByType[element.type] ?? NullSheet
 
     const ctx = {
         state, info, elementId,
@@ -301,7 +328,7 @@ export default function PropertySheet({ id }) {
     const structName = `ufbx_${element.type}`
     const icon = typeToIconUrl(element.type)
 
-    return <div className="ps-top">
+    return <div className="ps-top" aria-label={`${element.name} properties`}>
         <div className="ps-titlearea">
             <div className="ps-title">
                 <img className="ps-icon" src={icon} title={structName} alt={element.type} />

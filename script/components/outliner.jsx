@@ -25,6 +25,13 @@ function TreeNode({ state, info, id, level=0 }) {
     const onClick = () => {
         state.selectedElement = id
     }
+    const onKeyPress = (e) => {
+        console.log(e)
+        if (e.code === "Space" || e.code === "Enter") {
+            onClick()
+        }
+    }
+
     const selected = state.selectedElement === id
 
     const category = elementTypeCategory[element.type]
@@ -38,9 +45,14 @@ function TreeNode({ state, info, id, level=0 }) {
                 "ol-selected": selected,
                 [catClass]: true,
             }}
+            role="button"
+            aria-label={`${element.type} ${element.name}`}
+            tabIndex="0"
             style={{paddingLeft: padding}}
-            onClick={onClick}>
-            <img className="ol-icon" src={icon} title={structName} alt={element.type} />
+            onClick={onClick}
+            onKeyPress={onKeyPress}
+            >
+            <img className="ol-icon" src={icon} title={structName} alt="" aria-hidden="true" />
             <span>{element.name}</span>
             <span className="ol-type">{element.type}</span>
         </div>
@@ -56,7 +68,7 @@ export default function Outliner({ id }) {
     if (!info) return null
     const rootId = info.rootNode
     return <div className="ol-top">
-        <ul className="ol-list">{
+        <ul className="ol-list" role="tree">{
             state.outliner.includeRoot ? (
                 <TreeNode state={state} info={info} id={rootId} />
             ) : (

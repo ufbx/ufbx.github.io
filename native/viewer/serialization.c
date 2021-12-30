@@ -66,6 +66,15 @@ const char *element_type_str(ufbx_element_type type)
 	default: return "";
     }
 }
+
+static void jso_prop_vec2(jso_stream *s, const char *name, ufbx_vec2 value)
+{
+	jso_prop_object(s, name);
+	jso_prop_double(s, "x", value.x);
+	jso_prop_double(s, "y", value.y);
+	jso_end_object(s);
+}
+
 static void jso_prop_vec3(jso_stream *s, const char *name, ufbx_vec3 value)
 {
 	jso_prop_object(s, name);
@@ -161,6 +170,10 @@ void serialize_element_light(jso_stream *s, ufbx_light* elem)
 
 void serialize_element_camera(jso_stream *s, ufbx_camera* elem)
 {
+	jso_prop_object(s, "fields");
+	jso_prop_vec2(s, "resolution", elem->resolution);
+	jso_prop_vec2(s, "field_of_view_deg", elem->field_of_view_deg);
+    jso_end_object(s);
 }
 
 void serialize_element_bone(jso_stream *s, ufbx_bone* elem)
