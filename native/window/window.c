@@ -5,7 +5,6 @@
 #include "external/json_output.h"
 #include "external/sokol_config.h"
 #include "external/sokol_gfx.h"
-#include "external/sokol_gl.h"
 #include "external/sokol_app.h"
 #include "external/sokol_glue.h"
 #include "external/umath.h"
@@ -37,8 +36,6 @@ void init(void)
 	sg_setup(&(sg_desc) {
 		.context = sapp_sgcontext()
 	});
-
-    sgl_setup(&(sgl_desc_t){ 0 });
 
     {
         jso_stream s = begin_request("init");

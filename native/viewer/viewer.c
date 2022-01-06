@@ -1,11 +1,12 @@
 #include "viewer.h"
 #include "arena.h"
+#include "resources.h"
 #include "external/sokol_config.h"
 #include "external/sokol_gfx.h"
-#include "external/sokol_gl.h"
 #include "shaders/copy.h"
 #include "shaders/mesh.h"
 #include "shaders/debug.h"
+#include "shaders/icon.h"
 
 #if defined(SOKOL_GLES3) || defined(SOKOL_GLES2)
 	#define HAS_GL 1
@@ -17,8 +18,11 @@
 // TEMPT MEP
 #include <stdio.h>
 
-#define MAX_DEBUG_VERTICES 4096
+#define MAX_DEBUG_VERTICES 2048
 #define MAX_DEBUG_INDICES 4096
+
+#define MAX_ICON_VERTICES 512
+#define MAX_ICON_INDICES 1024
 
 // static um_vec2 fbx_to_um_vec2(ufbx_vec2 v) { return um_v2((float)v.x, (float)v.y); }
 static um_vec3 fbx_to_um_vec3(ufbx_vec3 v) { return um_v3((float)v.x, (float)v.y, (float)v.z); }
@@ -37,14 +41,12 @@ static void ad_sg_destroy_buffer(void *user) { sg_destroy_buffer(*(sg_buffer*)us
 static void ad_sg_destroy_shader(void *user) { sg_destroy_shader(*(sg_shader*)user); }
 static void ad_sg_destroy_pipeline(void *user) { sg_destroy_pipeline(*(sg_pipeline*)user); }
 static void ad_sg_destroy_pass(void *user) { sg_destroy_pass(*(sg_pass*)user); }
-static void ad_sg_destroy_sgl_context(void *user) { sgl_destroy_context(*(sgl_context*)user); }
 
 static void *defer_destroy_image(arena_t *a, sg_image image) { return arena_defer(a, &ad_sg_destroy_image, sg_image, &image); }
 static void *defer_destroy_buffer(arena_t *a, sg_buffer buffer) { return arena_defer(a, &ad_sg_destroy_buffer, sg_buffer, &buffer); }
 static void *defer_destroy_shader(arena_t *a, sg_shader shader) { return arena_defer(a, &ad_sg_destroy_shader, sg_shader, &shader); }
 static void *defer_destroy_pipeline(arena_t *a, sg_pipeline pipe) { return arena_defer(a, &ad_sg_destroy_pipeline, sg_pipeline, &pipe); }
 static void *defer_destroy_pass(arena_t *a, sg_pass pass) { return arena_defer(a, &ad_sg_destroy_pass, sg_pass, &pass); }
-static void *defer_destroy_sgl_context(arena_t *a, sgl_context ctx) { return arena_defer(a, &ad_sg_destroy_sgl_context, sgl_context, &ctx); }
 
 static sg_image make_image(arena_t *a, void **p_defer, const sg_image_desc *desc) {
 	sg_image image = sg_make_image(desc);
@@ -89,15 +91,6 @@ static sg_pass make_pass(arena_t *a, void **p_defer, const sg_pass_desc *desc) {
 	if (pass.id) defer = defer_destroy_pass(a, pass);
 	if (p_defer) *p_defer = defer;
 	return pass;
-}
-
-static sgl_context make_sgl_context(arena_t *a, void **p_defer, const sgl_context_desc_t *desc) {
-	sgl_context ctx = sgl_make_context(desc);
-	assert(ctx.id);
-	void *defer = NULL;
-	if (ctx.id) defer = defer_destroy_sgl_context(a, ctx);
-	if (p_defer) *p_defer = defer;
-	return ctx;
 }
 
 static size_t get_buffer_size(size_t size)
@@ -153,9 +146,25 @@ typedef struct {
 } vi_framebuffer;
 
 typedef struct {
+	uint8_t r, g, b, a;
+} vi_color8;
+
+static vi_color8 vi_rgb8(uint32_t hex) {
+	return (vi_color8){ (hex>>16u)&0xff, (hex>>8u)&0xff, hex&0xff, 0xff };
+}
+
+typedef struct {
 	um_vec4 position;
-	uint32_t color;
+	vi_color8 color;
 } vi_debug_vertex;
+
+typedef struct {
+	um_vec4 position;
+	um_vec2 uv;
+	uint8_t sdf_thresholds[4];
+	vi_color8 color;
+	vi_color8 outline_color;
+} vi_icon_vertex;
 
 typedef struct {
 	um_vec3 position;
@@ -221,6 +230,11 @@ typedef struct {
 	size_t keyframe_offset;
 } vi_blend_channel;
 
+typedef struct {
+	uint32_t x, y;
+	uint32_t width, height;
+} vi_rect;
+
 struct vi_scene {
 	arena_t *arena;
 	ufbx_scene fbx;
@@ -260,11 +274,12 @@ typedef struct {
 typedef struct {
 	vi_pipelines_desc desc;
 
-	sgl_context gl_context;
 	sg_pipeline mesh_pipe;
 
 	sg_pipeline debug_pipe;
+	sg_pipeline debug_pipe_post;
 
+	sg_pipeline icon_pipe;
 } vi_pipelines;
 
 typedef struct {
@@ -282,14 +297,41 @@ typedef struct {
 
 	sg_shader mesh_shader;
 	sg_shader debug_shader;
+	sg_shader icon_shader;
 
 	alist_t(vi_pipelines) pipelines;
+
 	alist_t(vi_debug_vertex) debug_vertices;
 	alist_t(uint32_t) debug_indices;
 
+	alist_t(vi_icon_vertex) icon_vertices;
+	alist_t(uint32_t) icon_indices;
+
 	sg_buffer debug_vb;
 	sg_buffer debug_ib;
+
+	sg_buffer icon_vb;
+	sg_buffer icon_ib;
+
+	sg_image icon_atlas;
 } vi_globals;
+
+typedef enum {
+	VI_ICON_NONE,
+	VI_ICON_CAMERA,
+	VI_ICON_LIGHT,
+	VI_ICON_X,
+	VI_ICON_Y,
+	VI_ICON_Z,
+} vi_icon;
+
+static const vi_rect icons[] = {
+	[VI_ICON_CAMERA] = { 0, 0, 64, 64 },
+	[VI_ICON_LIGHT] = { 64, 0, 64, 64 },
+	[VI_ICON_X] = { 192, 0, 32, 32 },
+	[VI_ICON_Y] = { 224, 0, 32, 32 },
+	[VI_ICON_Z] = { 192, 32, 32, 32 },
+};
 
 static vi_globals vig;
 
@@ -319,6 +361,11 @@ static void vi_init_pipelines(vi_pipelines *ps)
 		.depth.compare = SG_COMPAREFUNC_LESS_EQUAL,
 		.sample_count = samples,
 		.colors[0].pixel_format = color_format,
+		.stencil.enabled = true,
+		.stencil.front.compare = SG_COMPAREFUNC_EQUAL,
+		.stencil.front.pass_op = SG_STENCILOP_INCR_CLAMP,
+		.stencil.write_mask = 0xff,
+		.stencil.read_mask = 0xff,
 		.depth.pixel_format = depth_format,
 		.index_type = SG_INDEXTYPE_UINT32,
 		.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT4,
@@ -327,10 +374,48 @@ static void vi_init_pipelines(vi_pipelines *ps)
 		.face_winding = SG_FACEWINDING_CCW,
 	});
 
-	ps->gl_context = make_sgl_context(&vig.arena, NULL, &(sgl_context_desc_t){
-		.color_format = color_format,
-		.depth_format = depth_format,
+	ps->debug_pipe_post = make_pipeline(&vig.arena, NULL, &(sg_pipeline_desc){
+		.shader = vig.debug_shader,
+		.depth.compare = SG_COMPAREFUNC_GREATER,
+		.stencil.enabled = true,
+		.stencil.front.compare = SG_COMPAREFUNC_EQUAL,
+		.stencil.front.pass_op = SG_STENCILOP_INCR_CLAMP,
+		.stencil.write_mask = 0xff,
+		.stencil.read_mask = 0xff,
 		.sample_count = samples,
+		.blend_color.a = 0.2f,
+		.colors[0].pixel_format = color_format,
+		.colors[0].blend.enabled = true,
+		.colors[0].blend.src_factor_rgb = SG_BLENDFACTOR_BLEND_ALPHA,
+		.colors[0].blend.dst_factor_rgb = SG_BLENDFACTOR_ONE_MINUS_BLEND_ALPHA,
+		.colors[0].blend.src_factor_alpha = SG_BLENDFACTOR_ZERO,
+		.colors[0].blend.dst_factor_alpha = SG_BLENDFACTOR_ONE,
+		.depth.pixel_format = depth_format,
+		.index_type = SG_INDEXTYPE_UINT32,
+		.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT4,
+		.layout.attrs[1].format = SG_VERTEXFORMAT_UBYTE4N,
+		.cull_mode = SG_CULLMODE_BACK,
+		.face_winding = SG_FACEWINDING_CCW,
+	});
+
+	ps->icon_pipe = make_pipeline(&vig.arena, NULL, &(sg_pipeline_desc){
+		.shader = vig.icon_shader,
+		.sample_count = samples,
+		.colors[0].pixel_format = color_format,
+		.colors[0].blend.enabled = true,
+		.colors[0].blend.dst_factor_rgb = SG_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+		.colors[0].blend.src_factor_rgb = SG_BLENDFACTOR_SRC_ALPHA,
+		.colors[0].blend.src_factor_alpha = SG_BLENDFACTOR_ZERO,
+		.colors[0].blend.dst_factor_alpha = SG_BLENDFACTOR_ONE,
+		.depth.pixel_format = depth_format,
+		.index_type = SG_INDEXTYPE_UINT32,
+		.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT4,
+		.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT2,
+		.layout.attrs[2].format = SG_VERTEXFORMAT_UBYTE4N,
+		.layout.attrs[3].format = SG_VERTEXFORMAT_UBYTE4N,
+		.layout.attrs[4].format = SG_VERTEXFORMAT_UBYTE4N,
+		.cull_mode = SG_CULLMODE_BACK,
+		.face_winding = SG_FACEWINDING_CCW,
 	});
 }
 
@@ -386,6 +471,7 @@ void vi_setup()
 
 	vig.mesh_shader = make_shader(&vig.arena, NULL, mesh_shader_desc(vig.backend));
 	vig.debug_shader = make_shader(&vig.arena, NULL, debug_shader_desc(vig.backend));
+	vig.icon_shader = make_shader(&vig.arena, NULL, icon_shader_desc(vig.backend));
 
 	vig.debug_vb = make_buffer(&vig.arena, NULL, &(sg_buffer_desc){
 		.type = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -398,6 +484,51 @@ void vi_setup()
 		.usage = SG_USAGE_STREAM,
 		.size = sizeof(uint32_t) * MAX_DEBUG_INDICES,
 	});
+
+	vig.icon_vb = make_buffer(&vig.arena, NULL, &(sg_buffer_desc){
+		.type = SG_BUFFERTYPE_VERTEXBUFFER,
+		.usage = SG_USAGE_STREAM,
+		.size = sizeof(vi_icon_vertex) * MAX_ICON_VERTICES,
+	});
+
+	vig.icon_ib = make_buffer(&vig.arena, NULL, &(sg_buffer_desc){
+		.type = SG_BUFFERTYPE_INDEXBUFFER,
+		.usage = SG_USAGE_STREAM,
+		.size = sizeof(uint32_t) * MAX_ICON_INDICES,
+	});
+
+	{
+		size_t extent = 256;
+		size_t num_pixels = extent * extent;
+		uint8_t *icon_pixels = aalloc_uninit(NULL, uint8_t, num_pixels);
+
+		ufbx_inflate_input input = {
+			.data = icon_atlas,
+			.data_size = icon_atlas_size,
+			.total_size = icon_atlas_size,
+		};
+
+		ufbx_inflate_retain retain;
+		retain.initialized = false;
+		ufbx_inflate(icon_pixels, num_pixels, &input, &retain);
+
+		uint8_t prev = 0;
+		for (size_t i = 0; i < num_pixels; i++) {
+			prev += icon_pixels[i];
+			icon_pixels[i] = prev;
+		}
+
+		vig.icon_atlas = make_image(&vig.arena, NULL, &(sg_image_desc){
+			.width = (int)extent,
+			.height = (int)extent,
+			.pixel_format = SG_PIXELFORMAT_R8,
+			.data.subimage[0][0] = { icon_pixels, num_pixels },
+			.mag_filter = SG_FILTER_LINEAR,
+			.min_filter = SG_FILTER_LINEAR,
+		});
+
+		afree(NULL, icon_pixels);
+	}
 }
 
 void vi_shutdown()
@@ -893,46 +1024,7 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 	}
 }
 
-static void sgl_v2(um_vec2 v)
-{
-	sgl_v2f(v.x, v.y);
-}
-
-static void sgl_v3(um_vec3 v)
-{
-	sgl_v3f(v.x, v.y, v.z);
-}
-
-static void gl_set_perspective(vi_scene *vs)
-{
-	sgl_matrix_mode_projection();
-	sgl_load_matrix(vs->view_to_clip.m);
-	sgl_matrix_mode_modelview();
-	sgl_load_matrix(vs->world_to_view.m);
-}
-
-static void gl_set_2d()
-{
-	sgl_matrix_mode_projection();
-	sgl_load_identity();
-	sgl_matrix_mode_modelview();
-	sgl_load_identity();
-}
-
-static void gl_begin_lines()
-{
-	sgl_push_matrix();
-	gl_set_2d();
-	sgl_begin_quads();
-}
-
-static void gl_end_lines()
-{
-	sgl_end();
-	sgl_pop_matrix();
-}
-
-static void gl_draw_line_4d(vi_scene *vs, um_vec4 a, um_vec4 b, float width, uint32_t color)
+static void gl_draw_line_4d(vi_scene *vs, um_vec4 a, um_vec4 b, float width, vi_color8 color, bool top)
 {
 	um_vec2 delta = um_sub2(um_div2(b.xy, b.w), um_div2(a.xy, a.w));
 	um_vec2 nx = um_normalize2(delta);
@@ -975,6 +1067,12 @@ static void gl_draw_line_4d(vi_scene *vs, um_vec4 a, um_vec4 b, float width, uin
 		um_vec4 va = v, vb = v;
 		va.xy = um_mad2(va.xy, ny, e.y * +w);
 		vb.xy = um_mad2(vb.xy, ny, e.y * -w);
+
+		if (top) {
+			va.z = 0.0f;
+			vb.z = 0.0f;
+		}
+
 		verts[i*2+0].position = va;
 		verts[i*2+1].position = vb;
 		verts[i*2+0].color = color;
@@ -991,19 +1089,84 @@ static void gl_draw_line_4d(vi_scene *vs, um_vec4 a, um_vec4 b, float width, uin
 	}
 }
 
-static void gl_draw_line_3d(vi_scene *vs, um_vec3 a, um_vec3 b, float width, uint32_t color)
+static void gl_draw_line_3d(vi_scene *vs, um_vec3 a, um_vec3 b, float width, vi_color8 color, bool top)
 {
 	um_vec4 a4, b4;
 	a4.xyz = a; a4.w = 1.0f;
 	b4.xyz = b; b4.w = 1.0f;
 	um_vec4 va = um_mat_mulr(vs->world_to_clip, a4);
 	um_vec4 vb = um_mat_mulr(vs->world_to_clip, b4);
-	gl_draw_line_4d(vs, va, vb, width, color);
+	gl_draw_line_4d(vs, va, vb, width, color, top);
+}
+
+static void gl_draw_icon_4d(vi_scene *vs, vi_rect rect, um_vec4 pos, float extent, vi_color8 color, float outline_width, vi_color8 outline_color)
+{
+	uint32_t base = (uint32_t)vig.icon_vertices.count;
+
+	vi_icon_vertex *verts = alist_push_n(NULL, vi_icon_vertex, &vig.icon_vertices, 4);
+	uint32_t *indices = alist_push_n(NULL, uint32_t, &vig.icon_indices, 6);
+
+	um_vec2 uv_base = um_mul2(um_v2((float)rect.x, (float)rect.y), 1.0f / 256.0f);
+	um_vec2 uv_size = um_mul2(um_v2((float)rect.width, (float)rect.height), 1.0f / 256.0f);
+	float uv_pixels = um_min((float)rect.width, (float)rect.height);
+
+	um_vec2 size = um_mul2(vs->pixel_size, extent);
+
+	float pixel_distance = um_min((8.0f * uv_pixels) / extent / vs->pixel_scale, 32.0f);
+
+	if (outline_width == 0.0f) {
+		outline_color = color;
+	} else {
+		outline_width = outline_width * (8.0f * uv_pixels) / extent;
+	}
+
+	float th_a = 128.0f;
+	float th_b = th_a + pixel_distance;
+	float th_c = th_a + um_min(um_max(outline_width, pixel_distance), 48.0f);
+	float th_d = th_c + pixel_distance;
+
+	vi_icon_vertex vertex;
+	vertex.position = pos;
+	vertex.uv = uv_base;
+	vertex.color = color;
+	vertex.outline_color = outline_color;
+	vertex.sdf_thresholds[0] = (uint8_t)th_a;
+	vertex.sdf_thresholds[1] = (uint8_t)th_b;
+	vertex.sdf_thresholds[2] = (uint8_t)th_c;
+	vertex.sdf_thresholds[3] = (uint8_t)th_d;
+
+	verts[0] = vertex;
+	verts[0].position.x -= size.x * pos.w;
+	verts[0].position.y += size.y * pos.w;
+
+	verts[1] = vertex;
+	verts[1].position.x += size.x * pos.w;
+	verts[1].position.y += size.y * pos.w;
+	verts[1].uv.x += uv_size.x;
+
+	verts[2] = vertex;
+	verts[2].position.x -= size.x * pos.w;
+	verts[2].position.y -= size.y * pos.w;
+	verts[2].uv.y += uv_size.y;
+
+	verts[3] = vertex;
+	verts[3].position.x += size.x * pos.w;
+	verts[3].position.y -= size.y * pos.w;
+	verts[3].uv.x += uv_size.x;
+	verts[3].uv.y += uv_size.y;
+
+	indices[0] = base + 0;
+	indices[1] = base + 2;
+	indices[2] = base + 1;
+	indices[3] = base + 2;
+	indices[4] = base + 3;
+	indices[5] = base + 1;
 }
 
 static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 {
-#if 0
+	float widget_scale = 1.0f;
+
 	if (desc->selected_element_id < vs->fbx.elements.count) {
 		ufbx_element *fbx_elem = vs->fbx.elements.data[desc->selected_element_id];
 
@@ -1013,35 +1176,214 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 			um_mat node_to_world = node->node_to_world;
 			um_vec3 c = node_to_world.cols[3].xyz;
 
+			for (size_t i = 0; i < 3; i++) {
+				um_vec3 cx = um_mad3(c, node_to_world.cols[i].xyz, widget_scale);
+				gl_draw_line_3d(vs, c, cx, 5.0f, vi_rgb8(0x6cb9da), true);
+			}
 
-			um_vec3 cx = um_add3(c, node_to_world.cols[0].xyz);
-			gl_draw_line_3d(vs, c, cx, 0.01f, 0xffff0000);
+			for (size_t i = 0; i < 3; i++) {
+				um_vec3 cx = um_mad3(c, node_to_world.cols[i].xyz, widget_scale);
+				gl_draw_line_3d(vs, c, cx, 10.0f, vi_rgb8(0x0e2a36), true);
+
+				um_vec4 c4;
+				c4.xyz = um_mad3(c, node_to_world.cols[i].xyz, widget_scale * 1.1f);
+				c4.w = 1.0f;
+				c4 = um_mat_mulr(vs->world_to_clip, c4);
+				gl_draw_icon_4d(vs, icons[VI_ICON_X + i], c4, 30.0f, vi_rgb8(0x6cb9da), 2.5f, vi_rgb8(0x0e2a36));
+			}
 		}
 	}
-#endif
 
-	um_vec3 a = um_v3(-6.0f, 3.0f, 0.0f);
-	um_vec3 b = um_v3(2.0f, 3.0f, 0.0f);
-	gl_draw_line_3d(vs, a, b, 0.005f, 0xffffffff);
+	for (size_t i = 0; i < vs->fbx.elements.count; i++) {
+		ufbx_element *fbx_element = vs->fbx_state->elements.data[i];
+
+		vi_icon icon = VI_ICON_NONE;
+		if (fbx_element->type == UFBX_ELEMENT_CAMERA) {
+			icon = VI_ICON_CAMERA;
+		} else if (fbx_element->type == UFBX_ELEMENT_LIGHT) {
+			icon = VI_ICON_LIGHT;
+		}
+
+		if (icon == VI_ICON_NONE) continue;
+
+		for (size_t inst_ix = 0; inst_ix < fbx_element->instances.count; inst_ix++) {
+			ufbx_node *fbx_node = fbx_element->instances.data[inst_ix];
+			vi_node *node = &vs->nodes[fbx_node->id];
+
+			um_mat node_to_world = node->node_to_world;
+			um_vec3 c = node_to_world.cols[3].xyz;
+
+			vi_color8 color, outline_color;
+			if (desc->selected_element_id == fbx_element->element_id) {
+				color = vi_rgb8(0xf4bf6e);
+				outline_color = vi_rgb8(0x342e25);
+			} else if (desc->selected_element_id == fbx_node->element_id) {
+				color = vi_rgb8(0x6cb9da);
+				outline_color = vi_rgb8(0x342e25);
+			} else {
+				color = vi_rgb8(0x888888);
+				outline_color = vi_rgb8(0x2c2c2c);
+			}
+
+			um_vec4 c4;
+			c4.xyz = c;
+			c4.w = 1.0f;
+			c4 = um_mat_mulr(vs->world_to_clip, c4);
+			gl_draw_icon_4d(vs, icons[icon], c4, 50.0f, color, 2.5f, outline_color);
+		}
+	}
+
+	for (size_t i = 0; i < vs->fbx.cameras.count; i++) {
+		ufbx_camera *fbx_camera = vs->fbx_state->cameras.data[i];
+		for (size_t inst_ix = 0; inst_ix < fbx_camera->instances.count; inst_ix++) {
+			ufbx_node *fbx_node = fbx_camera->instances.data[inst_ix];
+			vi_node *node = &vs->nodes[fbx_node->id];
+
+			float near = 0.5f * widget_scale;
+			float far = 2.0f * widget_scale;
+
+			float dx = (float)fbx_camera->field_of_view_tan.x;
+			float dy = (float)fbx_camera->field_of_view_tan.y;
+
+			um_mat mat = um_mat_mulrev(node->node_to_world, vs->world_to_clip);
+
+			vi_color8 color, outline_color = { 0 };
+			if (desc->selected_element_id == fbx_camera->element_id) {
+				color = vi_rgb8(0xf4bf6e);
+				outline_color = vi_rgb8(0x342e25);
+			} else if (desc->selected_element_id == fbx_node->element_id) {
+				color = vi_rgb8(0x73919e);
+			} else {
+				color = vi_rgb8(0x888888);
+			}
+
+			um_vec4 n00 = um_mat_mulr(mat, um_v4(near, -dy*near, -dx*near, 1.0f));
+			um_vec4 n01 = um_mat_mulr(mat, um_v4(near, +dy*near, -dx*near, 1.0f));
+			um_vec4 n10 = um_mat_mulr(mat, um_v4(near, -dy*near, +dx*near, 1.0f));
+			um_vec4 n11 = um_mat_mulr(mat, um_v4(near, +dy*near, +dx*near, 1.0f));
+			um_vec4 f00 = um_mat_mulr(mat, um_v4(far, -dy*far, -dx*far, 1.0f));
+			um_vec4 f01 = um_mat_mulr(mat, um_v4(far, +dy*far, -dx*far, 1.0f));
+			um_vec4 f10 = um_mat_mulr(mat, um_v4(far, -dy*far, +dx*far, 1.0f));
+			um_vec4 f11 = um_mat_mulr(mat, um_v4(far, +dy*far, +dx*far, 1.0f));
+
+			bool top = false;
+
+			{
+				float width = 5.0f;
+
+				gl_draw_line_4d(vs, n00, n01, width, color, top);
+				gl_draw_line_4d(vs, n01, n11, width, color, top);
+				gl_draw_line_4d(vs, n11, n10, width, color, top);
+				gl_draw_line_4d(vs, n10, n00, width, color, top);
+
+				gl_draw_line_4d(vs, f00, f01, width, color, top);
+				gl_draw_line_4d(vs, f01, f11, width, color, top);
+				gl_draw_line_4d(vs, f11, f10, width, color, top);
+				gl_draw_line_4d(vs, f10, f00, width, color, top);
+
+				gl_draw_line_4d(vs, n00, f00, width, color, top);
+				gl_draw_line_4d(vs, n01, f01, width, color, top);
+				gl_draw_line_4d(vs, n11, f11, width, color, top);
+				gl_draw_line_4d(vs, n10, f10, width, color, top);
+			}
+
+			if (outline_color.r) {
+				float width = 10.0f;
+
+				gl_draw_line_4d(vs, n00, n01, width, outline_color, top);
+				gl_draw_line_4d(vs, n01, n11, width, outline_color, top);
+				gl_draw_line_4d(vs, n11, n10, width, outline_color, top);
+				gl_draw_line_4d(vs, n10, n00, width, outline_color, top);
+
+				gl_draw_line_4d(vs, f00, f01, width, outline_color, top);
+				gl_draw_line_4d(vs, f01, f11, width, outline_color, top);
+				gl_draw_line_4d(vs, f11, f10, width, outline_color, top);
+				gl_draw_line_4d(vs, f10, f00, width, outline_color, top);
+
+				gl_draw_line_4d(vs, n00, f00, width, outline_color, top);
+				gl_draw_line_4d(vs, n01, f01, width, outline_color, top);
+				gl_draw_line_4d(vs, n11, f11, width, outline_color, top);
+				gl_draw_line_4d(vs, n10, f10, width, outline_color, top);
+			}
+		}
+	}
+
+	for (size_t i = 0; i < vs->fbx.lights.count; i++) {
+		ufbx_light *fbx_light = vs->fbx_state->lights.data[i];
+		for (size_t inst_ix = 0; inst_ix < fbx_light->instances.count; inst_ix++) {
+			ufbx_node *fbx_node = fbx_light->instances.data[inst_ix];
+			vi_node *node = &vs->nodes[fbx_node->id];
+
+			if (fbx_light->type == UFBX_LIGHT_DIRECTIONAL) {
+				um_mat node_to_world = node->node_to_world;
+				um_vec3 c = node_to_world.cols[3].xyz;
+
+				vi_color8 color, outline_color = { 0 };
+				if (desc->selected_element_id == fbx_light->element_id) {
+					color = vi_rgb8(0xf4bf6e);
+					outline_color = vi_rgb8(0x342e25);
+				} else if (desc->selected_element_id == fbx_node->element_id) {
+					color = vi_rgb8(0x73919e);
+				} else {
+					color = vi_rgb8(0x888888);
+				}
+
+				um_vec3 cx = um_mad3(c, node_to_world.cols[1].xyz, -widget_scale * 3.0f);
+				gl_draw_line_3d(vs, c, cx, 5.0f, color, false);
+
+				if (outline_color.r) {
+					gl_draw_line_3d(vs, c, cx, 10.0f, outline_color, false);
+				}
+			}
+		}
+	}
+
 }
 
 static void vi_draw_debug(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 {
-	if (vig.debug_vertices.count == 0) return;
+	if (vig.debug_vertices.count > 0) {
 
-	sg_update_buffer(vig.debug_vb, &(sg_range){ vig.debug_vertices.data, vig.debug_vertices.count * sizeof(vi_debug_vertex) });
-	sg_update_buffer(vig.debug_ib, &(sg_range){ vig.debug_indices.data, vig.debug_indices.count * sizeof(uint32_t) });
+		sg_update_buffer(vig.debug_vb, &(sg_range){ vig.debug_vertices.data, vig.debug_vertices.count * sizeof(vi_debug_vertex) });
+		sg_update_buffer(vig.debug_ib, &(sg_range){ vig.debug_indices.data, vig.debug_indices.count * sizeof(uint32_t) });
 
-	sg_apply_pipeline(ps->debug_pipe);
-	sg_apply_bindings(&(sg_bindings){
-		.vertex_buffers[0] = vig.debug_vb,
-		.index_buffer = vig.debug_ib,
-	});
+		sg_apply_pipeline(ps->debug_pipe);
+		sg_apply_bindings(&(sg_bindings){
+			.vertex_buffers[0] = vig.debug_vb,
+			.index_buffer = vig.debug_ib,
+		});
 
-	sg_draw(0, (int)vig.debug_indices.count, 1);
+		sg_draw(0, (int)vig.debug_indices.count, 1);
 
-	vig.debug_vertices.count = 0;
-	vig.debug_indices.count = 0;
+		sg_apply_pipeline(ps->debug_pipe_post);
+		sg_apply_bindings(&(sg_bindings){
+			.vertex_buffers[0] = vig.debug_vb,
+			.index_buffer = vig.debug_ib,
+		});
+
+		sg_draw(0, (int)vig.debug_indices.count, 1);
+
+		vig.debug_vertices.count = 0;
+		vig.debug_indices.count = 0;
+	}
+
+	if (vig.icon_vertices.count > 0) {
+
+		sg_update_buffer(vig.icon_vb, &(sg_range){ vig.icon_vertices.data, vig.icon_vertices.count * sizeof(vi_icon_vertex) });
+		sg_update_buffer(vig.icon_ib, &(sg_range){ vig.icon_indices.data, vig.icon_indices.count * sizeof(uint32_t) });
+
+		sg_apply_pipeline(ps->icon_pipe);
+		sg_apply_bindings(&(sg_bindings){
+			.vertex_buffers[0] = vig.icon_vb,
+			.index_buffer = vig.icon_ib,
+			.fs_images[SLOT_icon_atlas] = vig.icon_atlas,
+		});
+
+		sg_draw(0, (int)vig.icon_indices.count, 1);
+
+		vig.icon_vertices.count = 0;
+		vig.icon_indices.count = 0;
+	}
 }
 
 static void vi_draw_postprocess(uint32_t width, uint32_t height, vi_framebuffer *src)
@@ -1103,8 +1445,8 @@ static void vi_update(vi_scene *vs, const vi_target *target, const vi_desc *desc
 	vs->view_to_clip = vi_mat_perspective(desc->field_of_view * UM_DEG_TO_RAD, aspect, desc->near_plane, desc->far_plane);
 	vs->world_to_clip = um_mat_mulrev(vs->world_to_view, vs->view_to_clip);
 	vs->pixel_scale = target->pixel_scale;
-	vs->pixel_size.x = vs->pixel_scale / aspect;
-	vs->pixel_size.y = vs->pixel_scale;
+	vs->pixel_size.x = 1.0f / (float)target->width * target->pixel_scale;
+	vs->pixel_size.y = 1.0f / (float)target->height * target->pixel_scale;
 
 	for (size_t i = 0; i < vs->fbx.nodes.count; i++) {
 		ufbx_node *fbx_node = fbx_state->nodes.data[i];
@@ -1132,8 +1474,6 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 		.samples = target->samples,
 	});
 
-	sgl_set_context(ps->gl_context);
-
 	vi_init_framebuffer(render_fb, &(vi_framebuffer_desc){
 		.width = target->width,
 		.height = target->height,
@@ -1160,8 +1500,6 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 	vi_draw_widgets(ps, vs, desc);
 	vi_draw_debug(ps, vs, desc);
 
-	sgl_draw();
-
 	sg_end_pass();
 
 	sg_begin_pass(dst_fb->pass, &(sg_pass_action){
@@ -1173,7 +1511,6 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 
 	sg_end_pass();
 
-	sgl_set_context(sgl_default_context());
 	sg_commit();
 }
 

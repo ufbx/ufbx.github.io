@@ -620,7 +620,7 @@ um_abi um_vec4 um_mat_mulr(um_mat a, um_vec4 b)
 	return um_v4(
 		a.m11*b.x + a.m12*b.y + a.m13*b.z + a.m14*b.w,
 		a.m21*b.x + a.m22*b.y + a.m23*b.z + a.m24*b.w,
-		a.m31*b.x + a.m32*b.y + a.m23*b.z + a.m34*b.w,
+		a.m31*b.x + a.m32*b.y + a.m33*b.z + a.m34*b.w,
 		a.m41*b.x + a.m42*b.y + a.m43*b.z + a.m44*b.w);
 }
 

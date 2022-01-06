@@ -31,7 +31,7 @@ target_include_directories(viewer INTERFACE ".")
 if(MSVC)
   target_compile_options(viewer PRIVATE /W3 /WX)
 else()
-  target_compile_options(viewer PRIVATE -Wall -Werror -Wno-unused-function -Wno-unused-variable)
+  target_compile_options(viewer PRIVATE -Wall -Werror -Wno-unused-function -Wno-unused-variable -Wno-missing-braces)
 endif()
 
 if(EMSCRIPTEN)
