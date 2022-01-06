@@ -484,6 +484,29 @@ void *alist_pop_size(size_t size, void *p_list)
     return (char*)list->data + index * size;
 }
 
+void *alist_push_n_size(arena_t *arena, size_t size, void *p_list, size_t n, void *p_item)
+{
+    arenaimp_alist *list = (arenaimp_alist*)p_list;
+    size_t index = list->count;
+    void *ptr = arealloc_size(arena, size, index + n, list->data);
+    if (!ptr) return NULL;
+    if (ptr != list->data) list->data = ptr;
+    void *dst = (char*)ptr + index * size;
+    arenaimp_copy(dst, p_item, size);
+    list->count = index + n;
+    return dst;
+}
+
+void *alist_pop_n_size(size_t size, void *p_list, size_t n)
+{
+    arenaimp_alist *list = (arenaimp_alist*)p_list;
+    assert(list->count >= n);
+    if (list->count < n) return NULL;
+    size_t index = list->count - n;
+    list->count = index;
+    return (char*)list->data + index * size;
+}
+
 bool alist_remove_size(size_t size, void *p_list, size_t index)
 {
     arenaimp_alist *list = (arenaimp_alist*)p_list;

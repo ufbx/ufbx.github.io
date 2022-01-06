@@ -187,6 +187,7 @@ void main()
 
 uniform ubo_mesh_pixel {
     vec3 highlight_color;
+    float pixel_scale;
 };
 
 in vec3 v_normal;
@@ -198,7 +199,8 @@ out vec4 o_color;
 float wireframeWeight(float width)
 {
     vec3 bary = vec3(v_barycentric, 1.0 - v_barycentric.x - v_barycentric.y);
-    vec3 dbary = fwidth(bary);
+    vec3 dx = dFdx(bary), dy = dFdy(bary);
+    vec3 dbary = sqrt(dx*dx + dy*dy);
     vec3 wire = bary * (1.0 / dbary);
     return 1.0 - clamp(min(min(wire.x, wire.y), wire.z) - (width - 1.0), 0.0, 1.0);
 }
@@ -210,7 +212,7 @@ void main()
     vec3 n = normalize(v_normal);
     float x = dot(n, l) * 0.4 + 0.4;
     vec3 col = vec3(x);
-    float wire = wireframeWeight(1.2);
+    float wire = wireframeWeight(1.2 * pixel_scale);
     col = mix(col, highlight_color, v_highlight * mix(wire, 1.0, 0.3));
     o_color = vec4(col, 1.0);
 }

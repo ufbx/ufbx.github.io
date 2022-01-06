@@ -171,6 +171,8 @@ void frame(void)
         jso_prop(&s, "target");
         serialize_vec3(&s, center);
         jso_prop_double(&s, "fieldOfView", 40.0);
+        jso_prop_double(&s, "nearPlane", 1.0f);
+        jso_prop_double(&s, "farPlane", 100.0f);
         jso_end_object(&s); // camera
 
         static double time = 0.0f;
@@ -178,9 +180,12 @@ void frame(void)
         if (time > 2.8f)
             time = 0.0f;
 
+
         jso_prop_object(&s, "animation");
         jso_prop_double(&s, "time", time);
         jso_end_object(&s);
+
+        jso_prop_int(&s, "selectedElement", 50);
 
 		jso_end_object(&s); // desc
 

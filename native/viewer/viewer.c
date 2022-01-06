@@ -5,6 +5,7 @@
 #include "external/sokol_gl.h"
 #include "shaders/copy.h"
 #include "shaders/mesh.h"
+#include "shaders/debug.h"
 
 #if defined(SOKOL_GLES3) || defined(SOKOL_GLES2)
 	#define HAS_GL 1
@@ -15,6 +16,9 @@
 
 // TEMPT MEP
 #include <stdio.h>
+
+#define MAX_DEBUG_VERTICES 4096
+#define MAX_DEBUG_INDICES 4096
 
 // static um_vec2 fbx_to_um_vec2(ufbx_vec2 v) { return um_v2((float)v.x, (float)v.y); }
 static um_vec3 fbx_to_um_vec3(ufbx_vec3 v) { return um_v3((float)v.x, (float)v.y, (float)v.z); }
@@ -149,6 +153,11 @@ typedef struct {
 } vi_framebuffer;
 
 typedef struct {
+	um_vec4 position;
+	uint32_t color;
+} vi_debug_vertex;
+
+typedef struct {
 	um_vec3 position;
 	um_vec3 normal;
 	int32_t vertex_id;
@@ -234,6 +243,8 @@ struct vi_scene {
 	um_mat world_to_view;
 	um_mat view_to_clip;
 	um_mat world_to_clip;
+	float pixel_scale;
+	um_vec2 pixel_size;
 };
 
 enum {
@@ -251,6 +262,9 @@ typedef struct {
 
 	sgl_context gl_context;
 	sg_pipeline mesh_pipe;
+
+	sg_pipeline debug_pipe;
+
 } vi_pipelines;
 
 typedef struct {
@@ -267,8 +281,14 @@ typedef struct {
 	vi_framebuffer framebuffers[MAX_FRAMEBUFFERS];
 
 	sg_shader mesh_shader;
+	sg_shader debug_shader;
 
 	alist_t(vi_pipelines) pipelines;
+	alist_t(vi_debug_vertex) debug_vertices;
+	alist_t(uint32_t) debug_indices;
+
+	sg_buffer debug_vb;
+	sg_buffer debug_ib;
 } vi_globals;
 
 static vi_globals vig;
@@ -290,6 +310,19 @@ static void vi_init_pipelines(vi_pipelines *ps)
 		.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3,
 		.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3,
 		.layout.attrs[2].format = SG_VERTEXFORMAT_UFBX_INT,
+		.cull_mode = SG_CULLMODE_BACK,
+		.face_winding = SG_FACEWINDING_CCW,
+	});
+
+	ps->debug_pipe = make_pipeline(&vig.arena, NULL, &(sg_pipeline_desc){
+		.shader = vig.debug_shader,
+		.depth.compare = SG_COMPAREFUNC_LESS_EQUAL,
+		.sample_count = samples,
+		.colors[0].pixel_format = color_format,
+		.depth.pixel_format = depth_format,
+		.index_type = SG_INDEXTYPE_UINT32,
+		.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT4,
+		.layout.attrs[1].format = SG_VERTEXFORMAT_UBYTE4N,
 		.cull_mode = SG_CULLMODE_BACK,
 		.face_winding = SG_FACEWINDING_CCW,
 	});
@@ -352,6 +385,19 @@ void vi_setup()
 	});
 
 	vig.mesh_shader = make_shader(&vig.arena, NULL, mesh_shader_desc(vig.backend));
+	vig.debug_shader = make_shader(&vig.arena, NULL, debug_shader_desc(vig.backend));
+
+	vig.debug_vb = make_buffer(&vig.arena, NULL, &(sg_buffer_desc){
+		.type = SG_BUFFERTYPE_VERTEXBUFFER,
+		.usage = SG_USAGE_STREAM,
+		.size = sizeof(vi_debug_vertex) * MAX_DEBUG_VERTICES,
+	});
+
+	vig.debug_ib = make_buffer(&vig.arena, NULL, &(sg_buffer_desc){
+		.type = SG_BUFFERTYPE_INDEXBUFFER,
+		.usage = SG_USAGE_STREAM,
+		.size = sizeof(uint32_t) * MAX_DEBUG_INDICES,
+	});
 }
 
 void vi_shutdown()
@@ -830,6 +876,7 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 
 				ubo_mesh_pixel_t pu = {
 					.highlight_color = highlight_color,
+					.pixel_scale = vs->pixel_scale,
 				};
 				sg_apply_uniforms(SG_SHADERSTAGE_FS, 0, SG_RANGE_REF(pu));
 
@@ -846,13 +893,117 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 	}
 }
 
+static void sgl_v2(um_vec2 v)
+{
+	sgl_v2f(v.x, v.y);
+}
+
 static void sgl_v3(um_vec3 v)
 {
 	sgl_v3f(v.x, v.y, v.z);
 }
 
-static void vi_draw_debug(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
+static void gl_set_perspective(vi_scene *vs)
 {
+	sgl_matrix_mode_projection();
+	sgl_load_matrix(vs->view_to_clip.m);
+	sgl_matrix_mode_modelview();
+	sgl_load_matrix(vs->world_to_view.m);
+}
+
+static void gl_set_2d()
+{
+	sgl_matrix_mode_projection();
+	sgl_load_identity();
+	sgl_matrix_mode_modelview();
+	sgl_load_identity();
+}
+
+static void gl_begin_lines()
+{
+	sgl_push_matrix();
+	gl_set_2d();
+	sgl_begin_quads();
+}
+
+static void gl_end_lines()
+{
+	sgl_end();
+	sgl_pop_matrix();
+}
+
+static void gl_draw_line_4d(vi_scene *vs, um_vec4 a, um_vec4 b, float width, uint32_t color)
+{
+	um_vec2 delta = um_sub2(um_div2(b.xy, b.w), um_div2(a.xy, a.w));
+	um_vec2 nx = um_normalize2(delta);
+	if (um_equal2(nx, um_zero2)) nx = um_v2(1.0f, 0.0f);
+	um_vec2 ny = um_v2(nx.y, -nx.x);
+
+	um_vec2 pixel_size = um_mul2(vs->pixel_size, width);
+	nx = um_mulv2(nx, pixel_size);
+	ny = um_mulv2(ny, pixel_size);
+
+	static const um_vec2 envelope[] = {
+		{ -0.93969262078f, 0.34202014332f },
+		{ -0.64278760968f, 0.76604444311f },
+		{ 0.0f, 1.0f },
+		{ 1.0f, 1.0f },
+		{ 1.64278760968f, 0.76604444311f },
+		{ 1.93969262078f, 0.34202014332f },
+	};
+	const size_t num_segments = sizeof(envelope)/sizeof(*envelope);
+	uint32_t base = (uint32_t)vig.debug_vertices.count;
+
+	vi_debug_vertex *verts = alist_push_n(NULL, vi_debug_vertex, &vig.debug_vertices, num_segments * 2);
+	uint32_t *indices = alist_push_n(NULL, uint32_t, &vig.debug_indices, (num_segments-1)*6);
+
+	for (size_t i = 0; i < num_segments; i++) {
+		um_vec2 e = envelope[i];
+		um_vec4 v;
+		float w;
+		if (e.x < 0.5f) {
+			w = a.w;
+			v.xy = um_mad2(a.xy, nx, e.x * w);
+			v.z = a.z;
+			v.w = a.w;
+		} else {
+			w = b.w;
+			v.xy = um_mad2(b.xy, nx, (e.x - 1.0f) * w);
+			v.z = b.z;
+			v.w = b.w;
+		}
+		um_vec4 va = v, vb = v;
+		va.xy = um_mad2(va.xy, ny, e.y * +w);
+		vb.xy = um_mad2(vb.xy, ny, e.y * -w);
+		verts[i*2+0].position = va;
+		verts[i*2+1].position = vb;
+		verts[i*2+0].color = color;
+		verts[i*2+1].color = color;
+	}
+	for (uint32_t i = 0; i < num_segments - 1; i++) {
+		uint32_t b = base + i * 2;
+		indices[i*6+0] = b + 0;
+		indices[i*6+1] = b + 2;
+		indices[i*6+2] = b + 1;
+		indices[i*6+3] = b + 2;
+		indices[i*6+4] = b + 3;
+		indices[i*6+5] = b + 1;
+	}
+}
+
+static void gl_draw_line_3d(vi_scene *vs, um_vec3 a, um_vec3 b, float width, uint32_t color)
+{
+	um_vec4 a4, b4;
+	a4.xyz = a; a4.w = 1.0f;
+	b4.xyz = b; b4.w = 1.0f;
+	um_vec4 va = um_mat_mulr(vs->world_to_clip, a4);
+	um_vec4 vb = um_mat_mulr(vs->world_to_clip, b4);
+	gl_draw_line_4d(vs, va, vb, width, color);
+}
+
+static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
+{
+#if 0
 	if (desc->selected_element_id < vs->fbx.elements.count) {
 		ufbx_element *fbx_elem = vs->fbx.elements.data[desc->selected_element_id];
 
@@ -862,15 +1013,35 @@ static void vi_draw_debug(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 			um_mat node_to_world = node->node_to_world;
 			um_vec3 c = node_to_world.cols[3].xyz;
 
-			sgl_begin_lines();
-			sgl_c3f(1.0f, 0.0f, 0.0f);
-			for (size_t i = 0; i < 3; i++) {
-				sgl_v3(c);
-				sgl_v3(um_add3(c, node_to_world.cols[i].xyz));
-			}
-			sgl_end();
+
+			um_vec3 cx = um_add3(c, node_to_world.cols[0].xyz);
+			gl_draw_line_3d(vs, c, cx, 0.01f, 0xffff0000);
 		}
 	}
+#endif
+
+	um_vec3 a = um_v3(-6.0f, 3.0f, 0.0f);
+	um_vec3 b = um_v3(2.0f, 3.0f, 0.0f);
+	gl_draw_line_3d(vs, a, b, 0.005f, 0xffffffff);
+}
+
+static void vi_draw_debug(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
+{
+	if (vig.debug_vertices.count == 0) return;
+
+	sg_update_buffer(vig.debug_vb, &(sg_range){ vig.debug_vertices.data, vig.debug_vertices.count * sizeof(vi_debug_vertex) });
+	sg_update_buffer(vig.debug_ib, &(sg_range){ vig.debug_indices.data, vig.debug_indices.count * sizeof(uint32_t) });
+
+	sg_apply_pipeline(ps->debug_pipe);
+	sg_apply_bindings(&(sg_bindings){
+		.vertex_buffers[0] = vig.debug_vb,
+		.index_buffer = vig.debug_ib,
+	});
+
+	sg_draw(0, (int)vig.debug_indices.count, 1);
+
+	vig.debug_vertices.count = 0;
+	vig.debug_indices.count = 0;
 }
 
 static void vi_draw_postprocess(uint32_t width, uint32_t height, vi_framebuffer *src)
@@ -931,6 +1102,9 @@ static void vi_update(vi_scene *vs, const vi_target *target, const vi_desc *desc
 	vs->world_to_view = um_mat_look_at(desc->camera_pos, desc->camera_target, um_v3(0,1,0));
 	vs->view_to_clip = vi_mat_perspective(desc->field_of_view * UM_DEG_TO_RAD, aspect, desc->near_plane, desc->far_plane);
 	vs->world_to_clip = um_mat_mulrev(vs->world_to_view, vs->view_to_clip);
+	vs->pixel_scale = target->pixel_scale;
+	vs->pixel_size.x = vs->pixel_scale / aspect;
+	vs->pixel_size.y = vs->pixel_scale;
 
 	for (size_t i = 0; i < vs->fbx.nodes.count; i++) {
 		ufbx_node *fbx_node = fbx_state->nodes.data[i];
@@ -960,11 +1134,6 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 
 	sgl_set_context(ps->gl_context);
 
-	sgl_matrix_mode_projection();
-	sgl_load_matrix(vs->view_to_clip.m);
-	sgl_matrix_mode_modelview();
-	sgl_load_matrix(vs->world_to_view.m);
-
 	vi_init_framebuffer(render_fb, &(vi_framebuffer_desc){
 		.width = target->width,
 		.height = target->height,
@@ -988,6 +1157,7 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 	sg_apply_viewport(0, 0, (int)render_fb->cur_width, (int)render_fb->cur_height, vig.origin_top_left);
 
 	vi_draw_meshes(ps, vs, desc);
+	vi_draw_widgets(ps, vs, desc);
 	vi_draw_debug(ps, vs, desc);
 
 	sgl_draw();

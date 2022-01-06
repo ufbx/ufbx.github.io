@@ -173,6 +173,7 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		.width = (uint32_t)jsi_get_int(target, "width", 256),
 		.height = (uint32_t)jsi_get_int(target, "height", 256),
 		.samples = (uint32_t)jsi_get_int(target, "samples", 1),
+		.pixel_scale = (float)jsi_get_double(target, "pixelScale", 1.0),
 	};
 
 	const char *name = jsi_get_str(desc, "sceneName", NULL);

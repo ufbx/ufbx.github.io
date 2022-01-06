@@ -11,6 +11,7 @@ typedef struct vi_target {
 	uint32_t width;
 	uint32_t height;
 	uint32_t samples;
+	float pixel_scale;
 } vi_target;
 
 typedef struct vi_desc {
