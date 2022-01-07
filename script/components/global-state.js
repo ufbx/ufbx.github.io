@@ -2,6 +2,7 @@ import { createState } from "../../../ext/kaiku/dist/kaiku.dev"
 
 const globalState = createState({
     scenes: {
+        /*
         defaultCube: {
             scene: "/static/models/blender_default_cube.fbx",
             camera: {
@@ -52,6 +53,7 @@ const globalState = createState({
             },
             selectedElement: -1,
         },
+        */
     },
     infos: { },
 })

@@ -1,9 +1,10 @@
 import { renderViewer, setupViewers } from "./viewer/viewer"
-import FbxViewer from "./components/fbx-viewer"
 import globalState from "./components/global-state"
 import { h, Fragment, useState, useEffect, render, createState } from "../../ext/kaiku/dist/kaiku.dev"
+import FbxViewer from "./components/fbx-viewer"
 import Outliner from "./components/outliner"
 import PropertySheet from "./components/property-sheet"
+import DocViewer from "./components/doc-viewer"
 
 setupViewers()
 
@@ -11,59 +12,90 @@ const state = createState({
     time: 0,
 })
 
-export function Top() {
-    const topState = useState({})
+;() => {
+    function Top() {
+        const topState = useState({})
 
-    return (
-        <div>
-            {/*
-        <div className="sp-top">
-            <div className="sp-pane sp-outliner">
-                <Outliner id="barb" />
+        return (
+            <div>
+                {/*
+            <div className="sp-top">
+                <div className="sp-pane sp-outliner">
+                    <Outliner id="barb" />
+                </div>
+                <div className="sp-pane sp-viewer">
+                    <FbxViewer id="barb" />
+                </div>
             </div>
-            <div className="sp-pane sp-viewer">
-                <FbxViewer id="barb" />
+            <div className="sp-top">
+                <div className="sp-pane sp-outliner">
+                    <Outliner id="barb2" />
+                </div>
+                <div className="sp-pane sp-viewer">
+                    <FbxViewer id="barb2" />
+                </div>
             </div>
-        </div>
-        <div className="sp-top">
-            <div className="sp-pane sp-outliner">
-                <Outliner id="barb2" />
+            <div>
+                <input type="range" min="0.0" max="2.8" step="0.01" style={{ width: "800px" }}
+                    onChange={(e) => globalState.scenes.barb.animation.time = e.target.valueAsNumber}
+                    onInput={(e) => globalState.scenes.barb.animation.time = e.target.valueAsNumber} />
             </div>
-            <div className="sp-pane sp-viewer">
-                <FbxViewer id="barb2" />
-            </div>
-        </div>
-        <div>
-            <input type="range" min="0.0" max="2.8" step="0.01" style={{ width: "800px" }}
-                onChange={(e) => globalState.scenes.barb.animation.time = e.target.valueAsNumber}
-                onInput={(e) => globalState.scenes.barb.animation.time = e.target.valueAsNumber} />
-        </div>
-            */}
+                */}
 
-        <div style={{width:"50vw"}}>
-        <div className="sp-top">
-            <div className="sp-pane sp-outliner">
-                <Outliner id="defaultCube" />
-                <PropertySheet id="defaultCube" />
+            <div style={{width:"50vw"}}>
+            <div className="sp-top">
+                <div className="sp-pane sp-outliner">
+                    <Outliner id="defaultCube" />
+                    <PropertySheet id="defaultCube" />
+                </div>
+                <div className="sp-pane sp-viewer">
+                    <FbxViewer id="defaultCube" />
+                </div>
             </div>
-            <div className="sp-pane sp-viewer">
-                <FbxViewer id="defaultCube" />
+
             </div>
-        </div>
-
-        </div>
 
 
-        </div>
-    )
+            </div>
+        )
+    }
 }
 
-;(function loop() {
-  window.requestAnimationFrame(loop)
-    state.time = performance.now() / 1000
-})();
+const viewerDescDefaults = {
+  camera: {
+    yaw: 0,
+    pitch: 0,
+    distance: 30,
+    offset: { x: 0, y: 0, z: 0 },
+  },
+  outliner: {
+    includeRoot: false,
+  },
+  animation: {
+    time: 0.0,
+  },
+  selectedElement: -1,
+  fieldOverrides: { },
+  propOverrides: { },
+}
 
-render(<Top />, document.querySelector("#root"), globalState)
+function patchDefaults(dst, defaults) {
+    if (dst === undefined) return defaults
+    if (typeof dst === "object" && !Array.isArray(dst)) {
+        for (const key in defaults) {
+            dst[key] = patchDefaults(dst[key], defaults[key])
+        }
+    }
+    return dst
+}
+
+for (const id in viewerDescs) {
+    const desc = viewerDescs[id]
+    const root = document.querySelector(`#root-${id}`)
+    globalState.scenes[id] = patchDefaults(desc, viewerDescDefaults)
+    render(<DocViewer id={id} />, root, globalState)
+}
+
 
 /*
 window.setInterval(() => {

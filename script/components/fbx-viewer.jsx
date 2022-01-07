@@ -192,7 +192,7 @@ export default function FbxViewer({ id }) {
     })
 
     return <div
-        class="viewer ufbx-canvas-container"
+        class="ufbx-viewer ufbx-canvas-container"
         ref={ref}
         onMouseDown={mouseDown}
         onWheel={wheel}

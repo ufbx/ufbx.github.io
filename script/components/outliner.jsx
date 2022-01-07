@@ -26,7 +26,6 @@ function TreeNode({ state, info, id, level=0 }) {
         state.selectedElement = id
     }
     const onKeyPress = (e) => {
-        console.log(e)
         if (e.code === "Space" || e.code === "Enter") {
             onClick()
         }

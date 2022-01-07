@@ -1,0 +1,4 @@
+{
+  "tags": "guide",
+  "permalink": "/{{ page.filePathStem }}.html"
+}
