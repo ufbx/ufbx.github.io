@@ -1,5 +1,9 @@
 import { deepEqual } from "../common"
 
+if (typeof window.Module === "undefined") {
+    window.Module = {}
+}
+
 const Module = window.Module
 
 const timeScale = 1.0
@@ -335,7 +339,9 @@ function renderCycle() {
                 }
             }
             interactiveId = requestedInteractiveId
-            renderCanvas.style.opacity = "0%"
+            if (renderCanvas.style.display !== "none") {
+                renderCanvas.style.display = "none"
+            }
         }
         requestedInteractiveId = null
         interactiveTarget = null
@@ -348,8 +354,12 @@ function renderCycle() {
 
             if (interactiveId === id) {
                 if (prevInteractiveId === id) {
-                    viewer.canvas.style.opacity = "0%"
-                    renderCanvas.style.opacity = "100%"
+                    if (viewer.canvas && viewer.canvas.style.display !== "none") {
+                        viewer.canvas.style.display = "none"
+                    }
+                    if (renderCanvas.style.display !== "block") {
+                        renderCanvas.style.display = "block"
+                    }
                     continue
                 } else {
                     prevInteractiveId = interactiveId
@@ -367,6 +377,7 @@ function renderCycle() {
             const ptr = result.dataPointer
             const pixels = new Uint8ClampedArray(Module.HEAPU8.buffer, ptr, renderWidth*renderHeight*4)
             const imageData = new ImageData(pixels, renderWidth, renderHeight)
+
 
             if (viewer.img) {
                 viewer.img.src = ""
@@ -386,12 +397,15 @@ function renderCycle() {
 
                 viewer.root.appendChild(canvas)
                 viewer.canvas = canvas
-                viewer.ctx = canvas.getContext("2d", {
+                viewer.ctx = canvas.getContext("bitmaprenderer", {
                     alpha: false,
                 })
             }
 
-            canvas.style.opacity = "100%"
+            if (canvas.style.display !== "block") {
+                canvas.style.display = "block"
+            }
+
             if (canvas.width !== renderWidth || canvas.height !== renderHeight) {
                 log(`${id}: Resizing canvas ${renderWidth}x${renderHeight}`)
                 canvas.width = renderWidth
@@ -400,7 +414,9 @@ function renderCycle() {
             canvas.style.width = `${elementWidth}px`
             canvas.style.height = `${elementHeight}px`
 
-            viewer.ctx.putImageData(imageData, 0, 0)
+            createImageBitmap(imageData)
+                .then(bitmap => viewer.ctx.transferFromImageBitmap(bitmap))
+            
         }
     }
 
@@ -443,8 +459,8 @@ function renderCycle() {
         if (interactive) {
             log(`${id}: Presenting ${targetIndex}`)
             const rect = viewer.root.getBoundingClientRect()
-            renderCanvas.style.left = `${rect.left}px`
-            renderCanvas.style.top = `${rect.top}px`
+            renderCanvas.style.left = `${rect.left + window.scrollX}px`
+            renderCanvas.style.top = `${rect.top + window.scrollY}px`
             renderCanvas.style.width = `${elementWidth}px`
             renderCanvas.style.height = `${elementHeight}px`
             if (renderCanvas.width !== renderWidth || renderCanvas.height !== renderHeight) {
@@ -545,7 +561,7 @@ function getRenderCanvas()
     renderCanvas.style.position = "absolute"
     renderCanvas.style.top = "0px"
     renderCanvas.style.left = "0px"
-    renderCanvas.style.opacity = "0%"
+    renderCanvas.style.display = "none"
 
     document.body.appendChild(renderCanvas)
     globalRenderCanvas = renderCanvas
@@ -560,11 +576,13 @@ function getRenderCanvas()
 }
 
 function initializeNativeViewer() {
-    getRenderCanvas()
-    Module._js_setup()
-    rpcCall({ cmd: "init" })
-    rpcInitialized = true
-    somethingChanged()
+    window.setTimeout(() => {
+        getRenderCanvas()
+        Module._js_setup()
+        rpcCall({ cmd: "init" })
+        rpcInitialized = true
+        somethingChanged()
+    }, 0)
 }
 
 export function setupViewers() {

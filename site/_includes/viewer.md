@@ -1,7 +1,7 @@
 
 
-<div id="root-{{ id }}">
-    <noscript>
-        Sorry no viewer support
-    </noscript>
+<noscript>
+    Sorry no viewer support
+</noscript>
+<div id="root-{{ id }}" class="{{ class }}">
 </div>

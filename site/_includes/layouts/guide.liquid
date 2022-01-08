@@ -1,0 +1,27 @@
+<!doctype html>
+{% capture css %}
+  {% include style.css %}
+{% endcapture %}
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+      {{ css | cssmin | safe }}
+    </style>
+    {% include interactive.md %}
+  </head>
+  <body>
+    <div class="g-toplevel">
+      <nav class="g-nav">
+        {{ collections.all | eleventyNavigation | eleventyNavigationToHtml }}
+      </nav>
+      <main class="g-main">
+        <article>
+          {{ content }}
+        </article>
+      </main>
+    </div>
+  </body>
+</html>

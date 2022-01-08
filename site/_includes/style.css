@@ -1,0 +1,45 @@
+* {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: none;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: sans-serif;
+    position: relative;
+}
+
+.doc-viewer {
+    background-color: #222;
+    font-size: 1rem;
+}
+.doc-viewer-mid {
+    height: 22em;
+    width: 100%;
+}
+
+.g-toplevel {
+    display: flex;
+    flex-direction: row;
+}
+
+.g-nav {
+    min-width: 4rem;
+    max-width: 14rem;
+    flex-grow: 1;
+}
+
+.g-main {
+    flex-grow: 8;
+    min-width: 35rem;
+    max-width: 60rem;
+    padding-right: 1rem;
+    font-size: 1rem;
+}
+
+.g-main p {
+    padding: 0.8em 1em;
+}

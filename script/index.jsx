@@ -70,6 +70,12 @@ const viewerDescDefaults = {
   },
   outliner: {
     includeRoot: false,
+    showMaterials: false,
+    showDeformers: false,
+  },
+  props: {
+    show: false,
+    showGeometricTransform: false,
   },
   animation: {
     time: 0.0,

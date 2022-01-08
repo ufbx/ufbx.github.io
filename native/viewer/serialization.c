@@ -158,6 +158,11 @@ void serialize_element_mesh(jso_stream *s, ufbx_mesh* elem)
 		jso_int(s, (int)elem->all_deformers.data[i]->element_id);
     }
     jso_end_array(s);
+
+	jso_prop_object(s, "info");
+	jso_prop_int(s, "numFaces", elem->num_faces);
+	jso_prop_int(s, "numVertices", elem->num_vertices);
+    jso_end_object(s);
 }
 
 void serialize_element_light(jso_stream *s, ufbx_light* elem)

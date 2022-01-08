@@ -171,6 +171,13 @@ function OverrideIndicator({ override, onClick }) {
     />
 }
 
+function Label({ name, text }) {
+    return <div className="ps-field">
+        <div className="ps-name">{name}</div>
+        <div>{text}</div>
+    </div>
+}
+
 function FieldVec2({ ctx, name, label, spec }) {
     const { value, override } = getField(ctx, name)
     const { x, y } = value
@@ -278,11 +285,13 @@ function NodeSheet({ ctx }) {
             <FieldVec3 ctx={ctx} name="rotation" label="rotation" spec={{ scale: 60.0 }} />
             <FieldVec3 ctx={ctx} name="scale" label="scale" spec={{ scale: 1.0 }}/>
         </FieldGroup>
-        <FieldGroup name="geometry_transform">
-            <FieldVec3 ctx={ctx} name="geo_translation" label="translation" spec={{ scale: 1.0 }} />
-            <FieldVec3 ctx={ctx} name="geo_rotation" label="rotation" spec={{ scale: 60.0 }} />
-            <FieldVec3 ctx={ctx} name="geo_scale" label="scale" spec={{ scale: 1.0 }}/>
-        </FieldGroup>
+        {ctx.state.props.showGeometricTransform ? (
+            <FieldGroup name="geometry_transform">
+                <FieldVec3 ctx={ctx} name="geo_translation" label="translation" spec={{ scale: 1.0 }} />
+                <FieldVec3 ctx={ctx} name="geo_rotation" label="rotation" spec={{ scale: 60.0 }} />
+                <FieldVec3 ctx={ctx} name="geo_scale" label="scale" spec={{ scale: 1.0 }}/>
+            </FieldGroup>
+        ) : null}
     </>
 }
 
@@ -300,6 +309,16 @@ function CameraSheet({ ctx }) {
     </>
 }
 
+function MeshSheet({ ctx }) {
+    const { info, elementId } = ctx
+    const elem = info.elements[elementId]
+    return <>
+        <Label name="faces" text={elem.info.numFaces} />
+        <Label name="vertices" text={elem.info.numVertices} />
+    </>
+}
+
+
 function NullSheet({ ctx }) {
     return <>
     </>
@@ -309,6 +328,7 @@ const sheetByType = {
     node: NodeSheet,
     light: LightSheet,
     camera: CameraSheet,
+    mesh: MeshSheet,
 }
 
 export default function PropertySheet({ id }) {

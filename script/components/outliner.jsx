@@ -11,7 +11,8 @@ function TreeNode({ state, info, id, level=0 }) {
     if (element.type === "node") {
         children = [...element.attribs, ...element.children]
     } else if (element.type === "mesh") {
-        children = [...element.materials, ...element.deformers]
+        if (state.outliner.showMaterials) children.push(...element.materials)
+        if (state.outliner.showDeformers) children.push(...element.deformers)
     } else if (element.type === "material") {
         children = element.textures
     } else if (element.type === "skin_deformer") {

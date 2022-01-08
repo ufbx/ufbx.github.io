@@ -1,17 +1,18 @@
 {
-  "name": "ufbx-doc",
+  "name": "site",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild scripts/index.js --minimize --bundle --outfile=build/components.js --jsx-factory=h --jsx-fragment=Fragment",
-    "watch": "esbuild scripts/index.js --watch --bundle --outfile=build/components.js --jsx-factory=h --jsx-fragment=Fragment"
+    "build": "eleventy",
+    "watch": "eleventy --watch",
+    "serve": "eleventy --serve"
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "esbuild": "^0.14.1",
-    "kaiku": "^1.19.2",
-    "watch": "^1.0.2"
+  "devDependencies": {
+    "@11ty/eleventy": "^0.12.1",
+    "@11ty/eleventy-navigation": "^0.3.2",
+    "clean-css": "^5.2.2"
   }
 }
