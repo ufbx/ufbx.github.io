@@ -37,8 +37,7 @@ const symId = Symbol("viewer-id")
 let animationFrameRequestId = null
 
 function log(str) {
-    return;
-    console.log(str)
+    // console.log(str)
 }
 
 function fetchScene(url) {
@@ -384,6 +383,7 @@ function renderCycle() {
                 canvas.height = renderHeight
                 canvas.style.width = `${elementWidth}px`
                 canvas.style.height = `${elementHeight}px`
+
                 viewer.root.appendChild(canvas)
                 viewer.canvas = canvas
                 viewer.ctx = canvas.getContext("2d", {
@@ -546,6 +546,7 @@ function getRenderCanvas()
     renderCanvas.style.top = "0px"
     renderCanvas.style.left = "0px"
     renderCanvas.style.opacity = "0%"
+
     document.body.appendChild(renderCanvas)
     globalRenderCanvas = renderCanvas
 
