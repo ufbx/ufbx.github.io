@@ -14,9 +14,15 @@
   </head>
   <body>
     <div class="g-toplevel">
+      <div class="g-gutter-left">
+      </div>
       <nav class="g-nav">
-        {{ collections.all | eleventyNavigation | eleventyNavigationToHtml }}
+        <div class="g-nav-sticky">
+          {{ collections.all | eleventyNavigation | eleventyNavigationToHtml }}
+        </div>
       </nav>
+      <div class="g-gutter-right">
+      </div>
       <main class="g-main">
         <article>
           {{ content }}

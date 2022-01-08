@@ -28,6 +28,7 @@ let allocatedResources = {
     scenes: true,
     globals: true,
 }
+let renderMountId = ""
 
 let latestRenders = []
 let renderTargets = []
@@ -41,7 +42,7 @@ const symId = Symbol("viewer-id")
 let animationFrameRequestId = null
 
 function log(str) {
-    // console.log(str)
+    console.log(str)
 }
 
 function fetchScene(url) {
@@ -54,6 +55,8 @@ function fetchScene(url) {
 function somethingChanged() {
     if (animationFrameRequestId === null) {
         animationFrameRequestId = requestAnimationFrame(renderCycle)
+        // TODO: Firefox hack
+        // animationFrameRequestId = setTimeout(renderCycle, 15)
     }
     if (idleTimeoutId === null) {
         idleTimeoutId = setTimeout(idleCycle, 1000 / timeScale)
@@ -122,7 +125,7 @@ export function renderViewer(id, root, desc, opts={}) {
 
     // Migrate the root if necessary
     if (viewer.root !== root) {
-        if (viewer.canvas) {
+        if (viewer.canvasMounted) {
             viewer.root.removeChild(canvas)
             root.appendChild(canvas)
         }
@@ -159,7 +162,9 @@ export function removeViewer(id) {
     if (viewer.canvas) {
         viewer.canvas.width = 1
         viewer.canvas.height = 1
-        viewer.root.removeChild(canvas)
+        if (viewer.canvasMounted) {
+            viewer.root.removeChild(canvas)
+        }
     }
     if (viewer.img) {
         viewer.img.src = ""
@@ -338,10 +343,8 @@ function renderCycle() {
                     renderTargets.push(interactiveTarget)
                 }
             }
+
             interactiveId = requestedInteractiveId
-            if (renderCanvas.style.display !== "none") {
-                renderCanvas.style.display = "none"
-            }
         }
         requestedInteractiveId = null
         interactiveTarget = null
@@ -354,12 +357,32 @@ function renderCycle() {
 
             if (interactiveId === id) {
                 if (prevInteractiveId === id) {
-                    if (viewer.canvas && viewer.canvas.style.display !== "none") {
-                        viewer.canvas.style.display = "none"
+
+                    if (renderMountId !== id) {
+                        if (renderMountId !== "") {
+                            log(`${renderMountId}: Unmounting interactive target`)
+                            const prevViewer = viewers[renderMountId]
+                            prevViewer.root.removeChild(renderCanvas)
+                            if (prevViewer.canvas && !prevViewer.canvasMounted) {
+                                prevViewer.root.appendChild(prevViewer.canvas)
+                                prevViewer.canvasMounted = true
+                            }
+                            document.body.appendChild(renderCanvas)
+                            renderMountId = ""
+                        } else {
+                            log(`${id}: Mounting interactive target`)
+                            document.body.removeChild(renderCanvas)
+                            viewer.root.appendChild(renderCanvas)
+
+                            if (viewer.canvasMounted) {
+                                viewer.root.removeChild(viewer.canvas)
+                                viewer.canvasMounted = false
+                            }
+
+                            renderMountId = id
+                        }
                     }
-                    if (renderCanvas.style.display !== "block") {
-                        renderCanvas.style.display = "block"
-                    }
+
                     continue
                 } else {
                     prevInteractiveId = interactiveId
@@ -397,13 +420,10 @@ function renderCycle() {
 
                 viewer.root.appendChild(canvas)
                 viewer.canvas = canvas
+                viewer.canvasMounted = true
                 viewer.ctx = canvas.getContext("bitmaprenderer", {
                     alpha: false,
                 })
-            }
-
-            if (canvas.style.display !== "block") {
-                canvas.style.display = "block"
             }
 
             if (canvas.width !== renderWidth || canvas.height !== renderHeight) {
@@ -459,8 +479,8 @@ function renderCycle() {
         if (interactive) {
             log(`${id}: Presenting ${targetIndex}`)
             const rect = viewer.root.getBoundingClientRect()
-            renderCanvas.style.left = `${rect.left + window.scrollX}px`
-            renderCanvas.style.top = `${rect.top + window.scrollY}px`
+            // renderCanvas.style.left = `${rect.left + window.scrollX}px`
+            // renderCanvas.style.top = `${rect.top + window.scrollY}px`
             renderCanvas.style.width = `${elementWidth}px`
             renderCanvas.style.height = `${elementHeight}px`
             if (renderCanvas.width !== renderWidth || renderCanvas.height !== renderHeight) {
@@ -470,12 +490,14 @@ function renderCycle() {
             }
             interactiveTarget = target
 
-            rpcCall({
-                cmd: "present",
-                targetIndex,
-                width: renderWidth,
-                height: renderHeight,
-            })
+            if (renderMountId === id) {
+                rpcCall({
+                    cmd: "present",
+                    targetIndex,
+                    width: renderWidth,
+                    height: renderHeight,
+                })
+            }
         }
 
         viewer.lastRenderTime = currentTime
@@ -558,10 +580,7 @@ function getRenderCanvas()
     renderCanvas.id = "ufbx-render-canvas"
     renderCanvas.width = 10
     renderCanvas.height = 10
-    renderCanvas.style.position = "absolute"
-    renderCanvas.style.top = "0px"
-    renderCanvas.style.left = "0px"
-    renderCanvas.style.display = "none"
+    renderCanvasParent = null
 
     document.body.appendChild(renderCanvas)
     globalRenderCanvas = renderCanvas
