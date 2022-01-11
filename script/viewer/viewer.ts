@@ -594,9 +594,9 @@ function animationFrame() {
 }
 
 function idleTick() {
-    if (!rpcInitialized) return
     slowIdleToken = null
     fastIdleToken = null
+    if (!rpcInitialized) return
 
     const time = getTime()
     idleStage++
