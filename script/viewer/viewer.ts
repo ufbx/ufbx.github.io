@@ -292,7 +292,15 @@ async function renderToBitmap(targetIndex: number, desc: SceneDesc, resolution: 
 }
 
 function getRenderResolution(resolution: Resolution, realtime: boolean): Resolution {
-    return resolution
+    let { width, height } = resolution
+
+    const ratio = Math.max(1.0, window.devicePixelRatio)
+    if (!realtime) {
+        width *= ratio
+        height *= ratio
+    }
+
+    return { width: Math.round(width), height: Math.round(height) }
     /*
     if (realtime) {
         return { width: resolution.width / 4 | 0, height: resolution.height / 4 | 0 }
@@ -684,13 +692,33 @@ function markDirty(viewer: Viewer) {
     requestFrame()
 }
 
-const resizeObserver = new ResizeObserver(() => {
+function listenToPixelRatio(cb: (ratio: number) => void) {
+    function onChange() {
+        const ratio = window.devicePixelRatio
+        cb(ratio)
+        console.log("CAHNGE")
+        matchMedia(`(resolution: ${ratio}dppx)`).addEventListener("change", onChange, { once: true })
+    }
+
+    const ratio = window.devicePixelRatio
+    matchMedia(`(resolution: ${ratio}dppx)`).addEventListener("change", onChange, { once: true })
+}
+
+function updateResolutions() {
     for (const viewer of viewers.values()) {
         const rootResolution = getElementResolution(viewer.root)
         if (!resolutionEqual(rootResolution, viewer.rootResolution)) {
             viewer.rootResolution = rootResolution
             markDirty(viewer)
         }
+    }
+}
+
+const resizeObserver = new ResizeObserver(updateResolutions)
+
+listenToPixelRatio(() => {
+    for (const viewer of viewers.values()) {
+        markDirty(viewer)
     }
 })
 
