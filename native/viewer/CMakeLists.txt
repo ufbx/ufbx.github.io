@@ -35,7 +35,7 @@ else()
 endif()
 
 if(EMSCRIPTEN)
-  target_link_options(viewer PUBLIC -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sTOTAL_STACK=1MB -sTOTAL_MEMORY=8MB -sALLOW_MEMORY_GROWTH=1)
+  target_link_options(viewer PUBLIC -sUSE_WEBGL2=1 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sTOTAL_STACK=1MB -sTOTAL_MEMORY=8MB -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_FUNCTIONS=["_malloc","_free"])
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_options(viewer PUBLIC -sSAFE_HEAP=1 -sASSERTIONS=1)
     target_compile_options(viewer PRIVATE -g3)
