@@ -189,6 +189,8 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		return fmt_error("Scene not found: '%s'", name);
 	}
 
+	vi_setup();
+
 	if (!scene->vi_scene) {
 		scene->vi_scene = vi_make_scene(scene->fbx_scene);
 	}
@@ -247,6 +249,8 @@ char *rpc_cmd_present(arena_t *tmp, jsi_obj *args)
 	uint32_t width = (uint32_t)jsi_get_int(args, "width", 0);
 	uint32_t height = (uint32_t)jsi_get_int(args, "height", 0);
 
+	vi_setup();
+
 	vi_present(target, width, height);
 
 	jso_stream s = begin_response();
@@ -265,6 +269,8 @@ char *rpc_cmd_get_pixels(arena_t *tmp, jsi_obj *args)
 		afree(NULL, rpcg.pixel_buffer);
 		rpcg.pixel_buffer = aalloc(NULL, char, required_size);
 	}
+
+	vi_setup();
 
 	if (!vi_get_pixels(target, width, height, rpcg.pixel_buffer)) {
 		return fmt_error("Failed to get pixels");

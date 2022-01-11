@@ -1,4 +1,4 @@
-import { renderViewer, setupViewers } from "./viewer/viewer"
+import { debugDumpViewers, renderViewer, setupViewers } from "./viewer/viewer"
 import globalState from "./components/global-state"
 import { h, Fragment, useState, useEffect, render, createState } from "../../ext/kaiku/dist/kaiku.dev"
 import FbxViewer from "./components/fbx-viewer"
@@ -7,10 +7,6 @@ import PropertySheet from "./components/property-sheet"
 import DocViewer from "./components/doc-viewer"
 
 setupViewers()
-
-const state = createState({
-    time: 0,
-})
 
 ;() => {
     function Top() {
@@ -83,6 +79,7 @@ const viewerDescDefaults = {
   selectedElement: -1,
   fieldOverrides: { },
   propOverrides: { },
+  latestInteractionTime: -10000.0,
 }
 
 function patchDefaults(dst, defaults) {
@@ -102,6 +99,34 @@ for (const id in viewerDescs) {
     render(<DocViewer id={id} />, root, globalState)
 }
 
+const debugState = createState({ viewers: [] })
+
+function ViewerDebug()
+{
+    const viewers = debugState.viewers
+    return <div>
+        {viewers.map(v => <div className={`vd-any vd-${v.state}`}>{v.id} {v.state}</div>)}
+    </div>
+}
+
+window.setInterval(() => {
+    debugState.viewers = debugDumpViewers()
+}, 100)
+
+const style = document.createElement("style")
+style.innerText = `
+.vd-any { width: 15em; }
+.vd-empty { background-color: #888; }
+.vd-canvas { background-color: #99f; }
+.vd-realtime { background-color: #f99; }
+.vd-image { background-color: #9f9; }
+`
+document.head.appendChild(style)
+
+const debug = document.createElement("div")
+document.querySelector("nav").appendChild(debug)
+
+render(<ViewerDebug />, debug, debugState)
 
 /*
 window.setInterval(() => {

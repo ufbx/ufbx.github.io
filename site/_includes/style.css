@@ -51,7 +51,7 @@ body {
     flex-grow: 8;
     min-width: 35rem;
     max-width: 60rem;
-    padding-left: 0.5rem;
+    padding-left: 1rem;
     padding-right: 1rem;
     font-size: 1rem;
     background-color: #fff;

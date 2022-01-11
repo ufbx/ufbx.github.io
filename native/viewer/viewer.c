@@ -24,6 +24,8 @@
 #define MAX_ICON_VERTICES 512
 #define MAX_ICON_INDICES 1024
 
+bool vi_initialized = false;
+
 // static um_vec2 fbx_to_um_vec2(ufbx_vec2 v) { return um_v2((float)v.x, (float)v.y); }
 static um_vec3 fbx_to_um_vec3(ufbx_vec3 v) { return um_v3((float)v.x, (float)v.y, (float)v.z); }
 um_quat fbx_to_um_quat(ufbx_quat v) { return um_quat_xyzw((float)v.x, (float)v.y, (float)v.z, (float)v.w); }
@@ -436,6 +438,8 @@ static vi_pipelines *vi_get_pipelines(const vi_pipelines_desc *desc)
 
 void vi_setup()
 {
+	if (vi_initialized) return;
+
 	arena_init(&vig.arena, NULL);
 
 	vig.backend = sg_query_backend();
@@ -529,12 +533,17 @@ void vi_setup()
 
 		afree(NULL, icon_pixels);
 	}
+
+	vi_initialized = true;
 }
 
 void vi_shutdown()
 {
-	arena_free(&vig.arena);
-	memset(&vig, 0, sizeof(vig));
+	if (vi_initialized) {
+		arena_free(&vig.arena);
+		memset(&vig, 0, sizeof(vig));
+		vi_initialized = false;
+	}
 }
 
 void vi_free_targets()
@@ -1434,12 +1443,11 @@ static void vi_update(vi_scene *vs, const vi_target *target, const vi_desc *desc
 
 	// TODO: Cache
 	if (vs->fbx_state) {
-		arena_cancel(vs->arena, vs->fbx_state_defer, false);
-		ufbx_free_scene(vs->fbx_state);
+		arena_cancel(vs->arena, vs->fbx_state_defer, true);
 	}
 	ufbx_scene *fbx_state = ufbx_evaluate_scene(&vs->fbx, &anim, desc->time, NULL, NULL);
 	vs->fbx_state = fbx_state;
-	arena_defer(vs->arena, ad_free_ufbx_scene, ufbx_scene*, &vs->fbx_state);
+	vs->fbx_state_defer = arena_defer(vs->arena, ad_free_ufbx_scene, ufbx_scene*, &vs->fbx_state);
 
 	vs->world_to_view = um_mat_look_at(desc->camera_pos, desc->camera_target, um_v3(0,1,0));
 	vs->view_to_clip = vi_mat_perspective(desc->field_of_view * UM_DEG_TO_RAD, aspect, desc->near_plane, desc->far_plane);

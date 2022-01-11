@@ -1,4 +1,5 @@
 import { h, Fragment, useRef, useEffect, unwrap, immutable } from  "../../../ext/kaiku/dist/kaiku.dev"
+import { getTime } from "../common"
 import { mad3, cross3, normalize3, v3, add3 } from "../common/vec3"
 import { renderViewer, removeViewer, queryResolution, addSceneInfoListener } from "../viewer/viewer"
 import { beginDrag, buttonToButtons } from "./global-drag"
@@ -50,6 +51,7 @@ function stateToDesc(state) {
 
     return {
         sceneName: state.scene,
+        latestInteractionTime: state.latestInteractionTime,
         camera: {
             position,
             target,
@@ -73,7 +75,7 @@ function handleDrag(event, { id, action }) {
 
     const resolution = queryResolution(id)
     if (!resolution) return false
-    const scale = 1.0 / Math.min(resolution.elementWidth, resolution.elementHeight)
+    const scale = 1.0 / Math.min(resolution.width, resolution.height)
     let dx = pixelDx * scale
     let dy = pixelDy * scale
     const state = globalState.scenes[id]
@@ -81,6 +83,7 @@ function handleDrag(event, { id, action }) {
     if (action === "rotate") {
         state.camera.yaw -= dx * 90.0
         state.camera.pitch = Math.min(Math.max(state.camera.pitch + dy * 90.0, -80), 80)
+        state.latestInteractionTime = getTime()
     } else if (action === "pan") {
         const { camera } = state
         const yaw = camera.yaw * (Math.PI/180.0)
@@ -91,6 +94,7 @@ function handleDrag(event, { id, action }) {
         const up = normalize3(cross3(right, forward))
         const speed = camera.distance * 0.5
         camera.offset = mad3(mad3(camera.offset, right, dx * speed), up, dy * speed)
+        state.latestInteractionTime = getTime()
     }
 
     return true

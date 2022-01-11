@@ -30,3 +30,8 @@ export function deepEqual(a, b) {
         return a === b
     }
 }
+
+export function getTime() {
+    return performance.now() * (1.0 / 1000.0)
+}
+

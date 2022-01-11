@@ -13,7 +13,7 @@ endif()
 
 if(EMSCRIPTEN)
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_link_options(js_viewer PRIVATE -g4 --source-map-base http://localhost:5000/native/build/js_viewer/)
+    target_link_options(js_viewer PRIVATE -g4 --source-map-base http://localhost:8080/native/)
     target_compile_options(js_viewer PRIVATE -g3)
   endif()
 endif()

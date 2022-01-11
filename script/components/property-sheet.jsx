@@ -1,7 +1,7 @@
 import { h, Fragment, useState, useRef, useEffect } from "../../../ext/kaiku/dist/kaiku.dev"
 import { typeToIconUrl } from "./common"
 import { beginDrag, buttonToButtons } from "./global-drag"
-import { deepEqual } from "../common"
+import { deepEqual, getTime } from "../common"
 
 function getField(ctx, name) {
     const { state, info, elementId } = ctx
@@ -17,6 +17,7 @@ function setField(ctx, name, value) {
     const key = `${elementId}.${name}`
     if (state.fieldOverrides.hasOwnProperty(key) || !deepEqual(value, info.elements[elementId].fields[name])) {
         state.fieldOverrides[key] = value
+        state.latestInteractionTime = getTime()
     }
 }
 
