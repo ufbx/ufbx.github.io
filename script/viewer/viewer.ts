@@ -696,7 +696,6 @@ function listenToPixelRatio(cb: (ratio: number) => void) {
     function onChange() {
         const ratio = window.devicePixelRatio
         cb(ratio)
-        console.log("CAHNGE")
         matchMedia(`(resolution: ${ratio}dppx)`).addEventListener("change", onChange, { once: true })
     }
 
