@@ -1,4 +1,4 @@
-import { h, Fragment, useRef, useEffect, unwrap, immutable } from  "../../../ext/kaiku/dist/kaiku.dev"
+import { h, Fragment, useRef, useEffect, unwrap, immutable } from "kaiku"
 import { getTime } from "../common"
 import { mad3, cross3, normalize3, v3, add3 } from "../common/vec3"
 import { renderViewer, removeViewer, queryResolution, addSceneInfoListener } from "../viewer/viewer"

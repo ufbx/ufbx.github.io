@@ -1,5 +1,5 @@
 import globalState from "./global-state"
-import { h, Fragment } from "../../../ext/kaiku/dist/kaiku.dev"
+import { h, Fragment } from "kaiku"
 import { elementTypeCategory, typeToIconUrl } from "./common"
 
 function TreeNode({ state, info, id, level=0 }) {

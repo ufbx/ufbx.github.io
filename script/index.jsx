@@ -1,6 +1,6 @@
 import { debugDumpViewers, renderViewer, setupViewers } from "./viewer/viewer"
 import globalState from "./components/global-state"
-import { h, Fragment, useState, useEffect, render, createState } from "../../ext/kaiku/dist/kaiku.dev"
+import { h, Fragment, useState, useEffect, render, createState } from "kaiku"
 import FbxViewer from "./components/fbx-viewer"
 import Outliner from "./components/outliner"
 import PropertySheet from "./components/property-sheet"

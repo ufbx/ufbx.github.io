@@ -1,4 +1,4 @@
-import { h, Fragment, useState, useRef, useEffect } from "../../../ext/kaiku/dist/kaiku.dev"
+import { h, Fragment, useState, useRef, useEffect } from "kaiku"
 import { typeToIconUrl } from "./common"
 import { beginDrag, buttonToButtons } from "./global-drag"
 import { deepEqual, getTime } from "../common"
