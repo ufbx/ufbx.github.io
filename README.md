@@ -30,7 +30,7 @@ cd ..
 
 # Start hacking
 npm install
-npm run watch --serve
+npm run serve
 
 # Run simultaneously if you also want to hot-reload script/
 # cd script && npm run watch
