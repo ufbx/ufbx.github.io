@@ -1,4 +1,4 @@
-import { createState } from "../../../ext/kaiku/dist/kaiku.dev"
+import { createState } from "kaiku"
 
 const globalState = createState({
     scenes: {

@@ -1,4 +1,4 @@
-import { h, Fragment } from "../../../ext/kaiku/dist/kaiku.dev"
+import { h, Fragment } from "kaiku"
 import FbxViewer from "./fbx-viewer"
 import Outliner from "./outliner"
 import PropertySheet from "./property-sheet"
