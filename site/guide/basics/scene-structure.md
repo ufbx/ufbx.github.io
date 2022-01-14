@@ -1,7 +1,7 @@
 ---
 title: scene-structure
 pageTitle: Scene structure
-layout: layouts/guide
+layout: "layouts/guide"
 eleventyNavigation:
   parent: Basics
   key: Scene structure
@@ -10,7 +10,7 @@ eleventyNavigation:
 
 Some things about scene structure
 
-{% include viewer.md,
+{% include "viewer.md",
   id: "blender-default",
   class: "doc-viewer doc-viewer-mid",
 %}
@@ -34,7 +34,7 @@ viewerDescs["blender-default"] = {
 
 Here is another scene you might care about_!
 
-{% include viewer.md,
+{% include "viewer.md",
   id: "blender-default-alt",
   class: "doc-viewer doc-viewer-mid",
 %}
@@ -52,7 +52,7 @@ viewerDescs["blender-default-alt"] = {
 
 HEE
 
-{% include viewer.md,
+{% include "viewer.md",
   id: "blender-default-alt3",
   class: "doc-viewer doc-viewer-mid",
 %}

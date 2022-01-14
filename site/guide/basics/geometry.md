@@ -1,7 +1,7 @@
 ---
 title: Geometry
 pageTitle: Geometry
-layout: layouts/guide
+layout: "layouts/guide"
 eleventyNavigation:
   parent: Basics
   key: Geometry

@@ -1,0 +1,44 @@
+
+.ref-type {
+    font-family: monospace;
+    padding-right: 2em;
+}
+
+.ref-ftype {
+    display: inline-block;
+    font-family: monospace;
+}
+
+.ref-fname {
+    display: inline-block;
+    font-family: monospace;
+    margin-right: 1em;
+    min-width: 14em;
+}
+
+.ref-ename {
+    font-family: monospace;
+}
+
+.ref-name {
+    font-family: monospace;
+}
+
+.struct-body {
+    padding-left: 3em;
+}
+
+code {
+    background-color: #eee;
+}
+
+h3 {
+    padding-top: 2rem;
+    font-size: 1.5rem;
+    font-weight: normal;
+}
+
+h4 {
+    font-size: 1rem;
+    font-weight: normal;
+}

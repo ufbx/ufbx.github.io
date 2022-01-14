@@ -1,7 +1,7 @@
 ---
 title: basics
 pageTitle: Basics
-layout: layouts/guide
+layout: "layouts/guide"
 eleventyNavigation:
   key: Basics
   order: 0

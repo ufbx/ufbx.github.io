@@ -1,16 +1,16 @@
 ---
 title: Animation
 pageTitle: Animation
-layout: layouts/guide
+layout: "layouts/guide"
 eleventyNavigation:
   parent: Basics
   key: Animation
   order: 2
 ---
 
-Some things about animation
+Some things about `ufbx_anim_stack`
 
-{% include viewer.md,
+{% include "viewer.md",
   id: "blender-default",
   class: "doc-viewer doc-viewer-mid",
 %}
