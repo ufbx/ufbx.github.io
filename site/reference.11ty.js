@@ -6,9 +6,8 @@ const md = new MarkdownIt({
 })
 
 function linkRefs(str) {
-    return str.replace(/(ufbx_[A-Za-z0-9_\.]+)[A-Za-z0-9_/]*(\([^)]*\))?/, (sub, root) => {
-        const rootNoList = root.replace(/_list$/, "")
-        return `<a href="#${rootNoList}">${sub}</a>`
+    return str.replace(/(ufbx_[A-Za-z0-9_\.]+)[A-Za-z0-9_/]*(\[[^\]]*\])?(\([^)]*\))?/, (sub, root) => {
+        return `<a href="#${root}">${sub}</a>`
     })
 }
 
