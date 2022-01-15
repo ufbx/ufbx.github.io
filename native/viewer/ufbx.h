@@ -464,7 +464,7 @@ struct ufbx_node {
 	// attribute is one of the common ones above (eg. `ufbx_mesh`).
 	ufbx_element *attrib;
 
-	// Element type of `.attrib`. `UFBX_ELEMENT_UNKNOWN` if there is no zero
+	// Element type of `attrib`. `UFBX_ELEMENT_UNKNOWN` if there is no zero
 	// or more than one attributes.
 	ufbx_element_type attrib_type;
 
@@ -495,19 +495,19 @@ struct ufbx_node {
 	// prefer using `geometry_to_world` as that supports geometric transforms.
 
 	// Transform from this node to `parent` space.
-	// Equivalent to `ufbx_transform_to_matrix(&node->local_transform)`.
+	// Equivalent to `ufbx_transform_to_matrix(&local_transform)`.
 	ufbx_matrix node_to_parent;
 	// Transform from this node to the world space, ie. multiplying all the
 	// `node_to_parent` matrices of the parent chain together.
-	// NOTE: Not the same as `ufbx_transform_to_matrix(&node->world_transform)`
+	// NOTE: Not the same as `ufbx_transform_to_matrix(&world_transform)`
 	// as this matrix will account for potential shear (if `inherit_type == UFBX_INHERIT_NORMAL`).
 	ufbx_matrix node_to_world;
 	// Transform from the attribute to this node. Does not affect the transforms
 	// of `children`!
-	// Equivalent to `ufbx_transform_to_matrix(&node->geometry_transform)`.
+	// Equivalent to `ufbx_transform_to_matrix(&geometry_transform)`.
 	ufbx_matrix geometry_to_node;
 	// Transform from attribute space to world space.
-	// Equivalent to `ufbx_matrix_mul(&node->node_to_world, &node->geometry_to_node)`.
+	// Equivalent to `ufbx_matrix_mul(&node_to_world, &geometry_to_node)`.
 	ufbx_matrix geometry_to_world;
 
 	// Visibility state.

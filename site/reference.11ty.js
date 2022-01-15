@@ -5,10 +5,22 @@ const md = new MarkdownIt({
     linkify: true,
 })
 
+let globalContext = {
+    prefix: "",
+    locals: [],
+}
+
 function linkRefs(str) {
-    return str.replace(/((ufbx_|UFBX_)[A-Za-z0-9_\.]+)[A-Za-z0-9_/]*/, (sub, root) => {
+    str = str.replace(/((ufbx_|UFBX_)[A-Za-z0-9_\.]+)[A-Za-z0-9_/]*/, (sub, root) => {
         return `<a href="#${root}">${sub}</a>`
     })
+    for (const local of globalContext.locals) {
+        str = str.replace(new RegExp(`\\b${local}\\b`), (sub) => {
+            const href = globalContext.prefix + local
+            return `<a href="#${href}">${sub}</a>`
+        })
+    }
+    return str
 }
 
 md.renderer.rules.code_inline = (tokens, idx, options, env, self) => {
@@ -41,6 +53,16 @@ function renderDecl(decl) {
     if (decl.kind === "paragraph") {
         return [renderComment(decl.comment), "\n"]
     } else if (decl.kind === "struct") {
+        let locals = []
+        for (const field of decl.decls) {
+            if (field.name) {
+                locals.push(field.name)
+            }
+        }
+
+        const prevContext = globalContext
+        globalContext = { prefix: `${decl.name}.`, locals }
+
         let result = []
         result.push(`<h3 class="ref-type" id=${decl.name}>${decl.name}</h3>`)
         result.push(renderComment(decl.comment))
@@ -56,6 +78,8 @@ function renderDecl(decl) {
             result.push(renderComment(field.comment))
         }
         result.push(`</div>`)
+
+        globalContext = prevContext
         return result
     } else if (decl.kind === "enum") {
         let result = []
