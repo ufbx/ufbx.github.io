@@ -28,7 +28,7 @@ module.exports = function(eleventyConfig) {
 
   md.renderer.rules.code_inline = (tokens, idx, options, env, self) => {
     const { content } = tokens[idx]
-    const html = content.replace(/(ufbx_[A-Za-z0-9_\.]+)[A-Za-z0-9_/]*(\[[^\]]*\])*(\([^)]*\))?/, (sub, root) => {
+    const html = content.replace(/(ufbx_[A-Za-z0-9_\.]+)[A-Za-z0-9_/]*/, (sub, root) => {
       return `<a href="/reference#${root}">${sub}</a>`
     })
     return `<code>${html}</code>`

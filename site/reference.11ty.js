@@ -6,7 +6,7 @@ const md = new MarkdownIt({
 })
 
 function linkRefs(str) {
-    return str.replace(/(ufbx_[A-Za-z0-9_\.]+)[A-Za-z0-9_/]*(\[[^\]]*\])*(\([^)]*\))?/, (sub, root) => {
+    return str.replace(/((ufbx_|UFBX_)[A-Za-z0-9_\.]+)[A-Za-z0-9_/]*/, (sub, root) => {
         return `<a href="#${root}">${sub}</a>`
     })
 }
@@ -47,7 +47,7 @@ function renderDecl(decl) {
         result.push(`<div class="struct-body">`)
         for (const field of decl.decls) {
             if (field.kind === "paragraph") {
-                result.push(renderComment(decl.comment))
+                result.push(renderComment(field.comment))
                 result.push("\n")
             }
             if (!field.name) continue

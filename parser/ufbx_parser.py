@@ -120,8 +120,10 @@ class Parser(parsette.Parser):
 
     def finish_comment(self, comment_type, first):
         comments = [first]
-        while self.accept(TComment):
-            comments.append(self.prev_token)
+        line = first.location.line + 1
+        while self.peek(TComment) and self.token.location.line == line:
+            comments.append(self.scan())
+            line += 1
         return comment_type(comments)
 
     def finish_struct(self, kind) -> ATypeStruct:

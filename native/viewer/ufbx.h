@@ -413,6 +413,7 @@ struct ufbx_unknown {
 
 	// FBX format specific type information
 	// ASCII FBX `<super_type>: ID, "<type>::<name>", "<sub_type>"`
+
 	ufbx_string type;
 	ufbx_string super_type;
 	ufbx_string sub_type;
@@ -442,18 +443,34 @@ struct ufbx_node {
 	}; };
 
 	// Node hierarchy
+
+	// Parent that the node is contained within. All nodes except the root have
+	// a non-`NULL` parent unless `ufbx_load_opts.allow_nodes_out_of_root` is
+	// set to `true`.
 	ufbx_node *parent;
+
+	// List of child nodes parented to this node.
 	ufbx_node_list children;
-	uint32_t node_depth;
 
 	// Attached element type and typed pointers. Nonexistent attributes are `NULL`
 	// so checking `type` is not necessary if acccessing eg. `node->mesh`.
-	ufbx_element_type attrib_type;
-	ufbx_element *attrib;
+
 	ufbx_mesh *mesh;
 	ufbx_light *light;
 	ufbx_camera *camera;
 	ufbx_bone *bone;
+
+	// Less common attributes use this field. It will be defined even if the
+	// attribute is one of the common ones above (eg. `ufbx_mesh`).
+	ufbx_element *attrib;
+
+	// Element type of `.attrib`. `UFBX_ELEMENT_UNKNOWN` if there is no zero
+	// or more than one attributes.
+	ufbx_element_type attrib_type;
+
+	// List of all attached attribute elements. In very rare cases a node may
+	// have more than one attribute, in which cases the above attributes are
+	// set to `NULL` and you need to use this.
 	ufbx_element_list all_attribs;
 
 	// Local transform in parent, geometry transform is a non-inherited
@@ -463,7 +480,11 @@ struct ufbx_node {
 	ufbx_transform geometry_transform;
 
 	// Raw Euler angles in degrees for those who want them
+
+	// Specifies the axis order `euler_rotation` is applied in.
 	ufbx_rotation_order rotation_order;
+	// Rotation around the local X/Y/Z axes in `rotation_order`.
+	// The angles are specified in degrees.
 	ufbx_vec3 euler_rotation;
 
 	// Transform to the global "world" space, may be incorrect if the node
@@ -472,15 +493,32 @@ struct ufbx_node {
 
 	// Matrices derived from the transformations, for transforming geometry
 	// prefer using `geometry_to_world` as that supports geometric transforms.
+
+	// Transform from this node to `parent` space.
+	// Equivalent to `ufbx_transform_to_matrix(&node->local_transform)`.
 	ufbx_matrix node_to_parent;
+	// Transform from this node to the world space, ie. multiplying all the
+	// `node_to_parent` matrices of the parent chain together.
+	// NOTE: Not the same as `ufbx_transform_to_matrix(&node->world_transform)`
+	// as this matrix will account for potential shear (if `inherit_type == UFBX_INHERIT_NORMAL`).
 	ufbx_matrix node_to_world;
+	// Transform from the attribute to this node. Does not affect the transforms
+	// of `children`!
+	// Equivalent to `ufbx_transform_to_matrix(&node->geometry_transform)`.
 	ufbx_matrix geometry_to_node;
+	// Transform from attribute space to world space.
+	// Equivalent to `ufbx_matrix_mul(&node->node_to_world, &node->geometry_to_node)`.
 	ufbx_matrix geometry_to_world;
 
-	// Visibility
+	// Visibility state.
 	bool visible;
 
+	// True if this node is the implicit root node of the scene.
 	bool is_root;
+
+	// How deep is this node in the parent hierarchy. Root node is at depth `0`
+	// and the immediate children of root at `1`.
+	uint32_t node_depth;
 };
 
 // Vertex attribute: All attributes are stored in a consistent indexed format
