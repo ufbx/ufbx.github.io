@@ -1,5 +1,4 @@
 from ast import SetComp
-from tkinter import E
 import parsette
 import string
 from typing import List, Optional, NamedTuple, Union
@@ -42,6 +41,7 @@ class AEnumDecl(Ast):
 class ADecl(Ast):
     type: AType
     names: List[AName]
+    end_line: Optional[int] = None
 
 class ANamePointer(AName):
     inner: AName
@@ -237,6 +237,7 @@ class Parser(parsette.Parser):
         elif self.accept("typedef"):
             decl = self.parse_decl("typedef")
             self.require(";", "after typedef")
+            decl.end_line = self.prev_token.location.line
             return [ATopTypedef(decl)]
         elif self.accept("extern"):
             if self.accept(TString):
@@ -248,6 +249,7 @@ class Parser(parsette.Parser):
             else:
                 decl = self.parse_decl("extern")
                 self.require(";", "after extern")
+                decl.end_line = self.prev_token.location.line
                 return [ATopExtern(decl)]
         elif self.accept("UFBX_LIST_TYPE"):
             tl = self.finish_top_list()
@@ -264,8 +266,10 @@ class Parser(parsette.Parser):
                         level -= 1
                     else:
                         self.scan()
+                decl.end_line = self.prev_token.location.line
             else:
                 self.require(";", "after top-level declaration")
+                decl.end_line = self.prev_token.location.line
             return [ATopDecl(decl)]
 
     def parse_top_file(self) -> ATopFile:
@@ -309,13 +313,22 @@ class SName(NamedTuple):
     value: Optional[str] = None
 
 class SDecl(NamedTuple):
-    line: int
+    line_begin: int
+    line_end: int
     kind: str
     names: List[SName]
     comment: Optional[SComment] = None
     comment_inline: bool = False
+    is_function: bool = False
 
-SCommentDecl = Union[SComment, SDecl]
+class SDeclGroup(NamedTuple):
+    line: int
+    decls: List[SDecl]
+    comment: Optional[SComment] = None
+    comment_inline: bool = False
+    is_function: bool = False
+
+SCommentDecl = Union[SComment, SDecl, SDeclGroup]
 
 class SStruct(NamedTuple):
     line: int
@@ -395,14 +408,19 @@ def name_str(name: AName):
 
 def to_sdecl(decl: ADecl, kind: str) -> SDecl:
     names = []
+    is_function = False
     base_st = to_stype(decl.type)
     for name in decl.names:
         st = name_to_stype(base_st, name)
+        if any(isinstance(mod, SModFunction) for mod in st.mods):
+            is_function = True
         names.append(SName(name_str(name), st))
     if not decl.names:
         names.append(SName(None, base_st))
     line = type_line(decl.type)
-    return SDecl(line, kind, names)
+    end_line = decl.end_line
+    if end_line is None: end_line = line
+    return SDecl(line, end_line, kind, names, is_function=is_function)
 
 Comment = List[str]
 
@@ -435,8 +453,10 @@ def to_senum(enum: ATypeEnum) -> SEnum:
         if isinstance(decl, AEnumComment):
             decls.append(to_scomment(decl))
         elif isinstance(decl, AEnumValue):
+            line = decl.name.location.line
             decls.append(SDecl(
-                line=decl.name.location.line,
+                line_begin=line,
+                line_end=line,
                 kind="enumValue",
                 names=[
                     SName(
@@ -471,32 +491,76 @@ def top_sdecls(top: ATop) -> List[SCommentDecl]:
     elif isinstance(top, ATopComment):
         return [to_scomment(top)]
     elif isinstance(top, ATopList):
-        return [] # TODO
+        line = top.name.location.line
+        name = top.name.text()
+        st = to_stype(top.type.type)
+        st = name_to_stype(st, top.type.names[0])
+        return [SDecl(line, line, "list", [SName(None, SType("struct", name,
+            body=SStruct(line, "struct", name, [
+                SDecl(line, line, "field", [SName("data", st._replace(mods=st.mods+[SModPointer()]))]),
+                SDecl(line+1, line+1, "field", [SName("count", SType("name", "size_t"))]),
+            ])
+        ))])]
     elif isinstance(top, ATopPreproc):
         return [] # TODO
     else:
         raise TypeError(f"Unhandled type {type(top)}")
 
-def collect_decls(decls: List[SCommentDecl]):
+def collect_decl_comments(decls: List[SCommentDecl]):
     n = 0
     while n < len(decls):
         dc = decls[n:n+3]
         if isinstance(dc[0], SComment):
-            if (len(dc) >= 2 and isinstance(dc[1], SDecl) and dc[0].line_end + 1 == dc[1].line
-                and (len(dc) < 3 or not (isinstance(dc[2], SComment) and dc[1].line == dc[2].line_begin))):
+            if (len(dc) >= 2 and isinstance(dc[1], SDecl) and dc[0].line_end + 1 == dc[1].line_begin
+                and (len(dc) < 3 or not (isinstance(dc[2], SComment) and dc[1].line_end == dc[2].line_begin))):
                 yield dc[1]._replace(comment=dc[0])
                 n += 2
             else:
                 yield dc[0]
                 n += 1
         else:
-            if len(dc) >= 2 and isinstance(dc[1], SComment) and dc[0].line == dc[1].line_begin:
+            if len(dc) >= 2 and isinstance(dc[1], SComment) and dc[0].line_end == dc[1].line_begin:
                 comment = dc[1]._replace(text=[re.sub("^\s*<\s*", "", t) for t in dc[1].text])
                 yield dc[0]._replace(comment=comment, comment_inline=True)
                 n += 2
             else:
                 yield dc[0]
                 n += 1
+
+def collect_decl_groups(decls: List[SCommentDecl]):
+    n = 0
+    while n < len(decls):
+        dc = decls[n]
+        if isinstance(dc, SDecl) and not dc.comment_inline and not (dc.names and dc.names[0].type.body):
+            group = [dc]
+            line = dc.line_end + 1
+            n += 1
+            while n < len(decls):
+                dc2 = decls[n]
+                if not isinstance(dc2, SDecl): break
+                if dc2.comment: break
+                if dc2.line_begin != line: break
+                if dc2.names and dc2.names[0].type.body: break
+                if dc2.is_function != dc.is_function: break
+                group.append(dc2)
+                line = dc2.line_end + 1
+                n += 1
+            group[0] = dc._replace(comment=None)
+            comment_inline = len(group) == 1 and dc.comment_inline
+            yield SDeclGroup(dc.line_begin, group, dc.comment, comment_inline, dc.is_function)
+        elif isinstance(dc, SDecl) and not (dc.names and dc.names[0].type.body):
+            group = [dc._replace(comment=None)]
+            yield SDeclGroup(dc.line_begin, group, dc.comment, dc.comment_inline, dc.is_function)
+            n += 1
+        else:
+            yield dc
+            n += 1
+
+def collect_decls(decls: List[SCommentDecl], allow_groups: bool) -> List[SCommentDecl]:
+    decls = list(collect_decl_comments(decls))
+    if allow_groups:
+        decls = list(collect_decl_groups(decls))
+    return decls
 
 def format_arg(decl: SDecl):
     name = decl.names[0]
@@ -532,8 +596,8 @@ def format_name(name: SName):
         "name": name.name,
     }
 
-def format_decls(decls: List[SCommentDecl]):
-    for decl in collect_decls(decls):
+def format_decls(decls: List[SCommentDecl], allow_groups: bool):
+    for decl in collect_decls(decls, allow_groups):
         if isinstance(decl, SComment):
             yield {
                 "kind": "paragraph",
@@ -546,11 +610,12 @@ def format_decls(decls: List[SCommentDecl]):
             if isinstance(body, SStruct):
                 yield {
                     "kind": "struct",
+                    "structKind": body.kind,
                     "line": body.line,
                     "name": body.name,
                     "comment": decl.comment.text if decl.comment else [],
                     "commentInline": decl.comment_inline,
-                    "decls": list(format_decls(body.decls)),
+                    "decls": list(format_decls(body.decls, allow_groups=True)),
                 }
             elif isinstance(body, SEnum):
                 yield {
@@ -559,18 +624,32 @@ def format_decls(decls: List[SCommentDecl]):
                     "name": body.name,
                     "comment": decl.comment.text if decl.comment else [],
                     "commentInline": decl.comment_inline,
-                    "decls": list(format_decls(body.decls)),
+                    "decls": list(format_decls(body.decls, allow_groups=True)),
                 }
-            elif len(decl.names) == 1:
+            else:
                 for name in decl.names:
                     yield {
                         "kind": "decl",
-                        "line": decl.line,
+                        "declKind": decl.kind,
+                        "line": decl.line_begin,
                         "name": name.name,
                         "comment": decl.comment.text if decl.comment else [],
                         "commentInline": decl.comment_inline,
+                        "isFunction": decl.is_function,
                         "type": format_type(name.type),
                     }
+        elif isinstance(decl, SDeclGroup):
+            yield {
+                "kind": "group",
+                "line": decl.line,
+                "name": None,
+                "comment": decl.comment.text if decl.comment else [],
+                "commentInline": decl.comment_inline,
+                "isFunction": decl.is_function,
+                "decls": list(format_decls(decl.decls, allow_groups=False)),
+            }
+        else:
+            raise TypeError(f"Unhandled type {type(decl)}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("ufbx_parser.py")
@@ -599,7 +678,7 @@ if __name__ == "__main__":
     top_file = p.parse_top_file()
     result = top_sdecls(top_file)
 
-    js = list(format_decls(result))
+    js = list(format_decls(result, allow_groups=True))
 
     with open(output_file, "wt") as f:
         json.dump(js, f, indent=2)

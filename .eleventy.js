@@ -3,6 +3,9 @@ const MarkdownIt = require("markdown-it")
 const eleventyNavigationPlugin = require("@11ty/eleventy-navigation")
 const fs = require("fs")
 const url = require("url")
+const { execSync } = require("child_process")
+
+global.ufbxReflection = null
 
 module.exports = function(eleventyConfig) {
 
@@ -67,8 +70,36 @@ module.exports = function(eleventyConfig) {
     },
   })
 
-  const ufbxReflection = JSON.parse(fs.readFileSync("parser/build/ufbx.json"))
-  eleventyConfig.addGlobalData("ufbxReflection", ufbxReflection)
+  const pythonExecutables = [
+    "python3",
+    "python",
+  ]
+
+  const pythonExe = pythonExecutables.find((exe) => {
+    try {
+      const version = execSync(`${exe} --version`, { encoding: "utf-8" })
+      const match = version.match(/Python (\d+)\.(\d+)\.(\d+)/)
+      return match && parseInt(match[1]) == 3 && parseInt(match[2]) >= 6
+    } catch {
+      return false
+    }
+  })
+
+  if (!pythonExe) {
+    console.warn("Could not find Python 3.6+, skipping parsing")
+  }
+
+  eleventyConfig.addWatchTarget("./parser/ufbx_parser.py")
+  eleventyConfig.addWatchTarget("./native/viewer/ufbx.h")
+  eleventyConfig.on("eleventy.before", async () => {
+    if (pythonExe) {
+      const cmd = `${pythonExe} parser/ufbx_parser.py`
+      console.log(cmd)
+      execSync(cmd)
+    }
+
+    global.ufbxReflection = JSON.parse(fs.readFileSync("parser/build/ufbx.json"))
+  })
 
   return {
     passthroughCopy: true,

@@ -1,4 +1,334 @@
 
+.kw {
+    color: #008;
+}
+
+.kww {
+    color: #bbf;
+}
+
+.code {
+    font-family: monospace;
+}
+
+.section-fields {
+    padding-left: 2rem;
+}
+
+.section {
+    margin-bottom: -4px;
+}
+
+.section-name {
+    font-family: monospace;
+    background-color: #334;
+    color: #fff;
+    padding: 0.2em;
+    padding-left: 1rem;
+    position: sticky;
+    top: 0px;
+    z-index: 999;
+}
+
+.section-content {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.nested-fields {
+    padding-left: 1.5rem;
+}
+
+.field-name {
+    font-weight: bold;
+}
+
+.enum-name {
+    font-weight: bold;
+}
+
+.desc {
+    padding-left: 2rem;
+    padding-right: 4rem;
+    padding-bottom: 1.5rem;
+    color: #222;
+}
+
+.desc.section-desc {
+    padding-left: 2rem;
+    padding-right: 4rem;
+    padding-bottom: 1rem;
+    color: #222;
+}
+
+.field-row {
+    position: relative;
+}
+
+.section-link {
+    color: #fff;
+    text-decoration: none;
+}
+
+.field-link {
+    color: #000;
+    text-decoration: none;
+}
+
+.field-link:target::before {
+    content: '';
+    display: block;
+    height:      2rem;
+    margin-top: -2rem;
+}
+
+code {
+    background-color: #f4f4f4;
+    padding: 0.1em 0.15em;
+    border-radius: 0.2em;
+}
+
+pre {
+    background-color: #f4f4f4;
+    padding: 0.1em 0.15em;
+    border-radius: 0.2em;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.desc p {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    line-height: 1.4;
+}
+
+.ll {
+    text-decoration: none;
+    color: rgb(180, 11, 76);
+}
+
+.dl {
+    text-decoration: none;
+    color: rgb(161, 85, 10);
+}
+
+.no-desc {
+    padding-top: 1rem;
+}
+
+.desc-note {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    padding: 0rem 0.6rem;
+    border-left: 3px solid #f88;
+    display: inline-block;
+}
+
+.desc-hint {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    padding: 0rem 0.6rem;
+    border-left: 3px solid #88f;
+    display: inline-block;
+}
+
+table.enum-values {
+    margin-top: -1rem;
+    border-spacing: 2rem 0.5rem;
+}
+
+.section-globals {
+    padding-top: 1rem;
+}
+
+.func {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+}
+
+.func-begin {
+    flex-shrink: 0;
+    flex-grow: 0;
+}
+
+.func-args {
+    flex-shrink: 1;
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
+.func-name {
+    font-weight: bold;
+}
+
+.desc.top-desc {
+    margin-top: 0.75rem;
+    margin-bottom: 1.0rem;
+}
+
+/*
+
+.kw {
+    color: blue;
+}
+
+article {
+    position: relative;
+}
+
+.topbar {
+    width: 100%;
+    height: 2rem;
+    background-color: #000;
+    left: 0px;
+    top: 0px;
+    position: sticky;
+    z-index: 998;
+}
+
+.decl-name {
+    margin-top: 3rem;
+    font-size: 1.2em;
+    height: 2rem;
+    font-weight: normal;
+    font-family: monospace;
+    background-color: #000;
+    color: #fff;
+    position: sticky;
+    top: 0px;
+    z-index: 999;
+}
+
+.struct-fields {
+    padding-left: 0.5em;
+    border-left: 2px solid black;
+}
+
+.nested-fields {
+    padding-left: 0.5em;
+    border-left: 2px solid black;
+}
+
+.desc-note {
+    background-color: salmon;
+    margin: 0.5em;
+    padding: 0.5em;
+    border-radius: 0.2em;
+}
+
+.desc-hint {
+    background-color: aquamarine;
+    margin: 0.5em;
+    padding: 0.5em;
+    border-radius: 0.2em;
+}
+
+.field-decls {
+    font-family: monospace;
+    margin-bottom: 0.25em;
+    margin-top: 0.5em;
+}
+
+.field-name {
+    font-weight: bold;
+    position: sticky;
+}
+
+.enum-name {
+    font-family: monospace;
+    font-weight: bold;
+}
+
+td.enum-name {
+    padding-right: 1em;
+}
+
+.desc {
+    margin-top: 0.5em;
+    margin-bottom: 2em;
+    padding-left: 1em;
+}
+
+pre {
+    background-color: #ddd;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+}
+
+*/
+
+/*
+
+.sc {
+    padding-left: 2em;
+}
+
+.sn {
+    font-family: monospace;
+    font-weight: normal;
+    font-size: 1.3em;
+    color: rgb(23, 94, 44);
+}
+
+.sgf {
+    margin-bottom: 0.5em;
+    background-color: #f8f8f8;
+}
+
+.sg {
+    margin-top: 0.7em;
+}
+
+.sf {
+    margin-top: 0.7em;
+    margin-bottom: 0.5em;
+}
+
+.f {
+    font-size: 1.1em;
+    background-color: #f8f8f8;
+}
+
+.nf {
+    margin-bottom: 0.5em;
+}
+
+.d {
+    padding-left: 2em;
+    padding-right: 4em;
+    color: #333;
+}
+
+.n {
+    font-family: monospace;
+    padding-right: 2em;
+}
+
+.t {
+    font-family: monospace;
+}
+
+.dl {
+    color: rgb(133, 155, 11);
+    text-decoration: none;
+}
+
+.ll {
+    color: #800;
+    text-decoration: none;
+}
+
+p {
+    padding-bottom: 1em;
+}
+
+/*
+
+.ref-field {
+    font-size: 1.15rem;
+}
+
 .ref-type {
     font-family: monospace;
     padding-right: 2em;
@@ -12,8 +342,8 @@
 .ref-fname {
     display: inline-block;
     font-family: monospace;
+    font-weight: bold;
     margin-right: 1em;
-    min-width: 14em;
 }
 
 .ref-ename {
@@ -25,7 +355,12 @@
 }
 
 .struct-body {
-    padding-left: 3em;
+    padding-left: 1em;
+}
+
+p {
+    padding: 0.4em 2em;
+    margin-right: 10em;
 }
 
 code {
@@ -42,3 +377,5 @@ h4 {
     font-size: 1rem;
     font-weight: normal;
 }
+
+*/
