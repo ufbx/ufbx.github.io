@@ -139,7 +139,6 @@ function formatType(type) {
         switch (mod.type) {
         case "pointer": s = `${s}*`; break
         case "const": s = `const&nbsp;${s}`; break
-        case "inline": s = `ufbx_inline&nbsp;${s}`; break
         case "array": s = `${s}[${mod.length}]`; break
         }
     }

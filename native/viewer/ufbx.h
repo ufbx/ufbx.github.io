@@ -2716,16 +2716,21 @@ ufbx_scene *ufbx_load_stream(
 // Free a previously loaded or evaluated scene
 void ufbx_free_scene(ufbx_scene *scene);
 
-// Format a textual description of `error`. Always produces a NULL-terminated string
-// to `char dst[dst_size]`, truncating if necessary. Returns the number of characters
-// written not including the NULL terminator.
+// Format a textual description of `error`.
+// Always produces a NULL-terminated string to `char dst[dst_size]`, truncating if
+// necessary. Returns the number of characters written not including the NULL terminator.
 size_t ufbx_format_error(char *dst, size_t dst_size, const ufbx_error *error);
 
 // Query
 
+// Find a property `name` from `props`, returns `NULL` if not found.
+// Searches through `ufbx_props.defaults` as well.
 ufbx_prop *ufbx_find_prop_len(const ufbx_props *props, const char *name, size_t name_len);
 ufbx_inline ufbx_prop *ufbx_find_prop(const ufbx_props *props, const char *name) { return ufbx_find_prop_len(props, name, strlen(name));}
 
+// Utility functions for finding the value of a property, returns `def` if not found.
+// NOTE: For `ufbx_string` you need to ensure the lifetime of the default is
+// sufficient as no copy is made.
 ufbx_real ufbx_find_real_len(const ufbx_props *props, const char *name, size_t name_len, ufbx_real def);
 ufbx_inline ufbx_real ufbx_find_real(const ufbx_props *props, const char *name, ufbx_real def) { return ufbx_find_real_len(props, name, strlen(name), def); }
 ufbx_vec3 ufbx_find_vec3_len(const ufbx_props *props, const char *name, size_t name_len, ufbx_vec3 def);
@@ -2735,31 +2740,51 @@ ufbx_inline int64_t ufbx_find_int(const ufbx_props *props, const char *name, int
 ufbx_string ufbx_find_string_len(const ufbx_props *props, const char *name, size_t name_len, ufbx_string def);
 ufbx_inline ufbx_string ufbx_find_string(const ufbx_props *props, const char *name, ufbx_string def) { return ufbx_find_string_len(props, name, strlen(name), def); }
 
+// Find any element of type `type` in `scene` by `name`.
+// For example if you want to find `ufbx_material` named `Mat`:
+//   (ufbx_material*)ufbx_find_element(scene, UFBX_ELEMENT_MATERIAL, "Mat");
 ufbx_element *ufbx_find_element_len(ufbx_scene *scene, ufbx_element_type type, const char *name, size_t name_len);
 ufbx_inline ufbx_element *ufbx_find_element(ufbx_scene *scene, ufbx_element_type type, const char *name) { return ufbx_find_element_len(scene, type, name, strlen(name));}
 
+// Find node in `scene` by `name` (shorthand for `ufbx_find_element(UFBX_ELEMENT_NODE)`).
 ufbx_node *ufbx_find_node_len(ufbx_scene *scene, const char *name, size_t name_len);
 ufbx_inline ufbx_node *ufbx_find_node(ufbx_scene *scene, const char *name) { return ufbx_find_node_len(scene, name, strlen(name));}
 
+// Get a matrix that transforms normals in the same way as Autodesk software.
+// NOTE: The resulting normals are slightly incorrect as this function deliberately
+// inverts geometric transformation wrong. For better results use
+// `ufbx_matrix_for_normals(&node->geometry_to_world)`.
 ufbx_matrix ufbx_get_compatible_matrix_for_normals(ufbx_node *node);
 
 // Utility
 
+// Decompress a DEFLATE compressed buffer.
+// Returns the decompressed size or a negative error code (see source for details).
+// NOTE: You must supply a valid `retain` with `ufbx_inflate_retain.initialized == false`
+// but the rest can be uninitialized.
 ptrdiff_t ufbx_inflate(void *dst, size_t dst_size, const ufbx_inflate_input *input, ufbx_inflate_retain *retain);
 
 // Animation evaluation
 
+// Evaluate a single animation `curve` at a `time`.
+// Returns `default_value` only if `curve == NULL` or it has no keyframes.
 ufbx_real ufbx_evaluate_curve(const ufbx_anim_curve *curve, double time, ufbx_real default_value);
 
+// Evaluate a value from bundled animation curves.
 ufbx_real ufbx_evaluate_anim_value_real(const ufbx_anim_value *anim_value, double time);
 ufbx_vec2 ufbx_evaluate_anim_value_vec2(const ufbx_anim_value *anim_value, double time);
 ufbx_vec3 ufbx_evaluate_anim_value_vec3(const ufbx_anim_value *anim_value, double time);
 
+// Evaluate an animated property `name` from `element` at `time`.
+// NOTE: If the property is not found it will have the flag `UFBX_PROP_FLAG_NOT_FOUND`.
 ufbx_prop ufbx_evaluate_prop_len(const ufbx_anim *anim, const ufbx_element *element, const char *name, size_t name_len, double time);
 ufbx_inline ufbx_prop ufbx_evaluate_prop(const ufbx_anim *anim, const ufbx_element *element, const char *name, double time) {
 	return ufbx_evaluate_prop_len(anim, element, name, strlen(name), time);
 }
 
+// Evaluate all _animated_ properties of `element`.
+// HINT: This function returns an `ufbx_props` structure with the original properties as
+// `ufbx_props.defaults`. This lets you use `ufbx_find_prop/value()` for the results.
 ufbx_props ufbx_evaluate_props(const ufbx_anim *anim, ufbx_element *element, double time, ufbx_prop *buffer, size_t buffer_size);
 
 ufbx_transform ufbx_evaluate_transform(const ufbx_anim *anim, const ufbx_node *node, double time);
