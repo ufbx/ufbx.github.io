@@ -1,7 +1,5 @@
 const MarkdownIt = require("markdown-it")
-const { /*highlight,*/ setHighlightContext } = require("./ufbx-highlight")
-
-function highlight(str) { return str }
+const { highlight, setHighlightContext } = require("./ufbx-highlight")
 
 const md = new MarkdownIt({
     html: true,
@@ -94,7 +92,7 @@ function formatType(type) {
     for (const mod of type.mods) {
         switch (mod.type) {
         case "pointer": s = `${s}*`; break
-        case "const": s = `const&nbsp;${s}`; break
+        case "const": s = `const\xa0${s}`; break
         case "array": s = `${s}[${mod.length}]`; break
         }
     }
@@ -144,7 +142,7 @@ function renderDeclGroup(parentName, decl, nested) {
             const typeStr = highlight(formatType(inner.type))
             const id = `${parentName}.${inner.name}`
             r.push(`<tr class="field-row">`)
-            r.push(`<td class="field-type">${typeStr}&nbsp;</td>`)
+            r.push(`<td class="field-type">${typeStr}\xa0</td>`)
             r.push(`<td class="field-name"><a class="field-link" id="${id}" href="#${id}">${inner.name}</td>`)
             r.push(`</tr>`)
         }
@@ -155,7 +153,7 @@ function renderDeclGroup(parentName, decl, nested) {
     } else if (decl.kind === "struct") {
         r.push(`<div class="field struct-nested">`)
         if (decl.name) {
-            r.push(`<div class="code nested-head"><span class="kw">${decl.structKind}</span>&nbsp;${decl.name}</div>`)
+            r.push(`<div class="code nested-head"><span class="kw">${decl.structKind}</span>\xa0${decl.name}</div>`)
         } else {
             r.push(`<div class="code nested-head"><span class="kw">${decl.structKind}</span></div>`)
         }
@@ -280,7 +278,7 @@ function renderDecl(decl) {
         let r = []
         if (previousWasSection) {
             r.push(`<div class="section">`)
-            r.push(`<h3 class="section-name">&nbsp;</h3>`)
+            r.push(`<h3 class="section-name">\xa0</h3>`)
             r.push(`<div class="section-fields section-globals">`)
             previousWasSection = false
         }
@@ -294,9 +292,9 @@ function renderDecl(decl) {
 
                 let proto = `<div class="func"><div class="func-begin">`
                 if (field.declKind === "typedef") {
-                    proto += `<span class="kw">typedef</span>&nbsp;`
+                    proto += `<span class="kw">typedef</span>\xa0`
                 } else if (field.declKind === "extern") {
-                    proto += `<span class="kw">extern</span>&nbsp;`
+                    proto += `<span class="kw">extern</span>\xa0`
                 }
                 proto += renderType(type)
                 proto += ` <a id="${id}" href="#${id}" class="func-name field-link">${field.name}</a>(</div><div class="func-args">`
@@ -306,7 +304,7 @@ function renderDecl(decl) {
                         proto += ", "
                     }
                     first = false
-                    proto += `${renderType(arg.type)}&nbsp;${arg.name}`
+                    proto += `${renderType(arg.type)}\xa0${arg.name}`
                 }
                 proto += ")</div></div>"
 
@@ -324,12 +322,12 @@ function renderDecl(decl) {
                     const typeStr = highlight(formatType(inner.type))
                     let prefix = ""
                     if (inner.declKind === "extern") {
-                        prefix = `<span class="kw">extern</span>&nbsp;`
+                        prefix = `<span class="kw">extern</span>\xa0`
                     } else if (inner.declKind === "typedef") {
-                        prefix = `<span class="kw">typedef</span>&nbsp;`
+                        prefix = `<span class="kw">typedef</span>\xa0`
                     }
                     r.push(`<tr class="field-row" id="${inner.name}">`)
-                    r.push(`<td class="field-type">${prefix}${typeStr}&nbsp;</td>`)
+                    r.push(`<td class="field-type">${prefix}${typeStr}\xa0</td>`)
                     r.push(`<td class="field-name">${inner.name}</td>`)
                     r.push(`</tr>`)
                 }
