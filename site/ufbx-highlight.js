@@ -261,30 +261,6 @@ function highlight(str) {
             return `<${tag} ${attribStr}>${token.text}</${tag}>`
         }
     }).join("")
-
-    if (false) {
-        str = str.replace(/<((?:ufbx_|UFBX_)[A-Za-z0-9_\.]+)>.([A-Za-z0-9_]+)[A-Za-z0-9_/]*/g, (sub, root, field) => {
-            const href = linkRef(`${root}.${field}`.toLowerCase())
-            return `.<a class="dl" href="${href}">${field}</a>`
-        })
-        str = str.replace(/(?<!#)((ufbx_|UFBX_)[A-Za-z0-9_\.]+)[A-Za-z0-9_/]*/g, (sub, root) => {
-            const href = linkRef(root.toLowerCase())
-            return `<a class="dl" href="${href}">${sub}</a>`
-        })
-        for (const local of globalContext.locals) {
-            str = str.replace(new RegExp(`\\b${local}\\b`, "g"), (sub) => {
-                const href = linkRef(globalContext.prefix + local)
-                return `<a class="ll" href="${href}">${sub}</a>`
-            })
-        }
-        str = str.replace(keywordRegex, (sub) => {
-            return `<span class="kw">${sub}</span>`
-        })
-        str = str.replace(builtinRegex, (sub) => {
-            return `<span class="bt">${sub}</span>`
-        })
-    }
-    return str
 }
 
 function setHighlightContext(ctx) {
