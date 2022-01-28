@@ -1,67 +1,23 @@
 const MarkdownIt = require("markdown-it")
+const { /*highlight,*/ setHighlightContext } = require("./ufbx-highlight")
+
+function highlight(str) { return str }
 
 const md = new MarkdownIt({
     html: true,
     linkify: true,
 })
 
-let globalContext = {
-    prefix: "",
-    locals: [],
-}
-
-const keywords = [
-    "extern",
-    "typedef",
-    "struct",
-    "union",
-    "enum",
-    "const",
-    "void",
-    "size_t",
-    "ptrdiff_t",
-    "int32_t",
-    "int64_t",
-    "uint32_t",
-    "uint64_t",
-    "bool",
-    "char",
-    "int",
-    "float",
-    "double",
-    "sizeof",
-]
-
 const forceTableEnums = new Set([])
-
-const keywordsPipe = keywords.join("|")
-const keywordRegex = new RegExp(`\\b(${keywordsPipe})\\b`, "g")
-
-function linkRefs(str) {
-    str = str.replace(/((ufbx_|UFBX_)[A-Za-z0-9_\.]+)[A-Za-z0-9_/]*/g, (sub, root) => {
-        return `<a class="dl" href="#${root.toLowerCase()}">${sub}</a>`
-    })
-    for (const local of globalContext.locals) {
-        str = str.replace(new RegExp(`\\b${local}\\b`, "g"), (sub) => {
-            const href = globalContext.prefix + local
-            return `<a class="ll" href="#${href}">${sub}</a>`
-        })
-    }
-    str = str.replace(keywordRegex, (sub) => {
-        return `<span class="kw">${sub}</span>`
-    })
-    return str
-}
 
 md.renderer.rules.code_block = (tokens, idx, options, env, self) => {
     const { content } = tokens[idx]
-    return `<pre>${linkRefs(content)}</pre>`
+    return `<pre>${highlight(content)}</pre>`
 }
-
 
 md.renderer.rules.code_inline = (tokens, idx, options, env, self) => {
     const { content } = tokens[idx]
-    return `<code>${linkRefs(content)}</code>`
+    return `<code>${highlight(content)}</code>`
 }
 
 function parseComment(comment, pos=0, type="text") {
@@ -160,7 +116,7 @@ function shouldRender(decl) {
 }
 
 function renderType(type) {
-    return linkRefs(formatType(type))
+    return highlight(formatType(type))
 }
 
 function structContext(decl) {
@@ -175,7 +131,7 @@ function structContext(decl) {
         }
     }
 
-    return { prefix: `${decl.name}.`, locals }
+    return { prefix: `${decl.name}.`, locals, inReference: true }
 }
 
 function renderDeclGroup(parentName, decl, nested) {
@@ -185,7 +141,7 @@ function renderDeclGroup(parentName, decl, nested) {
         r.push(`<div class="field">`)
         r.push(`<table class="code field-decls" role="presentation">`)
         for (const inner of decl.decls) {
-            const typeStr = linkRefs(formatType(inner.type))
+            const typeStr = highlight(formatType(inner.type))
             const id = `${parentName}.${inner.name}`
             r.push(`<tr class="field-row">`)
             r.push(`<td class="field-type">${typeStr}&nbsp;</td>`)
@@ -234,8 +190,8 @@ function renderDecl(decl) {
             previousWasSection = true
         }
 
-        const prevContext = globalContext
-        globalContext = structContext(decl)
+        const ctx = structContext(decl)
+        const prevCtx = setHighlightContext(ctx)
 
         r.push(`<div class="decl struct section">`)
         {
@@ -254,7 +210,7 @@ function renderDecl(decl) {
         }
         r.push(`</div>`)
 
-        globalContext = prevContext
+        setHighlightContext(prevCtx)
         return r
     } else if (decl.kind === "enum") {
         let r = []
@@ -365,7 +321,7 @@ function renderDecl(decl) {
             {
                 r.push(`<table class="code field-decls" role="presentation">`)
                 for (const inner of decl.decls) {
-                    const typeStr = linkRefs(formatType(inner.type))
+                    const typeStr = highlight(formatType(inner.type))
                     let prefix = ""
                     if (inner.declKind === "extern") {
                         prefix = `<span class="kw">extern</span>&nbsp;`
@@ -561,12 +517,18 @@ class Page {
         }
     }
     render() {
+        const prevCtx = setHighlightContext({
+            prefix: "",
+            locals: [],
+            inReference: true,
+        })
         const { ufbxReflection } = global
         let lines = ufbxReflection.map(renderDecl).flat()
         if (!previousWasSection) {
             lines.push("</div>")
             lines.push("</div>")
         }
+        setHighlightContext(prevCtx)
         return lines.join("\n")
     }
 }

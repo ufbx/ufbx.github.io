@@ -5,8 +5,10 @@ layout: "layouts/guide"
 eleventyNavigation:
   parent: Basics
   key: Scene structure
-  order: 0
+  order: 1
 ---
+
+
 
 Some things about scene structure
 

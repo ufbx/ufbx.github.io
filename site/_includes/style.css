@@ -72,3 +72,32 @@ body {
 .g-nav a {
     text-decoration: none;
 }
+.ll {
+    text-decoration: none;
+    color: rgb(180, 11, 76);
+}
+
+.dl {
+    text-decoration: none;
+    color: rgb(161, 85, 10);
+}
+
+.c-kw {
+    color: #008;
+}
+
+.c-builtin {
+    color: #408;
+}
+
+.c-comment {
+    color: #080;
+}
+
+.c-hover {
+    background-color: #f00;
+}
+
+.c-string {
+    color: #e84;
+}

@@ -103,16 +103,6 @@ pre {
     line-height: 1.4;
 }
 
-.ll {
-    text-decoration: none;
-    color: rgb(180, 11, 76);
-}
-
-.dl {
-    text-decoration: none;
-    color: rgb(161, 85, 10);
-}
-
 .no-desc {
     padding-top: 1rem;
 }

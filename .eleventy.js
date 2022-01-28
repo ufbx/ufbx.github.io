@@ -4,8 +4,14 @@ const eleventyNavigationPlugin = require("@11ty/eleventy-navigation")
 const fs = require("fs")
 const url = require("url")
 const { execSync } = require("child_process")
+const { highlight } = require("./site/ufbx-highlight")
 
 global.ufbxReflection = null
+
+let globalContext = {
+    prefix: "",
+    locals: [],
+}
 
 module.exports = function(eleventyConfig) {
 
@@ -29,12 +35,19 @@ module.exports = function(eleventyConfig) {
     html: true,
   })
 
+  md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+      const { content } = tokens[idx]
+      return `<pre>${highlight(content)}</pre>`
+  }
+
+  md.renderer.rules.code_block = (tokens, idx, options, env, self) => {
+      const { content } = tokens[idx]
+      return `<pre>${highlight(content)}</pre>`
+  }
+
   md.renderer.rules.code_inline = (tokens, idx, options, env, self) => {
-    const { content } = tokens[idx]
-    const html = content.replace(/(ufbx_[A-Za-z0-9_\.]+)[A-Za-z0-9_/]*/, (sub, root) => {
-      return `<a href="/reference#${root}">${sub}</a>`
-    })
-    return `<code>${html}</code>`
+      const { content } = tokens[idx]
+      return `<code>${highlight(content)}</code>`
   }
 
   eleventyConfig.setLibrary("md", md)
