@@ -72,15 +72,6 @@ body {
 .g-nav a {
     text-decoration: none;
 }
-.ll {
-    text-decoration: none;
-    color: rgb(180, 11, 76);
-}
-
-.dl {
-    text-decoration: none;
-    color: rgb(161, 85, 10);
-}
 
 .c-kw {
     color: #008;
@@ -95,9 +86,33 @@ body {
 }
 
 .c-hover {
-    background-color: #f00;
+    background-color: #e9e9e9;
 }
 
 .c-string {
     color: #e84;
+}
+
+.c-kw {
+    color: #00f;
+}
+
+.c-type {
+    color: #00f;
+}
+
+a.c-type {
+    text-decoration: underline #9815cc27;
+    color: #9815cc;
+}
+
+a.c-name {
+    text-decoration: underline #9815cc31;
+    color: #71067a;
+}
+
+article > ul li {
+    list-style: none;
+    margin-left: 2em;
+    line-height: 1.3;
 }

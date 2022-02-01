@@ -2380,9 +2380,9 @@ typedef struct ufbx_vertex_stream {
 typedef void *ufbx_alloc_fn(void *user, size_t size);
 
 // Reallocate `old_ptr` from `old_size` to `new_size`
-// NOTE: If omit `alloc_fn` and `free_fn` they will be translated to:
-//   `alloc(size)` -> `realloc_fn(user, NULL, 0, size)`
-//   `free_fn(ptr, size)` ->  `realloc_fn(user, ptr, size, 0)`
+// NOTE: If omitted `alloc_fn` and `free_fn` they will be translated to:
+//   alloc_fn(user, size)     -> realloc_fn(user, NULL, 0, size)
+//   free_fn(user, ptr, size) -> realloc_fn(user, ptr, size, 0)
 typedef void *ufbx_realloc_fn(void *user, void *old_ptr, size_t old_size, size_t new_size);
 
 // Free pointer `ptr` (of `size` bytes) returned by `alloc_fn` or `realloc_fn`
@@ -2409,14 +2409,14 @@ typedef struct ufbx_allocator {
 	// Maximum number of allocations to attempt before failing
 	size_t allocation_limit;
 
-	// Threshold to swap from batched allocations to individual ones
-	// Defaults to 1MB if set to zero
+	// Threshold to swap from batched allocations to individual ones.
+	// Defaults to 1MB if set to zero.
 	// NOTE: If set to `1` ufbx will allocate everything in the smallest
 	// possible chunks which may be useful for debugging (eg. ASAN)
 	size_t huge_threshold;
 
 	// Maximum size of a single allocation containing sub-allocations.
-	// Defaults to 16MB if set to zero
+	// Defaults to 16MB if set to zero.
 	// The maximum amount of wasted memory depends on `max_chunk_size` and
 	// `huge_threshold`: each chunk can waste up to `huge_threshold` bytes
 	// internally and the last chunk might be incomplete. So for example
@@ -2424,7 +2424,7 @@ typedef struct ufbx_allocator {
 	// up to 32MB due to the two incomplete blocks. The actual amounts differ
 	// slightly as the chunks start out at 4kB and double in size each time,
 	// meaning that the maximum fixed overhead (up to 32MB with defaults) is
-	// at most ~30% of the total allocation size.
+	// in the worst case ~30% of the total allocation size.
 	size_t max_chunk_size;
 
 } ufbx_allocator;

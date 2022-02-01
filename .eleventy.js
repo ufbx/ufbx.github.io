@@ -33,7 +33,7 @@ module.exports = function(eleventyConfig) {
 
   const md = new MarkdownIt({
     html: true,
-  })
+  }).use(require("markdown-it-footnote"))
 
   md.renderer.rules.fence = (tokens, idx, options, env, self) => {
       const { content } = tokens[idx]
@@ -83,6 +83,57 @@ module.exports = function(eleventyConfig) {
     },
   })
 
+  function gatherFields(fields, parent)
+  {
+    if (parent.kind === "group" || parent.kind === "struct") {
+      for (const decl of parent.decls) {
+        gatherFields(fields, decl)
+      }
+    } else if (parent.kind === "decl") {
+      const type = parent.type.name
+      if (type) {
+        fields[parent.name] = type
+      }
+    }
+  }
+
+  function gatherEnumValues(info, parent, type)
+  {
+    if (parent.kind === "group" || parent.kind === "enum") {
+      for (const decl of parent.decls) {
+        gatherEnumValues(info, decl, type)
+      }
+    } else if (parent.kind === "decl") {
+      info.enumValues[parent.name] = type
+    }
+  }
+
+  function gatherInfo(info, parent)
+  {
+    if (parent.kind === "group") {
+      for (const decl of parent.decls) {
+        gatherInfo(info, decl)
+      }
+    } else if (parent.kind === "struct") {
+      if (parent.name) {
+        let type = { kind: parent.structKind, fields: { } }
+        gatherFields(type.fields, parent)
+        info.types[parent.name] = type
+      }
+    } else if (parent.kind === "enum") {
+      gatherEnumValues(info, parent, parent.name)
+      info.types[parent.name] = { kind: "enum" }
+    } else if (parent.kind === "decl") {
+      if (parent.declKind === "typedef") {
+        info.types[parent.name] = { kind: "typedef" }
+      } else if (parent.isFunction) {
+        info.decls[parent.name] = { kind: "function" }
+      } else {
+        info.decls[parent.name] = { kind: "decl" }
+      }
+    }
+  }
+
   const pythonExecutables = [
     "python3",
     "python",
@@ -112,6 +163,12 @@ module.exports = function(eleventyConfig) {
     }
 
     global.ufbxReflection = JSON.parse(fs.readFileSync("parser/build/ufbx.json"))
+
+    const info = { types: { }, enumValues: { }, decls: { } }
+    for (const decl of global.ufbxReflection) {
+      gatherInfo(info, decl)
+    }
+    global.ufbxInfo = info
   })
 
   return {

@@ -23,6 +23,9 @@ const keywords = new Set([
     "for",
     "while",
     "return",
+    "struct",
+    "union",
+    "typedef",
 ])
 
 const builtins = new Set([
@@ -32,6 +35,7 @@ const builtins = new Set([
 ])
 
 const types = new Set([
+    "bool",
     "int",
     "unsigned",
     "short",
@@ -114,6 +118,7 @@ function search(tokens, pattern) {
                 }
             })
         })
+        re.lastIndex -= match[0].length - 1;
     }
 
     return results
@@ -130,11 +135,15 @@ function patchKeywords(tokens) {
 }
 
 function patchTypes(tokens) {
+    const { ufbxInfo } = global
     for (const m of search(tokens, /name/)) {
-        if (types.has(m.token.text)) {
+        const text = m.token.text
+        if (types.has(text)) {
             m.token.type = "type"
-        } else if (m.token.text.startsWith("ufbx_")) {
+        } else if (m.token.text in ufbxInfo.types) {
             m.token.type = "type"
+            m.token.refType = m.token.text
+            m.token.ufbxType = ufbxInfo.types[text]
         }
     }
 }
@@ -184,14 +193,22 @@ function patchRefs(tokens) {
 }
 
 function patchFields(tokens) {
-    for (const m of search(tokens, /(name:\S* )(?:op:. |op:-> )(name:\S* )/)) {
+    const { ufbxInfo } = global
+    for (const m of search(tokens, /(name:\S* )(?:op:\. |op:-> )(name:\S* )/)) {
         const parent = m.groups[1].token
         const field = m.groups[2].token
         if (parent.refType) {
             field.structType = parent.refType
+            const ufbxType = ufbxInfo.types[parent.refType]
+            if (ufbxType && ufbxType.kind === "struct") {
+                const ufbxField = ufbxType.fields[field.text]
+                if (ufbxField) {
+                    field.refType = ufbxField
+                }
+            }
         }
     }
-    for (const m of search(tokens, /(type:\S* )op:. (name:\S* )/)) {
+    for (const m of search(tokens, /(type:\S* )op:\. (name:\S* )/)) {
         const parent = m.groups[1].token
         const field = m.groups[2].token
         if (parent.refType) {
@@ -234,6 +251,7 @@ function highlight(str) {
     patchDecls(tokens)
     patchRefs(tokens)
     patchFields(tokens)
+    patchFields(tokens)
     patchInitFields(tokens)
 
     return tokens.map((token) => {
@@ -249,12 +267,12 @@ function highlight(str) {
             if (token.refId) attribs["data-ref-id"] = token.refId
             attribs["class"] = classes.join(" ")
 
-            if (token.text.startsWith("ufbx_")) {
+            if (token.text.toLocaleLowerCase().startsWith("ufbx_")) {
                 tag = "a"
-                attribs["href"] = `/reference#${token.text}`
+                attribs["href"] = linkRef(token.text.toLowerCase())
             } else if (token.structType) {
                 tag = "a"
-                attribs["href"] = `/reference#${token.structType}.${token.text}`
+                attribs["href"] = linkRef(`${token.structType}.${token.text}`)
             }
 
             const attribStr = Object.keys(attribs).map(key => `${key}="${attribs[key]}"`).join(" ")

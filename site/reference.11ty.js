@@ -510,7 +510,7 @@ class Page {
             layout: "layouts/reference",
             eleventyNavigation: {
                 key: "Reference",
-                order: 1,
+                order: 2,
             }
         }
     }
