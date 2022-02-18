@@ -63,6 +63,7 @@ function stateToDesc(state) {
             time: animation.time,
         },
         selectedElement: state.selectedElement,
+        highlightVertexIndex: state.highlightVertexIndex,
         overrides,
     }
 }
@@ -172,7 +173,7 @@ export default function FbxViewer({ id }) {
             case WheelEvent.DOM_DELTA_LINE:  scale = 1.33; break;
             case WheelEvent.DOM_DELTA_PAGE:  scale = 10.0; break; // FIXME: this is a guess
         }
-        const distance = Math.min(Math.max(state.camera.distance *= Math.pow(2.0, e.deltaY * scale * 0.03), 1.0), 100.0)
+        const distance = Math.min(Math.max(state.camera.distance * Math.pow(2.0, e.deltaY * scale * 0.03), 1.0), 1000.0)
         state.camera.distance = distance
         e.preventDefault()
     }

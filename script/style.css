@@ -204,3 +204,26 @@
     flex-shrink: 1;
     height: 10px;
 }
+
+.vw-row {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+}
+
+.vw-row:hover {
+    background-color: salmon;
+}
+
+.vw-list {
+    height: 200px;
+}
+
+.vw-index {
+    width: 5em;
+}
+
+.vw-cell {
+    width: 12em;
+}

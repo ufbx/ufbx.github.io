@@ -16271,7 +16271,7 @@ ufbx_transform ufbx_matrix_to_transform(const ufbx_matrix *m)
 
 ufbx_matrix ufbx_get_skin_vertex_matrix(const ufbx_skin_deformer *skin, size_t vertex, const ufbx_matrix *fallback)
 {
-	if (!skin || vertex >= skin->vertices.count) return ufbx_identity_matrix;
+	if (!skin || vertex >= skin->vertices.count) return fallback ? *fallback : ufbx_identity_matrix;
 	ufbx_skin_vertex skin_vertex = skin->vertices.data[vertex];
 
 	ufbx_matrix mat = { 0.0f };

@@ -15,9 +15,6 @@
 	#define HAS_GL 0
 #endif
 
-// TEMPT MEP
-#include <stdio.h>
-
 #define MAX_DEBUG_VERTICES 2048
 #define MAX_DEBUG_INDICES 4096
 
@@ -1177,7 +1174,7 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 	float widget_scale = 1.0f;
 
 	if (desc->selected_element_id < vs->fbx.elements.count) {
-		ufbx_element *fbx_elem = vs->fbx.elements.data[desc->selected_element_id];
+		ufbx_element *fbx_elem = vs->fbx_state->elements.data[desc->selected_element_id];
 
 		if (fbx_elem->type == UFBX_ELEMENT_NODE) {
 			vi_node *node = &vs->nodes[fbx_elem->typed_id];
@@ -1200,6 +1197,47 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 				c4 = um_mat_mulr(vs->world_to_clip, c4);
 				gl_draw_icon_4d(vs, icons[VI_ICON_X + i], c4, 30.0f, vi_rgb8(0x6cb9da), 2.5f, vi_rgb8(0x0e2a36));
 			}
+		} if (fbx_elem->type == UFBX_ELEMENT_MESH) {
+			ufbx_mesh *fbx_mesh = (ufbx_mesh*)fbx_elem;
+
+   			uint32_t highlight_index = desc->highlight_vertex_index;
+			if (highlight_index < fbx_mesh->num_indices) {
+				ufbx_vec3 pos = ufbx_get_vertex_vec3(&fbx_mesh->vertex_position, highlight_index);
+
+				for (size_t i = 0; i < fbx_mesh->instances.count; i++) {
+					ufbx_node *fbx_node = fbx_mesh->instances.data[i];
+					uint32_t vertex = fbx_mesh->vertex_indices[highlight_index];
+
+					ufbx_matrix geometry_to_world = fbx_node->geometry_to_world;
+
+					um_vec3 pos = fbx_to_um_vec3(fbx_mesh->vertices[vertex]);
+
+					if (fbx_mesh->blend_deformers.count > 0) {
+						ufbx_blend_deformer *blend = fbx_mesh->blend_deformers.data[0];
+						pos = um_add3(pos, fbx_to_um_vec3(ufbx_get_blend_vertex_offset(blend, vertex)));
+					}
+
+					if (fbx_mesh->skin_deformers.count > 0) {
+						ufbx_skin_deformer *skin = fbx_mesh->skin_deformers.data[0];
+						geometry_to_world = ufbx_get_skin_vertex_matrix(skin, vertex, &geometry_to_world);
+					}
+
+					um_mat mat = fbx_to_um_mat(geometry_to_world);
+					pos = um_transform_point(&mat, pos);
+
+					if (fbx_mesh->vertex_normal.data) {
+						um_mat normal_mat = um_mat_tranpose(um_mat_inverse(mat));
+
+						um_vec3 normal = fbx_to_um_vec3(ufbx_get_vertex_vec3(&fbx_mesh->vertex_normal, highlight_index));
+						normal = um_normalize3(um_transform_direction(&normal_mat, normal));
+						// TODO: Hardcoded length
+						gl_draw_line_3d(vs, pos, um_mad3(pos, normal, 10.5f), 4.0f, vi_rgb8(0x0000ff), false);
+					}
+
+					gl_draw_line_3d(vs, pos, pos, 8.0f, vi_rgb8(0xff0000), false);
+				}
+			}
+
 		}
 	}
 

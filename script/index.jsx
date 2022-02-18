@@ -5,6 +5,7 @@ import FbxViewer from "./components/fbx-viewer"
 import Outliner from "./components/outliner"
 import PropertySheet from "./components/property-sheet"
 import DocViewer from "./components/doc-viewer"
+import VertexDisplay from "./components/vertex-display"
 
 setupViewers()
 
@@ -80,6 +81,7 @@ const viewerDescDefaults = {
   fieldOverrides: { },
   propOverrides: { },
   latestInteractionTime: -10000.0,
+  highlightVertexIndex: -1,
 }
 
 function patchDefaults(dst, defaults) {
@@ -99,104 +101,7 @@ for (const id in viewerDescs) {
     render(<DocViewer id={id} />, root, globalState)
 }
 
-const debugState = createState({ viewers: [] })
-
-function ViewerDebug()
-{
-    const viewers = debugState.viewers
-    return <div>
-        {viewers.map(v => <div className={`vd-any vd-${v.state}`}>{v.id} {v.state}</div>)}
-    </div>
+for (const elem of document.querySelectorAll("[data-viewer-id]")) {
+    const id = elem.dataset.viewerId
+    render(<VertexDisplay id={id} />, elem, globalState)
 }
-
-window.setInterval(() => {
-    debugState.viewers = debugDumpViewers()
-}, 100)
-
-const style = document.createElement("style")
-style.innerText = `
-.vd-any { width: 15em; }
-.vd-empty { background-color: #888; }
-.vd-canvas { background-color: #99f; }
-.vd-realtime { background-color: #f99; }
-.vd-image { background-color: #9f9; }
-`
-document.head.appendChild(style)
-
-const debug = document.createElement("div")
-document.querySelector("nav").appendChild(debug)
-
-render(<ViewerDebug />, debug, debugState)
-
-/*
-window.setInterval(() => {
-    const time = window.performance.now() / 1000.0
-    renderViewer("a", document.getElementById("a"), {
-        sceneName: "/static/models/barbarian.fbx",
-        camera: {
-            position: [20 * Math.sin(time), 10, 20 * Math.cos(time)],
-            target: [0, 3, 0],
-            fieldOfView: 30,
-        },
-    })
-}, 16)
-*/
-
-/*
-
-window.setInterval(() => {
-    const time = window.performance.now() / 1000.0
-    renderViewer("a", document.getElementById("a"), {
-        sceneName: "/static/models/barbarian.fbx",
-        camera: {
-            position: [20 * Math.sin(-time), 10, 20 * Math.cos(-time)],
-            target: [0, 3, 0],
-            fieldOfView: 10,
-        },
-    }, { interactive: Math.random() < 0.2 })
-}, 50000)
-
-document.getElementById("b").addEventListener("mousemove", e => {
-    if (e.buttons & 1) {
-        renderViewer("b", document.getElementById("b"), {
-            sceneName: "/static/models/barbarian.fbx",
-            camera: {
-                position: [e.clientX*-0.1+40, e.clientY*0.1, 20],
-                target: [0, 3, 0],
-                fieldOfView: 60,
-            },
-        }, { interactive: true })
-        e.preventDefault()
-    }
-})
-
-document.getElementById("c").addEventListener("mousemove", e => {
-    if (e.buttons & 1) {
-        renderViewer("c", document.getElementById("c"), {
-            sceneName: "/static/models/barbarian.fbx",
-            camera: {
-                position: [e.clientX*-0.1+40, e.clientY*0.1, 20],
-                target: [0, 3, 0],
-                fieldOfView: 60,
-            },
-        }, { interactive: true })
-        e.preventDefault()
-    }
-})
-
-*/
-
-/*
-window.setInterval(() => {
-    const time = window.performance.now() / 1000.0
-    renderViewer("d", document.getElementById("d"), {
-        sceneName: "/static/models/barbarian.fbx",
-        camera: {
-            position: [20 * Math.sin(time*0.3), 40, 20 * Math.cos(time*0.3)],
-            target: [0, 3, 0],
-            fieldOfView: 5,
-        },
-    }, { interactive: Math.random() < 0.05 })
-}, 100)
-*/
-

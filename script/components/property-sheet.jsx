@@ -314,8 +314,8 @@ function MeshSheet({ ctx }) {
     const { info, elementId } = ctx
     const elem = info.elements[elementId]
     return <>
-        <Label name="faces" text={elem.info.numFaces} />
-        <Label name="vertices" text={elem.info.numVertices} />
+        <Label name="faces" text={elem.numFaces} />
+        <Label name="vertices" text={elem.numVertices} />
     </>
 }
 

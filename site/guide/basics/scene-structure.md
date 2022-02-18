@@ -11,17 +11,19 @@ eleventyNavigation:
 ## Elements
 
 A `ufbx_scene` consists of multiple **elements**[^1]: Meshes, materials, animated properties, etc. are all represented as elements.
-Every element has a type, a name, properties, and connections. The latter two are handled internally by ufbx but advanced users
-can still access them through `ufbx_element.props` and `ufbx_element.connections_src/dst`.
 
-`ufbx_scene.elements` contains all the elements but there are separated lists for each element type, eg. `ufbx_scene.meshes`.
-`ufbx_element.element_id` refers to the index in the first list and `ufbx_element.typed_id` in the second one. These
-indices are stable between loading the _same_ file multiple times, but may change between re-exports.
+You can access all the elements of a scene through `ufbx_scene.elements` and more conveniently through typed lists of
+elements such as `ufbx_scene.meshes`. Each element stores it's index in the shared list (`ufbx_element.element_id`) and
+in the per-type list (`ufbx_element.typed_id`), these indices are stable when loading the _same_[^2] file multiple times.
 
 [^1]: FBX calls these "objects", but ufbx uses "element" to avoid confusion with 3D objects.
 
+[^2]: The indices may change between multiple re-exports of the same file!
 
 ### Overview of element types
+
+Here's a preview of all supported element types in ufbx. We will go over these in detail later so feel free to skim
+the list to get a feel of what is possible.
 
 - <strong>Scene hierarchy</strong>
   - Object&emsp;`ufbx_node`
@@ -33,7 +35,7 @@ indices are stable between loading the _same_ file multiple times, but may chang
   - Empty / Null&emsp;`ufbx_empty`
   - Curves&emsp;`ufbx_line_curve`&ensp;`ufbx_nurbs_curve`
   - Surfaces&emsp;`ufbx_nurbs_surface`&ensp;`ufbx_nurbs_trim_surface`&ensp;`ufbx_nurbs_trim_boundary`
-  - Oddities&emsp;`ufbx_procedural_geometry`&ensp;`ufbx_camera_stereo`&ensp;`ufbx_camera_switcher`&ensp;`ufbx_lod_group`
+  - Oddities&emsp;`ufbx_procedural_geometry`&ensp;`ufbx_stereo_camera`&ensp;`ufbx_camera_switcher`&ensp;`ufbx_lod_group`
 - <strong>Geometry deformers</strong>
   - Skinning&emsp;`ufbx_skin_deformer`&ensp;`ufbx_skin_cluster`
   - Blend shape&emsp;`ufbx_blend_deformer`&ensp;`ufbx_blend_channel`&ensp;`ufbx_blend_shape`
@@ -52,7 +54,58 @@ indices are stable between loading the _same_ file multiple times, but may chang
   - Metadata&emsp;`ufbx_metadata_object`
   - Unknown&emsp;`ufbx_unknown`
 
-Some things about scene structure
+## Node hierarchy
+
+Nodes (`ufbx_node`) represent objects in the scene. By themselves they only have name and transformation but may contain
+contain *attributes*, such as a mesh (`ufbx_mesh`). A node may also have child nodes that inherit the parent's transformation.
+The scene contains a single root `ufbx_scene.root_node` that contains all the top-level nodes.
+
+```c
+void visit_node(ufbx_node *node)
+{
+    // Print the name and local position
+    ufbx_vec3 pos = node->local_transform.position;
+    printf("Node %s: (%f, %f, %f)\n", node->name.data,
+        pos.x, pos.y, pos.z);
+
+    // Recursively visit the children
+    for (size_t i = 0; i < node->children.count; i++) {
+        ufbx_node *child = node->children.data[i];
+        visit_node(child);
+    }
+}
+
+ufbx_scene *scene;
+visit_node(scene->root_node);
+```
+
+Alternatively we can use `ufbx_scene.nodes` that contains a flattened list of all nodes.
+The nodes are sorted by depth so you can apply parent transformations without recursion!
+
+Here's an example how to compute `ufbx_node.node_to_world`.
+
+```cc
+ufbx_scene *scene;
+ufbx_matrix node_to_world[128];
+
+for (size_t i = 0; i < scene->nodes.count; i++) {
+    ufbx_node *node = scene->nodes.data[i];
+
+    // Resolve the parent transform (use identity if root)
+    ufbx_matrix parent_to_world = ufbx_identity_matrix;
+    if (node->parent) {
+        uint32_t parent_id = node->parent->typed_id;
+
+        // NOTE: `parent_id < i` due to nodes being sorted by depth
+        parent_to_world = node_to_world[parent_id];
+    }
+
+    // NOTE: `i == node->typed_id` as that's the order we iterate in
+    node_to_world[i] = ufbx_matrix_mul(&parent_to_world, &node->node_to_parent);
+}
+```
+
+Transformation is represented using `ufbx_node.local_transform`
 
 {% include "viewer.md",
   id: "blender-default",

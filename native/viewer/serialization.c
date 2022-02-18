@@ -37,7 +37,7 @@ const char *element_type_str(ufbx_element_type type)
 	case UFBX_ELEMENT_NURBS_TRIM_SURFACE: return "nurbs_trim_surface";
 	case UFBX_ELEMENT_NURBS_TRIM_BOUNDARY: return "nurbs_trim_boundary";
 	case UFBX_ELEMENT_PROCEDURAL_GEOMETRY: return "procedural_geometry";
-	case UFBX_ELEMENT_CAMERA_STEREO: return "camera_stereo";
+	case UFBX_ELEMENT_CAMERA_STEREO: return "stereo_camera";
 	case UFBX_ELEMENT_CAMERA_SWITCHER: return "camera_switcher";
 	case UFBX_ELEMENT_LOD_GROUP: return "lod_group";
 	case UFBX_ELEMENT_SKIN_DEFORMER: return "skin_deformer";
@@ -65,28 +65,6 @@ const char *element_type_str(ufbx_element_type type)
 	case UFBX_ELEMENT_METADATA_OBJECT: return "metadataObject";
 	default: return "";
     }
-}
-
-static void jso_prop_vec2(jso_stream *s, const char *name, ufbx_vec2 value)
-{
-	jso_prop_object(s, name);
-	jso_prop_double(s, "x", value.x);
-	jso_prop_double(s, "y", value.y);
-	jso_end_object(s);
-}
-
-static void jso_prop_vec3(jso_stream *s, const char *name, ufbx_vec3 value)
-{
-	jso_prop_object(s, name);
-	jso_prop_double(s, "x", value.x);
-	jso_prop_double(s, "y", value.y);
-	jso_prop_double(s, "z", value.z);
-	jso_end_object(s);
-}
-
-static void jso_prop_ustring(jso_stream *s, const char *key, ufbx_string str)
-{
-	jso_prop_string_len(s, key, str.data, str.length);
 }
 
 void serialize_props(jso_stream *s, ufbx_props *props)
@@ -159,10 +137,9 @@ void serialize_element_mesh(jso_stream *s, ufbx_mesh* elem)
     }
     jso_end_array(s);
 
-	jso_prop_object(s, "info");
 	jso_prop_int(s, "numFaces", elem->num_faces);
 	jso_prop_int(s, "numVertices", elem->num_vertices);
-    jso_end_object(s);
+	jso_prop_int(s, "numIndices", elem->num_indices);
 }
 
 void serialize_element_light(jso_stream *s, ufbx_light* elem)

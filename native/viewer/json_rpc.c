@@ -161,6 +161,16 @@ static um_vec3 get_vec3(jsi_obj *parent, const char *name, um_vec3 def)
 	}
 }
 
+static rpc_scene *find_scene(const char *name)
+{
+	for (size_t i = 0; i < rpcg.scenes.count; i++) {
+		if (!strcmp(rpcg.scenes.data[i].name, name)) {
+			return &rpcg.scenes.data[i];
+		}
+	}
+	return NULL;
+}
+
 char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 {
 	jsi_obj *target = jsi_get_obj(args, "target");
@@ -176,20 +186,12 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		.pixel_scale = (float)jsi_get_double(target, "pixelScale", 1.0),
 	};
 
+	vi_setup();
+
 	const char *name = jsi_get_str(desc, "sceneName", NULL);
 	if (!name) return fmt_error("Missing field: 'name'");
-	rpc_scene *scene = NULL;
-	for (size_t i = 0; i < rpcg.scenes.count; i++) {
-		if (!strcmp(rpcg.scenes.data[i].name, name)) {
-			scene = &rpcg.scenes.data[i];
-			break;
-		}
-	}
-	if (!scene) {
-		return fmt_error("Scene not found: '%s'", name);
-	}
-
-	vi_setup();
+	rpc_scene *scene = find_scene(name);
+	if (!scene) return fmt_error("Scene not found: '%s'", name);
 
 	if (!scene->vi_scene) {
 		scene->vi_scene = vi_make_scene(scene->fbx_scene);
@@ -232,6 +234,7 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		.near_plane = (float)jsi_get_double(camera, "nearPlane", 0.01f),
 		.far_plane = (float)jsi_get_double(camera, "farPlane", 100.0f),
 		.selected_element_id = (uint32_t)jsi_get_int(desc, "selectedElement", -1),
+		.highlight_vertex_index = (uint32_t)jsi_get_int(desc, "highlightVertexIndex", -1),
 		.time = jsi_get_double(animation, "time", 0.0),
 		.overrides = overrides,
 		.num_overrides = num_overrides,
@@ -307,6 +310,40 @@ char *rpc_cmd_free_resources(arena_t *tmp, jsi_obj *args)
 	return end_response(&s);
 }
 
+char *rpc_cmd_get_vertex(arena_t *tmp, jsi_obj *args)
+{
+	const char *scene_name = jsi_get_str(args, "sceneName", NULL);
+	size_t element_id = (size_t)jsi_get_int(args, "elementId", SIZE_MAX);
+	size_t index = (size_t)jsi_get_int(args, "index", SIZE_MAX);
+
+	const char *name = jsi_get_str(args, "sceneName", NULL);
+	if (!name) return fmt_error("Missing field: 'name'");
+	rpc_scene *scene = find_scene(name);
+	if (!scene) return fmt_error("Scene not found: '%s'", name);
+	if (!scene->fbx_scene) return fmt_error("Scene not loaded");
+
+	ufbx_scene *fbx_scene = scene->fbx_scene;
+	if (element_id >= fbx_scene->elements.count) return fmt_error("Bad element id: %zu", element_id);
+	ufbx_element *element = fbx_scene->elements.data[element_id];
+	if (element->type != UFBX_ELEMENT_MESH) return fmt_error("Element is not a mesh");
+	ufbx_mesh *mesh = (ufbx_mesh*)element;
+	if (index >= mesh->num_indices) return fmt_error("Index out of bounds: %zu", index);
+
+	jso_stream s = begin_response();
+
+	jso_prop_int(&s, "vertexIndex", (int)mesh->vertex_indices[index]);
+
+	jso_prop_vec3(&s, "position", ufbx_get_vertex_vec3(&mesh->vertex_position, index));
+	if (mesh->vertex_normal.data) {
+		jso_prop_vec3(&s, "normal", ufbx_get_vertex_vec3(&mesh->vertex_normal, index));
+	}
+	if (mesh->vertex_uv.data) {
+		jso_prop_vec2(&s, "uv", ufbx_get_vertex_vec2(&mesh->vertex_uv, index));
+	}
+
+	return end_response(&s);
+}
+
 char *rpc_handle(arena_t *tmp, jsi_value *value)
 {
 	jsi_obj *obj = jsi_as_obj(value);
@@ -325,6 +362,8 @@ char *rpc_handle(arena_t *tmp, jsi_value *value)
 		return rpc_cmd_get_pixels(tmp, obj);
 	} else if (!strcmp(cmd, "freeResources")) {
 		return rpc_cmd_free_resources(tmp, obj);
+	} else if (!strcmp(cmd, "getVertex")) {
+		return rpc_cmd_get_vertex(tmp, obj);
 	} else {
 		return fmt_error("Unknown cmd: '%s'\n", cmd);
 	}
