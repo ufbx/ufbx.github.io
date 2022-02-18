@@ -151,13 +151,13 @@ function patchTypes(tokens) {
 let globalDeclId = 0
 
 function patchDecls(tokens) {
-    for (const m of search(tokens, /line (?:kw:const )?(type:\S* )(?:op:\* )*(name:\S* )(?:op:= |op:; )/)) {
+    for (const m of search(tokens, /line (?:kw:const )?(type:\S* )(?:op:\* )*(name:\S* )(?:op:= |op:; |op:\[ )/)) {
         const type = m.groups[1].token
         const name = m.groups[2].token
         name.declType = type.text
         name.declId = ++globalDeclId
     }
-    for (const m of search(tokens, /(?:op:\( |op:, )(?:kw:const )?(type:\S* )(?:op:\* )*(name:\S* )(?:op:= |op:; )/)) {
+    for (const m of search(tokens, /(?:op:\( |op:, )(?:kw:const )?(type:\S* )(?:op:\* )*(name:\S* )(?:op:= |op:; |op:, |op:\) |op:\[ )/)) {
         const type = m.groups[1].token
         const name = m.groups[2].token
         name.declType = type.text
