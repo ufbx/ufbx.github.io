@@ -1226,7 +1226,7 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 					pos = um_transform_point(&mat, pos);
 
 					if (fbx_mesh->vertex_normal.data) {
-						um_mat normal_mat = um_mat_tranpose(um_mat_inverse(mat));
+						um_mat normal_mat = um_mat_transpose(um_mat_inverse(mat));
 
 						um_vec3 normal = fbx_to_um_vec3(ufbx_get_vertex_vec3(&fbx_mesh->vertex_normal, highlight_index));
 						normal = um_normalize3(um_transform_direction(&normal_mat, normal));
