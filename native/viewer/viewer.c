@@ -600,14 +600,14 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 		}
 	}
 
-	for (size_t di = 0; di < fbx_mesh->blend_deformers.count; di++) {
-		ufbx_blend_deformer *deformer = fbx_mesh->blend_deformers.data[di];
-		for (size_t ci = 0; ci < deformer->channels.count; ci++) {
-			ufbx_blend_channel *channel = deformer->channels.data[ci];	
-			for (size_t ki = 0; ki < channel->keyframes.count; ki++) {
-				ufbx_blend_shape *shape = channel->keyframes.data[ki].shape;
-				float f_keyframe_index = (float)(vs->blend_channels[channel->id].keyframe_offset + ki);
-				for (size_t vi = 0; vi < fbx_mesh->num_vertices; vi++) {
+	for (size_t vi = 0; vi < fbx_mesh->num_vertices; vi++) {
+		for (size_t di = 0; di < fbx_mesh->blend_deformers.count; di++) {
+			ufbx_blend_deformer *deformer = fbx_mesh->blend_deformers.data[di];
+			for (size_t ci = 0; ci < deformer->channels.count; ci++) {
+				ufbx_blend_channel *channel = deformer->channels.data[ci];	
+				for (size_t ki = 0; ki < channel->keyframes.count; ki++) {
+					ufbx_blend_shape *shape = channel->keyframes.data[ki].shape;
+					float f_keyframe_index = (float)(vs->blend_channels[channel->id].keyframe_offset + ki);
 					ufbx_vec3 offset = ufbx_get_blend_shape_vertex_offset(shape, vi);
 					if (offset.x == 0.0f && offset.y == 0.0f && offset.z == 0.0f) continue;
 
