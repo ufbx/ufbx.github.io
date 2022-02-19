@@ -176,7 +176,7 @@ void main()
     gl_Position = clip_pos;
     v_normal = normalize(world_normal);
     v_barycentric = vec2(bary_index == 1 ? 1.0 : 0.0, bary_index == 2.0 ? 1.0 : 0.0);
-    v_highlight = highlight;
+    v_highlight = min(highlight, 1.0);
 }
 
 @end
