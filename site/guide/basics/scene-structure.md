@@ -32,7 +32,7 @@ the list to get a feel of what is possible.
   - Light source&emsp;`ufbx_light`
   - Camera&emsp;`ufbx_camera`
   - Bone&emsp;`ufbx_bone`
-  - Empty / Null&emsp;`ufbx_empty`
+  - Empty / Null&emsp;`ufbx_empty`&ensp;`ufbx_marker`
   - Curves&emsp;`ufbx_line_curve`&ensp;`ufbx_nurbs_curve`
   - Surfaces&emsp;`ufbx_nurbs_surface`&ensp;`ufbx_nurbs_trim_surface`&ensp;`ufbx_nurbs_trim_boundary`
   - Oddities&emsp;`ufbx_procedural_geometry`&ensp;`ufbx_stereo_camera`&ensp;`ufbx_camera_switcher`&ensp;`ufbx_lod_group`
