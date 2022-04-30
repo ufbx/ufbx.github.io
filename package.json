@@ -10,13 +10,12 @@
   },
   "author": "",
   "license": "ISC",
-  "devDependencies": {
+  "dependencies": {
     "@11ty/eleventy": "^1.0.0",
     "@11ty/eleventy-navigation": "^0.3.2",
     "clean-css": "^5.2.2",
-    "markdown-it": "^12.3.2"
-  },
-  "dependencies": {
-    "markdown-it-footnote": "^3.0.3"
+    "markdown-it": "^12.3.2",
+    "markdown-it-footnote": "^3.0.3",
+    "prismjs": "^1.28.0"
   }
 }

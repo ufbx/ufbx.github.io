@@ -8,9 +8,10 @@ const tokenTypes = {
     comment: "//[^\n]*|/\*.*?\\*/",
     name: "[A-Za-z_][A-Za-z_0-9]*",
     string: "\"(?:\\\"|[^\"])*?\"",
+    header: "<[a-zA-Z0-9\.]+>(?=\s*\n)",
     line: "\n",
     space: "[ \\t\\r]+",
-    op: "(?:->|<<|>>|.)",
+    op: "(?:->|<<|>>|.|::|:)",
 }
 
 const tokenNames = Object.keys(tokenTypes)
@@ -87,7 +88,7 @@ function search(tokens, pattern) {
 
         mapping[pos] = index
         let repr = ""
-        if (token.type === "string" || token.type === "line") {
+        if (token.type === "string" || token.type === "line" || token.type === "header") {
             repr = `${token.type} `
         } else {
             repr = `${token.type}:${token.text} `
@@ -157,7 +158,7 @@ function patchDecls(tokens) {
         name.declType = type.text
         name.declId = ++globalDeclId
     }
-    for (const m of search(tokens, /(?:op:\( |op:, )(?:kw:const )?(type:\S* )(?:op:\* )*(name:\S* )(?:op:= |op:; |op:, |op:\) |op:\[ )/)) {
+    for (const m of search(tokens, /(?:op:\( |op:, )(?:kw:const )?(type:\S* )(?:op:\* )*(name:\S* )(?:op:= |op:; |op:, |op:\) |op:\[ |op:: )/)) {
         const type = m.groups[1].token
         const name = m.groups[2].token
         name.declType = type.text
@@ -255,10 +256,13 @@ function highlight(str) {
     patchInitFields(tokens)
 
     return tokens.map((token) => {
+        const safeText = token.text.replace("<", "&lt;").replace(">", "&gt;")
         if (token.type === "op" || token.type === "line" || token.type === "space") {
-            return token.text
+            return safeText
+        } else if (token.type === "header") {
+            return `<span class="c-header">${safeText}</span>`
         } else if (token.type === "comment") {
-            return `<span class="c-comment">${token.text}</span>`
+            return `<span class="c-comment">${safeText}</span>`
         } else {
             let classes = [`c-${token.type}`]
             let tag = "span"
@@ -276,7 +280,7 @@ function highlight(str) {
             }
 
             const attribStr = Object.keys(attribs).map(key => `${key}="${attribs[key]}"`).join(" ")
-            return `<${tag} ${attribStr}>${token.text}</${tag}>`
+            return `<${tag} ${attribStr}>${safeText}</${tag}>`
         }
     }).join("")
 }

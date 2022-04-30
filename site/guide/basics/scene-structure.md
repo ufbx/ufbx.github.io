@@ -84,7 +84,7 @@ The nodes are sorted by depth so you can apply parent transformations without re
 
 Here's an example how to compute `ufbx_node.node_to_world`.
 
-```cc
+```c
 ufbx_scene *scene;
 ufbx_matrix node_to_world[128];
 

@@ -10,6 +10,135 @@ eleventyNavigation:
 
 ## Setup
 
+Let's try this again
+
+```c
+#include <stdio.h>
+#include "ufbx.h"
+
+int main()
+{
+    ufbx_scene *scene = ufbx_load_file("my_scene.fbx", NULL, NULL);
+
+    for (size_t i = 0; i < scene->nodes.count; i++) {
+        ufbx_node *node = scene->nodes.data[i];
+        printf("%s\n", node->name.data);
+    }
+
+    ufbx_free_scene(scene);
+    return 0;
+}
+```
+
+```cpp
+#include <stdio.h>
+#include "ufbx.h"
+
+int main()
+{
+    ufbx_scene *scene = ufbx_load_file("my_scene.fbx", NULL, NULL);
+
+    for (ufbx_node *node : scene->nodes) {
+        printf("%s\n", node->name.data);
+    }
+
+    ufbx_free_scene(scene);
+    return 0;
+}
+```
+
+```rust
+use ufbx;
+
+fn main() {
+    let scene = ufbx::load_file("my_scene.fbx", ufbx::LoadOpts::default()).unwrap();
+
+    for node in &scene.nodes {
+        println!("{}", node.element.name);
+    }
+}
+```
+
+For a more complete example let's supply some load options and check the returned error properly.
+
+```c
+#include <stdio.h>
+#include "ufbx.h"
+
+int main()
+{
+    // FBX scenes have configurable axes and units but we can normalize them at load time.
+    ufbx_load_opts opts = {
+        .target_axes = ufbx_axes_right_handed_y_up,
+        .target_unit_meters = 1.0f,
+    };
+
+    ufbx_error error;
+    ufbx_scene *scene = ufbx_load_file("my_scene.fbx", &opts, &error);
+    if (!scene) {
+        fprintf(stderr, "Failed to load scene: %s\n", error.description.data);
+        return 1;
+    }
+
+    for (size_t i = 0; i < scene->nodes.count; i++) {
+        ufbx_node *node = scene->nodes.data[i];
+        printf("%s\n", node->name.data);
+    }
+
+    ufbx_free_scene(scene);
+    return 0;
+}
+```
+
+```cpp
+#include <stdio.h>
+#include "ufbx.h"
+
+int main()
+{
+    // FBX scenes have configurable axes and units but we can normalize them at load time.
+    ufbx_load_opts opts = { };
+    opts.target_axes = ufbx_axes_right_handed_y_up;
+    opts.target_unit_meters = 1.0f;
+
+    ufbx_error error;
+    ufbx_scene *scene = ufbx_load_file("my_scene.fbx", &opts, &error);
+    if (!scene) {
+        fprintf(stderr, "Failed to load scene: %s\n", error.description.data);
+        return 1;
+    }
+
+    for (ufbx_node *node : scene->nodes) {
+        printf("%s\n", node->name.data);
+    }
+
+    ufbx_free_scene(scene);
+    return 0;
+}
+```
+
+```rust
+use ufbx;
+
+fn main() {
+    // FBX scenes have configurable axes and units but we can normalize them at load time.
+    let opts = ufbx::LoadOpts {
+        ...Default::default(),
+        target_axes: ufbx_axes_right_handed_y_u,p
+        target_unit_meters: 1.0,
+    };
+
+    let scene = match ufbx::load_file("my_scene.fbx", opts) {
+        Ok(scene) => scene,
+        Err(error) => panic!("Failed to load scene: {}", error.description),
+    };
+
+    for node in &scene.nodes {
+        println!("{}", node.element.name);
+    }
+}
+```
+
 The only files you will need are `ufbx.c/h`. You can get them from [https://github.com/bqqbarbhg/ufbx](https://github.com/bqqbarbhg/ufbx).
 The library has no dependencies aside from libc (and libm on platforms where it's separate from libc).
 
@@ -19,6 +148,21 @@ In this case I recommend renaming the file to `ufbx.c.h` so it's purpose is clea
 ```c
 #define ufbx_assert(cond) my_assert(cond)
 #include "ufbx.c.h"
+```
+
+```rust
+let x = 
+```
+
+Hey!
+
+```c
+#define ufbx_assert(cond) my_assert(cond)
+#include "ufbx.c.h"
+```
+
+```rust
+let x = 
 ```
 
 ## Loading scenes

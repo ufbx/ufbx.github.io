@@ -2,17 +2,51 @@
 p {
     margin: 1em 2em;
     line-height: 1.5;
+    color: #222;
 }
 
 pre {
-    margin: 2em;
-    padding: 1em;
-    border-radius: 0.2em;
-    background-color: #fafaff;
+    border-radius: 0 0.2em 0.2em 0.2em;
+    background-color: #f1f1f4;
 }
 
 code {
     border-radius: 0.2em;
-    background-color: #fafaff;
+    background-color: #f1f1f4;
 }
 
+.lang-select {
+    display: flex;
+    flex-flow: row wrap;
+    margin: 1em 2em;
+}
+
+.lang-radio {
+    display: none;
+}
+
+.lang-label {
+    order: 1;
+    cursor: pointer;
+    padding: 0.3em 1em;
+    margin-right: 0.5em;
+    border-radius: 0.2em 0.2em 0 0;
+    background-color: #aab;
+    color: #334;
+    user-select: none;
+}
+
+.lang-radio:checked + .lang-label {
+    background-color: #f1f1f4;
+    color: #558;
+}
+
+.lang-content {
+    order: 2;
+    width: 100%;
+    padding: 0.5em;
+}
+
+.lang-radio:not(:checked) + .lang-label + .lang-content {
+    display: none;
+}
