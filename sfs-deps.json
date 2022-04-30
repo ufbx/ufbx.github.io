@@ -1,0 +1,25 @@
+{
+    "dependencies": [
+        {
+            "name": "sfs",
+            "url": "https://github.com/bqqbarbhg/sfs",
+            "files": "sfs.py"
+        },
+        {
+            "name": "ufbx",
+            "url": "https://github.com/bqqbarbhg/ufbx",
+            "branch": "strong-types",
+            "files": [
+                {
+                    "root": "native/viewer",
+                    "files": ["ufbx.h", "ufbx.c"]
+                },
+                {
+                    "root": "parser",
+                    "remoteRoot": "bindgen",
+                    "files": ["parsette.py", "ufbx_parser.py"]
+                }
+            ]
+        }
+    ]
+}

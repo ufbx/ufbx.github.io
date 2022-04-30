@@ -17,7 +17,7 @@ TNumber = lexer.rule("number", r"(0[Xx][0-9A-Fa-f]+)|([0-9]+)", prefix=string.di
 TComment = lexer.rule("comment", r"//[^\r\n]*", prefix="/")
 TPreproc = lexer.rule("preproc", r"#[^\n\\]*(\\\r?\n[^\n\\]*?)*\n", prefix="#")
 TString = lexer.rule("string", r"\"[^\"]*\"", prefix="\"")
-lexer.literals(*"const typedef struct union enum extern ufbx_inline UFBX_LIST_TYPE".split())
+lexer.literals(*"const typedef struct union enum extern ufbx_abi ufbx_inline ufbx_nullable UFBX_LIST_TYPE".split())
 lexer.literals(*",.*[]{}()<>=-;")
 
 Token = parsette.Token
@@ -63,7 +63,13 @@ class ANameAnonymous(AName):
 class ATypeInline(AType):
     inner: AType
 
+class ATypeAbi(AType):
+    inner: AType
+
 class ATypeConst(AType):
+    inner: AType
+
+class ATypeNullable(AType):
     inner: AType
 
 class ATypeIdent(AType):
@@ -126,6 +132,14 @@ class Parser(parsette.Parser):
             line += 1
         return comment_type(comments)
 
+    def accept_impl(self) -> bool:
+        if self.token.rule != TIdent: return False
+        text = self.token.text()
+        if not text.startswith("UFBX_"): return False
+        if not text.endswith("_IMPL"): return False
+        self.scan()
+        return True
+
     def finish_struct(self, kind) -> ATypeStruct:
         kn = kind.text()
         name = self.accept(TIdent)
@@ -136,6 +150,9 @@ class Parser(parsette.Parser):
                 while not self.accept("}"):
                     if self.accept(TComment):
                         fields.append(self.finish_comment(AStructComment, self.prev_token))
+                    elif self.accept_impl():
+                        self.require("(", "for macro parameters")
+                        self.finish_macro_params()
                     else:
                         decl = self.parse_decl(f"{kn} field")
                         field = AStructField(decl)
@@ -174,9 +191,15 @@ class Parser(parsette.Parser):
         if self.accept("const"):
             inner = self.parse_type()
             return ATypeConst(inner)
+        elif self.accept("ufbx_nullable"):
+            inner = self.parse_type()
+            return ATypeNullable(inner)
         elif self.accept("ufbx_inline"):
             inner = self.parse_type()
             return ATypeInline(inner)
+        elif self.accept("ufbx_abi"):
+            inner = self.parse_type()
+            return ATypeAbi(inner)
         elif self.accept(["struct", "union"]):
             return self.finish_struct(self.prev_token)
         elif self.accept("enum"):
@@ -186,19 +209,23 @@ class Parser(parsette.Parser):
         else:
             self.fail_got("expected a type")
 
-    def parse_name(self, ctx, allow_anonymous=False) -> AName:
+    def parse_name_non_array(self, ctx, allow_anonymous=False) -> AName:
         if self.accept("*"):
-            inner = self.parse_name(ctx, allow_anonymous)
+            inner = self.parse_name_non_array(ctx, allow_anonymous)
             return ANamePointer(inner)
         if allow_anonymous and not self.peek(TIdent):
-            ast = ANameAnonymous()
+            return ANameAnonymous()
         else:
             name = self.require(TIdent, f"for {ctx} name")
-            ast = ANameIdent(name)
+            return ANameIdent(name)
+
+    def parse_name(self, ctx, allow_anonymous=False) -> AName:
+        ast = self.parse_name_non_array(ctx, allow_anonymous)
+
         while True:
             if self.accept("["):
                 length = self.accept([TIdent, TNumber])
-                self.require("]", f"for '{name.text()}' opening [")
+                self.require("]", f"for opening [")
                 ast = ANameArray(ast, length)
             elif self.accept("("):
                 args = []
@@ -228,6 +255,14 @@ class Parser(parsette.Parser):
         decl = self.parse_decl("UFBX_TOP_LIST type", allow_anonymous=True, allow_list=False)
         self.require(")", "for macro parameters")
         return ATopList(name, decl)
+
+    def finish_macro_params(self):
+        while not self.accept(")"):
+            if self.accept(TEnd): self.fail("Unclosed macro parameters")
+            if self.accept("("):
+                self.finish_macro_params()
+            else:
+                self.scan()
 
     def parse_top(self) -> List[ATop]:
         if self.accept(TPreproc):
@@ -284,10 +319,14 @@ def fmt_type(type: AType):
         return type.name.text()
     elif isinstance(type, ATypeConst):
         return f"const {fmt_type(type.inner)}"
+    elif isinstance(type, ATypeNullable):
+        return f"ufbx_nullable {fmt_type(type.inner)}"
 
 class SMod: pass
 class SModConst(SMod): pass
+class SModNullable(SMod): pass
 class SModInline(SMod): pass
+class SModAbi(SMod): pass
 class SModPointer(SMod): pass
 class SModArray(SMod):
     def __init__(self, length: Optional[str]):
@@ -320,6 +359,7 @@ class SDecl(NamedTuple):
     comment: Optional[SComment] = None
     comment_inline: bool = False
     is_function: bool = False
+    value: Optional[str] = None
 
 class SDeclGroup(NamedTuple):
     line: int
@@ -335,6 +375,7 @@ class SStruct(NamedTuple):
     kind: str
     name: Optional[str]
     decls: List[SCommentDecl]
+    is_list: bool = False
 
 class SEnum(NamedTuple):
     line: int
@@ -346,7 +387,11 @@ def type_line(type: AType):
         return type.name.location.line
     elif isinstance(type, ATypeConst):
         return type_line(type.inner)
+    elif isinstance(type, ATypeNullable):
+        return type_line(type.inner)
     elif isinstance(type, ATypeInline):
+        return type_line(type.inner)
+    elif isinstance(type, ATypeAbi):
         return type_line(type.inner)
     elif isinstance(type, ATypeStruct):
         return type.kind.location.line
@@ -361,9 +406,15 @@ def to_stype(type: AType) -> SType:
     elif isinstance(type, ATypeConst):
         st = to_stype(type.inner)
         return st._replace(mods=st.mods + [SModConst()])
+    elif isinstance(type, ATypeNullable):
+        st = to_stype(type.inner)
+        return st._replace(mods=st.mods + [SModNullable()])
     elif isinstance(type, ATypeInline):
         st = to_stype(type.inner)
         return st._replace(mods=st.mods + [SModInline()])
+    elif isinstance(type, ATypeAbi):
+        st = to_stype(type.inner)
+        return st._replace(mods=st.mods + [SModAbi()])
     elif isinstance(type, ATypeStruct):
         body = to_sstruct(type) if type.decls is not None else None
         return SType(type.kind.text(), type.name.text() if type.name else None, body=body)
@@ -458,6 +509,7 @@ def to_senum(enum: ATypeEnum) -> SEnum:
                 line_begin=line,
                 line_end=line,
                 kind="enumValue",
+                value=decl.value.text() if decl.value else None,
                 names=[
                     SName(
                         name=decl.name.text(),
@@ -499,7 +551,7 @@ def top_sdecls(top: ATop) -> List[SCommentDecl]:
             body=SStruct(line, "struct", name, [
                 SDecl(line, line, "field", [SName("data", st._replace(mods=st.mods+[SModPointer()]))]),
                 SDecl(line+1, line+1, "field", [SName("count", SType("name", "size_t"))]),
-            ])
+            ], is_list=True)
         ))])]
     elif isinstance(top, ATopPreproc):
         return [] # TODO
@@ -572,8 +624,12 @@ def format_arg(decl: SDecl):
 def format_mod(mod: SMod):
     if isinstance(mod, SModConst):
         return { "type": "const" }
+    elif isinstance(mod, SModNullable):
+        return { "type": "nullable" }
     elif isinstance(mod, SModInline):
         return { "type": "inline" }
+    elif isinstance(mod, SModAbi):
+        return { "type": "abi" }
     elif isinstance(mod, SModPointer):
         return { "type": "pointer" }
     elif isinstance(mod, SModArray):
@@ -615,6 +671,7 @@ def format_decls(decls: List[SCommentDecl], allow_groups: bool):
                     "name": body.name,
                     "comment": decl.comment.text if decl.comment else [],
                     "commentInline": decl.comment_inline,
+                    "isList": body.is_list,
                     "decls": list(format_decls(body.decls, allow_groups=True)),
                 }
             elif isinstance(body, SEnum):
@@ -636,6 +693,7 @@ def format_decls(decls: List[SCommentDecl], allow_groups: bool):
                         "comment": decl.comment.text if decl.comment else [],
                         "commentInline": decl.comment_inline,
                         "isFunction": decl.is_function,
+                        "value": decl.value,
                         "type": format_type(name.type),
                     }
         elif isinstance(decl, SDeclGroup):
@@ -661,7 +719,7 @@ if __name__ == "__main__":
 
     input_file = argv.i
     if not input_file:
-        input_file = os.path.join(src_path, "..", "native", "viewer", "ufbx.h")
+        input_file = os.path.join(src_path, "..", "ufbx.h")
 
     output_file = argv.o
     if not output_file:

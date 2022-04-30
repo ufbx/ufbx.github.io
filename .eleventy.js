@@ -157,7 +157,7 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.addWatchTarget("./native/viewer/ufbx.h")
   eleventyConfig.on("eleventy.before", async () => {
     if (pythonExe) {
-      const cmd = `${pythonExe} parser/ufbx_parser.py`
+      const cmd = `${pythonExe} parser/ufbx_parser.py -i native/viewer/ufbx.h -o parser/build/ufbx.json`
       console.log(cmd)
       execSync(cmd)
     }
