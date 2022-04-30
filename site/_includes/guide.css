@@ -34,11 +34,13 @@ code {
     background-color: #aab;
     color: #334;
     user-select: none;
+    border-bottom: 1px solid #aab;
 }
 
 .lang-radio:checked + .lang-label {
     background-color: #f1f1f4;
     color: #558;
+    border-bottom: 1px solid #dde;
 }
 
 .lang-content {
