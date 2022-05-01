@@ -32,6 +32,7 @@ const keywords = new Set([
 const builtins = new Set([
     "true",
     "false",
+    "nullptr",
     "NULL",
 ])
 

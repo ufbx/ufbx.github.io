@@ -16,8 +16,23 @@ body {
     background-color: #222;
     font-size: 1rem;
 }
+
+.doc-viewer-nojs {
+    background-color: #222;
+    padding: 0.5rem;
+    width: 100%;
+    display: block;
+    color: #ddd;
+    text-align: center;
+}
+
 .doc-viewer-mid {
-    height: 22em;
+    height: 22rem;
+    width: 100%;
+}
+
+.doc-viewer-tall {
+    height: 28rem;
     width: 100%;
 }
 
@@ -50,7 +65,7 @@ body {
 .g-main {
     flex-grow: 8;
     min-width: 35rem;
-    max-width: 60rem;
+    max-width: 55rem;
     font-size: 1rem;
     background-color: #fff;
 }
@@ -94,15 +109,15 @@ body {
 }
 
 .c-string {
-    color: #e84;
+    color: #ca6725;
 }
 
 .c-header {
-    color: #e84;
+    color: #ca6725;
 }
 
 .token.string {
-    color: #e84;
+    color: #ca6725;
 }
 
 .c-kw {
@@ -121,6 +136,18 @@ body {
 a.c-type {
     text-decoration: underline #9815cc27;
     color: #9815cc;
+}
+
+.token.namespace {
+    color: #804d94;
+}
+
+.token.class-name {
+    color: #9815cc;
+}
+
+.token.function {
+    color: #71067a;
 }
 
 a.c-name {

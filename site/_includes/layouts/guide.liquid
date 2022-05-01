@@ -28,6 +28,23 @@
         <article>
           {{ content }}
         </article>
+        {% assign flatNavItems = collections.all | eleventyNavigation | flattenNavigationAndAddNextPrev %}
+
+        {% for item in flatNavItems %}
+          {% if item.url == page.url %}
+            {% if item.prev %}
+        <a href="{{ item.prev.url }}">
+          <- {{ item.prev.title }}
+        </a>
+            {% endif %}
+
+            {% if item.next %}
+        <a href="{{ item.next.url }}">
+          {{ item.next.title }} ->
+        </a>
+    {% endif %}
+  {% endif %}
+{% endfor %}
       </main>
     </div>
   <script>

@@ -8,3 +8,10 @@ const viewerDescs = { }
 <script defer src="/native/js_viewer.js"></script>
 
 <link rel="stylesheet" href="/script/style.css">
+<noscript>
+<style>
+.show-if-js {
+    display: none;
+}
+</style>
+</noscript>

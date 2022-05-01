@@ -15,6 +15,18 @@ export function beginDrag(buttons, callback, state=null, userOpts=null) {
         dragReceiver.style.zIndex = "10"
         dragReceiver.style.opacity = "0%"
 
+        dragReceiver.addEventListener("wheel", (e) => {
+            if (!currentDrag) return
+            if (!currentDrag.wheelCallback) return
+            const buttons = currentDrag.buttons & e.buttons
+            currentDrag.buttons = buttons
+            if (buttons) {
+                if (currentDrag.wheelCallback(e, currentDrag.state)) {
+                    e.preventDefault()
+                }
+            }
+        })
+
         dragReceiver.addEventListener("mousemove", (e) => {
             if (!currentDrag) return
             const buttons = currentDrag.buttons & e.buttons
@@ -27,6 +39,7 @@ export function beginDrag(buttons, callback, state=null, userOpts=null) {
                 resetDrag()
             }
         })
+
         dragReceiver.addEventListener("mouseup", (e) => {
             if (!currentDrag) return
             const buttons = buttonToButtons(e.button)
@@ -40,6 +53,7 @@ export function beginDrag(buttons, callback, state=null, userOpts=null) {
                 resetDrag()
             }
         })
+
         dragReceiver.addEventListener("blur", resetDrag)
     }
 
@@ -47,7 +61,8 @@ export function beginDrag(buttons, callback, state=null, userOpts=null) {
     dragReceiver.style.cursor = opts.cursor || "inherit"
 
     if (!currentDrag) {
-        currentDrag = { callback, opts, state, buttons }
+        const wheelCallback = opts.wheelCallback ?? null
+        currentDrag = { callback, opts, state, buttons, wheelCallback }
         document.body.appendChild(dragReceiver)
     }
 }

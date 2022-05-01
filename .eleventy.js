@@ -8,7 +8,7 @@ const { highlight } = require("./site/ufbx-highlight")
 const Prism = require("prismjs")
 const loadLanguages = require("prismjs/components/")
 
-loadLanguages(["rust"])
+loadLanguages(["rust", "bash"])
 
 global.ufbxReflection = null
 
@@ -34,7 +34,24 @@ module.exports = function(eleventyConfig) {
     "script/style.css": "script/style.css",
     "script/build/bundle.js": "script/bundle.js",
   })
-  
+
+  eleventyConfig.addFilter('flattenNavigationAndAddNextPrev', (nav) => {
+    const flat = []
+    const visit = (items) => {
+      for (const item of items) {
+        flat.push(item)
+        visit(item.children)
+      }
+    }
+    visit(nav)
+    for (let i = 0; i < flat.length; i++) {
+      const item = flat[i]
+      item.prev = flat[i - 1]
+      item.next = flat[i + 1]
+    }
+    return flat
+  })
+
   const md = new MarkdownIt({
     html: true,
   }).use(require("markdown-it-footnote"))
@@ -56,6 +73,7 @@ module.exports = function(eleventyConfig) {
       "c": "C",
       "cpp": "C++",
       "rust": "Rust",
+      "bash": "Bash",
     }
 
     function renderTab(token, index) {
@@ -65,11 +83,17 @@ module.exports = function(eleventyConfig) {
       const content = token.content
       const checked = index === 0 ? "checked" : ""
 
+      if (!lang) {
+        return `<pre class="lang-content">${content}</pre>`
+      }
+
       let highlightedContent = ""
       if (lang === "c" || lang === "cpp") {
         highlightedContent = highlight(content)
       } else if (lang === "rust") {
         highlightedContent = Prism.highlight(content, Prism.languages.rust, "rust")
+      } else if (lang === "bash") {
+        highlightedContent = Prism.highlight(content, Prism.languages.bash, "bash")
       } else {
         throw new Error(`Unknown language: ${lang}`)
       }

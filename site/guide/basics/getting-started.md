@@ -1,5 +1,5 @@
 ---
-title: scene-structure
+title: Getting started
 pageTitle: Scene structure
 layout: "layouts/guide"
 eleventyNavigation:
@@ -10,7 +10,36 @@ eleventyNavigation:
 
 ## Setup
 
-Let's try this again
+### C / C++
+
+*ufbx* is a single source library which means all you need is two files `ufbx.c` and `ufbx.h`.
+The simplest way to get started is to download them from [https://github.com/bqqbarbhg/ufbx](https://github.com/bqqbarbhg/ufbx).
+
+Unlike single *header* libraries you'll need to compile `ufbx.c` along the rest of your code.
+Alternatively you can `#include "ufbx.c"` in a single file to compile it.
+
+*ufbx* has no dependencies outside of libc, though you may need to pass `-lm` to link the C
+standard math library.
+
+```
+gcc -lm ufbx.c main.c -o main
+clang -lm ufbx.c main.c -o main
+```
+
+### Rust
+
+*ufbx* has Rust bindings as the crate [ufbx](https://crates.io/crates/ufbx).
+
+```
+cargo install ufbx
+```
+
+## Loading a scene
+
+To get started with *ufbx* we need to first load a scene.
+After loading a scene you can get pretty far by just inspecting the returned `ufbx_scene` structure.
+
+Let's load a scene from a file and print the names of all the nodes (aka objects in the scene hierarchy).
 
 ```c
 #include <stdio.h>
@@ -36,7 +65,7 @@ int main()
 
 int main()
 {
-    ufbx_scene *scene = ufbx_load_file("my_scene.fbx", NULL, NULL);
+    ufbx_scene *scene = ufbx_load_file("my_scene.fbx", nullptr, nullptr);
 
     for (ufbx_node *node : scene->nodes) {
         printf("%s\n", node->name.data);
@@ -59,7 +88,12 @@ fn main() {
 }
 ```
 
-For a more complete example let's supply some load options and check the returned error properly.
+In the above example we loaded the scene with default options and were pretty ruthless when it comes to error handling.
+To fix this we can use `ufbx_error` to get information about any errors that happen during loading.
+
+We can also pass in `ufbx_load_opts` for options.
+FBX scenes have varying coordinate and unit systems and *ufbx* supports normalizing them at load time.
+Here we request a right-handed Y up coordinate system with 1 meter units.
 
 ```c
 #include <stdio.h>
@@ -67,7 +101,6 @@ For a more complete example let's supply some load options and check the returne
 
 int main()
 {
-    // FBX scenes have configurable axes and units but we can normalize them at load time.
     ufbx_load_opts opts = {
         .target_axes = ufbx_axes_right_handed_y_up,
         .target_unit_meters = 1.0f,
@@ -96,7 +129,6 @@ int main()
 
 int main()
 {
-    // FBX scenes have configurable axes and units but we can normalize them at load time.
     ufbx_load_opts opts = { };
     opts.target_axes = ufbx_axes_right_handed_y_up;
     opts.target_unit_meters = 1.0f;
@@ -121,11 +153,10 @@ int main()
 use ufbx;
 
 fn main() {
-    // FBX scenes have configurable axes and units but we can normalize them at load time.
     let opts = ufbx::LoadOpts {
-        ...Default::default(),
-        target_axes: ufbx_axes_right_handed_y_u,p
+        target_axes: ufbx::CoordinateAxes::right_handed_y_up(),
         target_unit_meters: 1.0,
+        ..Default::default()
     };
 
     let scene = match ufbx::load_file("my_scene.fbx", opts) {
@@ -139,100 +170,28 @@ fn main() {
 }
 ```
 
-The only files you will need are `ufbx.c/h`. You can get them from [https://github.com/bqqbarbhg/ufbx](https://github.com/bqqbarbhg/ufbx).
-The library has no dependencies aside from libc (and libm on platforms where it's separate from libc).
-
-Alternatively you can `#include "ufbx.c"` if you want to override some of the preprocessor defines.
-In this case I recommend renaming the file to `ufbx.c.h` so it's purpose is clearer.
-
-```c
-#define ufbx_assert(cond) my_assert(cond)
-#include "ufbx.c.h"
-```
-
-```rust
-let x = 
-```
-
-Hey!
-
-```c
-#define ufbx_assert(cond) my_assert(cond)
-#include "ufbx.c.h"
-```
-
-```rust
-let x = 
-```
-
-## Loading scenes
-
-All you need to get started is to call one of the `ufbx_load_*()` functions to obtain a `ufbx_scene`.
-
-```c
-// Load a scene from a file
-ufbx_scene *scene = ufbx_load_file("my_scene.fbx", NULL, NULL);
-// .. or from a memory buffer
-ufbx_scene *scene = ufbx_load_memory(my_data, my_size, NULL, NULL);
-// .. you can also load from a custom stream but let's look into it later
-
-// Make sure to free the scene when you're done with it
-ufbx_free_scene(scene);
-```
-
-You can also provide additional options via `ufbx_load_opts` such as custom allocators, memory limits, or ignoring aspects of the file that you don't need.
-
-Detailed error information is returned via the `ufbx_error` struct.
-If you encounter a file that won't load please file an issue with the output of `ufbx_format_error()` included.
-
-```c
-// Zeroed defaults are equivalent to calling with NULL options.
-ufbx_load_opts opts = {
-    // We're only interested in animation
-    .ignore_geometry = true,
-    // Load external files referenced by the .fbx file
-    .load_external_files = true,
-};
-
-ufbx_error error;
-ufbx_scene *scene = ufbx_load_file("my_scene.fbx", &opts, &error);
-if (!scene) {
-    fprintf(stderr, "Failed to load: %s\n", error.description);
-}
-```
+If you prefer you can also load scenes from memory using `ufbx_load_memory()` or even custom
+streams using `ufbx_load_stream()`.
 
 ## Interactive viewers
 
-This guide has interactive scene viewers to illustrate some concepts like the one below.
+This guide contains interactive viewers to demonstrate the concepts. You can select elements
+from the left panel to inspect and adjust their properties.
 
-- Controls:
-    - Left mouse button: Turn camera
-    - Shift + Left mouse button / Middle mouse button: Pan camera
-    - Shift + Scroll: Zoom camera
+- Left mouse button: Turn camera
+- Shift + Left mouse button / Middle mouse button: Pan camera
+- Shift + Scroll: Zoom camera
 
 {% include "viewer.md",
   id: "blender-default",
-  class: "doc-viewer doc-viewer-mid",
+  class: "doc-viewer doc-viewer-tall",
 %}
 <script>
 viewerDescs["blender-default"] = {
-  scene: "/static/models/blender_default_cube.fbx",
-  camera: {
-    yaw: 0,
-    pitch: 0,
-    distance: 30,
-    offset: { x: 0, y: 0, z: 0 },
-  },
-  props: {
-      show: true,
-  }
+    scene: "/static/models/blender_default_cube.fbx",
+    camera: {"yaw":-375.7609577922058,"pitch":29.80519480519472,"distance":23.37493738981497,"offset":{"x":4.814403983585144,"y":1.6022970913598036,"z":-0.11125223900915396}},
+    props: {
+        show: true,
+    },
 }
 </script>
-
-## Elements
-
-Loaded scenes consist of **elements**[^1] that describe aspects of the scene such as geometry or animation. See `ufbx_element_type` for all
-supported element types.
-
-[^1]: FBX itself calls these **objects** but to avoid confusion with 3D objects ufbx uses **element**.
-

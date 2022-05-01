@@ -166,7 +166,7 @@ export default function FbxViewer({ id }) {
     const ref = useRef()
     const state = globalState.scenes[id]
 
-    const wheel = (e) => {
+    const rawWheel = (e) => {
         let scale = 0.1
         switch (e.deltaMode) {
             case WheelEvent.DOM_DELTA_PIXEL: scale = 0.04; break;
@@ -178,12 +178,21 @@ export default function FbxViewer({ id }) {
         e.preventDefault()
     }
 
+    const wheel = (e) => {
+        if (!e.shiftKey) return
+        rawWheel(e)
+    }
+
     const mouseDown = (e) => {
         if (currentDrag) return
         const buttons = buttonToButtons(e.button) & 0x5
         const action = getDragAction(buttons, e.shiftKey)
         if (buttons && action) {
-            beginDrag(buttons, handleDrag, { id, action })
+            beginDrag(buttons, handleDrag, { id, action }, {
+                wheelCallback: (e, _) => {
+                    rawWheel(e)
+                },
+            })
             e.preventDefault()
         }
     }

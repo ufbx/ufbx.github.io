@@ -1,8 +1,18 @@
 
 p {
-    margin: 1em 2em;
+    margin: 1rem 2rem;
     line-height: 1.5;
-    color: #222;
+    color: #24292f;
+}
+
+h2 {
+    margin-left: 2rem;
+    margin-top: 2rem;
+}
+
+h3 {
+    margin-left: 2rem;
+    margin-top: 2rem;
 }
 
 pre {
@@ -28,7 +38,7 @@ code {
 .lang-label {
     order: 1;
     cursor: pointer;
-    padding: 0.3em 1em;
+    padding: 0.2em 1em;
     margin-right: 0.5em;
     border-radius: 0.2em 0.2em 0 0;
     background-color: #aab;
@@ -52,3 +62,14 @@ code {
 .lang-radio:not(:checked) + .lang-label + .lang-content {
     display: none;
 }
+
+.doc-viewer {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.doc-viewer-nojs {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
