@@ -5,6 +5,12 @@ p {
     color: #24292f;
 }
 
+h1 {
+    margin-left: 2rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
 h2 {
     margin-left: 2rem;
     margin-top: 2rem;
@@ -73,3 +79,33 @@ code {
     margin-bottom: 1rem;
 }
 
+.guide-bottom-nav {
+    display: flex;
+    justify-content: space-between;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    margin-top: 4rem;
+    margin-bottom: 8rem;
+}
+
+.guide-bottom-link {
+    text-decoration: none;
+    font-size: 1.5rem;
+}
+
+.toc {
+    margin-left: 2rem;
+}
+
+.toc ol {
+    padding-left: 1em;
+    list-style-type: none;
+}
+
+.toc li {
+    margin-top: 0.25rem;
+}
+
+.toc a {
+    text-decoration: none;
+}

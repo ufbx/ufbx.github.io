@@ -1,8 +1,11 @@
 const CleanCSS = require("clean-css")
 const MarkdownIt = require("markdown-it")
 const eleventyNavigationPlugin = require("@11ty/eleventy-navigation")
+const eleventyTocPlugin = require('eleventy-plugin-nesting-toc')
+const anchor = require('markdown-it-anchor')
 const fs = require("fs")
 const url = require("url")
+const string = require('string')
 const { execSync } = require("child_process")
 const { highlight } = require("./site/ufbx-highlight")
 const Prism = require("prismjs")
@@ -20,6 +23,8 @@ let globalContext = {
 module.exports = function(eleventyConfig) {
   
   eleventyConfig.addPlugin(eleventyNavigationPlugin)
+  eleventyConfig.addPlugin(eleventyTocPlugin, {
+  })
   
   eleventyConfig.addFilter("cssmin", function(code) {
     return new CleanCSS({}).minify(code).styles
@@ -52,9 +57,28 @@ module.exports = function(eleventyConfig) {
     return flat
   })
 
+  const substitutions = [
+    [/c\+\+/gi, "cpp"],
+  ]
+
   const md = new MarkdownIt({
     html: true,
-  }).use(require("markdown-it-footnote"))
+  })
+    .use(require("markdown-it-footnote"))
+    .use(anchor, {
+      permalink: anchor.permalink.linkAfterHeader({
+        style: "aria-label",
+        assistiveText: title => `Permalink to "${title}"`,
+        wrapper: ['<div class="header-parent">', '</div>']
+      }),
+      slugify: s => {
+        for (const [re, sub] of substitutions) {
+          s = s.replace(re, sub)
+        }
+        return string(s).slugify().toString()
+      },
+      tabIndex: false,
+    })
   
   md.renderer.rules.fence = (tokens, idx, options, env, self) => {
     let langs = []
@@ -80,8 +104,13 @@ module.exports = function(eleventyConfig) {
       const lang = token.info
       const name = langNames[lang]
       const id = `${globalPrefix}-${lang}`
-      const content = token.content
+      let content = token.content
       const checked = index === 0 ? "checked" : ""
+
+      const match = content.match(/^\s*(\/\/|#)\s*ufbx-doc-example\s*:[^\n]*\n/m)
+      if (match) {
+        content = content.substring(match[0].length)
+      }
 
       if (!lang) {
         return `<pre class="lang-content">${content}</pre>`

@@ -25,6 +25,10 @@
       <div class="g-gutter-right">
       </div>
       <main class="g-main">
+        <h1>{{ title }}</h1>
+        <aside>
+          {{ content | toc }}
+        </aside>
         <article>
           {{ content }}
         </article>
@@ -32,19 +36,25 @@
 
         {% for item in flatNavItems %}
           {% if item.url == page.url %}
+            <div class="guide-bottom-nav">
             {% if item.prev %}
-        <a href="{{ item.prev.url }}">
-          <- {{ item.prev.title }}
-        </a>
+              <a href="{{ item.prev.url }}" class="guide-bottom-link">
+                ⭠ {{ item.prev.title }}
+              </a>
+            {% else %}
+              <span></span>
             {% endif %}
 
             {% if item.next %}
-        <a href="{{ item.next.url }}">
-          {{ item.next.title }} ->
-        </a>
-    {% endif %}
-  {% endif %}
-{% endfor %}
+                <a href="{{ item.next.url }}" class="guide-bottom-link">
+                  {{ item.next.title }} ⭢
+                </a>
+            {% else %}
+              <span></span>
+            {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
       </main>
     </div>
   <script>

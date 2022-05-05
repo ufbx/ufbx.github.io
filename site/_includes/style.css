@@ -160,3 +160,31 @@ article > ul li {
     margin-left: 2em;
     line-height: 1.3;
 }
+
+.header-anchor {
+    visibility: hidden;
+    color: #888;
+    text-decoration: none;
+    font-size: 1.2em;
+    margin-left: 0.2em;
+}
+
+.header-parent h1 {
+    display: inline-block;
+}
+
+.header-parent h2 {
+    display: inline-block;
+}
+
+.header-parent h3 {
+    display: inline-block;
+}
+
+.header-parent h4 {
+    display: inline-block;
+}
+
+.header-parent:hover .header-anchor {
+    visibility: visible;
+}
