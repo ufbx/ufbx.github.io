@@ -27,7 +27,7 @@ jobs:
           ./emsdk activate latest
       - name: Download SHDC
         run: |
-          curl https://raw.githubusercontent.com/floooh/sokol-tools-bin/3592dabe8667d0ef3c36fa9bcce903a9aa9e8b46/bin/linux/sokol-shdc -o sokol-shdc
+          curl https://raw.githubusercontent.com/floooh/sokol-tools-bin/33d2e4cc26088c6c28eaef5467990f8940d15aab/bin/linux/sokol-shdc -o sokol-shdc
           chmod +x sokol-shdc
           pwd >> $GITHUB_PATH
       - name: Build native
