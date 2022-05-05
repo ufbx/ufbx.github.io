@@ -44,5 +44,5 @@ jobs:
         run: |
           npm install
           npm run build
-      - name: Run tests
+      - name: Compile examples
         run: python3 tests/compile-examples.py
