@@ -84,7 +84,10 @@ class CompilerGCC(CompilerC):
     def compile(self, path):
         main_path = os.path.join(path, "main.c")
         exe_path = os.path.join(path, self.exe_path)
-        args = self.exe + ["-I", "native/viewer", self.ufbx_obj, main_path, "-o", exe_path]
+        lm = []
+        if sys.platform != "win32":
+            lm = ["-lm"]
+        args = self.exe + ["-I", "native/viewer"] + lm + [self.ufbx_obj, main_path, "-o", exe_path]
         exec(args)
 
 class CompilerClang(CompilerGCC):
@@ -109,7 +112,9 @@ class CompilerCargo(Compiler):
         args = self.exe + ["--version"]
         exec(args)
 
-    def setup(self, path, source_lines):
+    def prepare(self):
+        path = self.compiler_path
+
         exec(self.exe + ["init"], cwd=path)
 
         def patch_lines(lines):
@@ -127,6 +132,11 @@ class CompilerCargo(Compiler):
         with open(toml_path, "rt") as f:
             toml_lines = list(patch_lines(f))
         write_lines(toml_path, toml_lines)
+
+        exec(self.exe + ["build"], cwd=path)
+
+    def setup(self, path, source_lines):
+        shutil.copytree(self.compiler_path, path, dirs_exist_ok=True)
 
         main_path = os.path.join(path, "src", "main.rs")
         write_lines(main_path, source_lines)
@@ -229,8 +239,6 @@ def main():
     for example in examples:
         log("")
         log(f"== Compiling: {example.name} {example.lang} ==")
-
-        compiler.prepare()
 
         compiler = compilers[example.lang]
         key = f"{example.name}-{example.lang}"
