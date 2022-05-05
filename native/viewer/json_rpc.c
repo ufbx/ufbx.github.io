@@ -331,13 +331,13 @@ char *rpc_cmd_get_vertex(arena_t *tmp, jsi_obj *args)
 
 	jso_stream s = begin_response();
 
-	jso_prop_int(&s, "vertexIndex", (int)mesh->vertex_indices[index]);
+	jso_prop_int(&s, "vertexIndex", (int)mesh->vertex_indices.data[index]);
 
 	jso_prop_vec3(&s, "position", ufbx_get_vertex_vec3(&mesh->vertex_position, index));
-	if (mesh->vertex_normal.data) {
+	if (mesh->vertex_normal.exists) {
 		jso_prop_vec3(&s, "normal", ufbx_get_vertex_vec3(&mesh->vertex_normal, index));
 	}
-	if (mesh->vertex_uv.data) {
+	if (mesh->vertex_uv.exists) {
 		jso_prop_vec2(&s, "uv", ufbx_get_vertex_vec2(&mesh->vertex_uv, index));
 	}
 

@@ -579,7 +579,7 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 			for (size_t i = 0; i < vert.num_weights; i++) {
 				ufbx_skin_cluster *cluster = deformer->clusters.data[weights[i].cluster_index];
 				vi_deform_bone *d_bone = alist_push(&tmp, vi_deform_bone, &d_bones);
-				d_bone->f_cluster_index = (float)cluster->id;
+				d_bone->f_cluster_index = (float)cluster->typed_id;
 				d_bone->weight = (float)weights[i].weight;
 			}
 			// We need to keep bones paired for the GPU
@@ -607,7 +607,7 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 				ufbx_blend_channel *channel = deformer->channels.data[ci];	
 				for (size_t ki = 0; ki < channel->keyframes.count; ki++) {
 					ufbx_blend_shape *shape = channel->keyframes.data[ki].shape;
-					float f_keyframe_index = (float)(vs->blend_channels[channel->id].keyframe_offset + ki);
+					float f_keyframe_index = (float)(vs->blend_channels[channel->typed_id].keyframe_offset + ki);
 					ufbx_vec3 offset = ufbx_get_blend_shape_vertex_offset(shape, vi);
 					if (offset.x == 0.0f && offset.y == 0.0f && offset.z == 0.0f) continue;
 
@@ -672,7 +672,7 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 		vi_part *part = &parts[num_parts++];
 
 		if (fbx_mesh_mat->material) {
-			part->material_id = fbx_mesh_mat->material->id;
+			part->material_id = fbx_mesh_mat->material->typed_id;
 		} else {
 			part->material_id = (uint32_t)vs->fbx.materials.count;
 		}
@@ -689,7 +689,7 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 
 		vi_vertex *vert = vertices;
 		for (size_t fi = 0; fi < fbx_mesh_mat->num_faces; fi++) {
-			ufbx_face face = fbx_mesh->faces[fbx_mesh_mat->face_indices[fi]];
+			ufbx_face face = fbx_mesh->faces.data[fbx_mesh_mat->face_indices.data[fi]];
 			size_t num_tris = ufbx_triangulate_face(tri_ix, num_tri_ix, fbx_mesh, face);
 			for (size_t ti = 0; ti < num_tris; ti++) {
 				uint8_t vert_ids[3] = { 0 };
@@ -697,7 +697,7 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 
 				for (size_t ci = 0; ci < 3; ci++) {
 					size_t index = tri_ix[ti * 3 + ci];
-					uint32_t vertex = fbx_mesh->vertex_indices[index];
+					uint32_t vertex = fbx_mesh->vertex_indices.data[index];
 					uint8_t existing_id = vertex_ids[vertex];
 					if (!id_used[existing_id]) {
 						id_used[existing_id] = true;
@@ -709,7 +709,7 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (vert_ids[ci] == 0) {
 						size_t index = tri_ix[ti * 3 + ci];
-						uint32_t vertex = fbx_mesh->vertex_indices[index];
+						uint32_t vertex = fbx_mesh->vertex_indices.data[index];
 						uint8_t unused_id = 1;
 						while (id_used[unused_id]) unused_id++;
 						vert_ids[ci] = unused_id;
@@ -720,7 +720,7 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 
 				for (size_t ci = 0; ci < 3; ci++) {
 					size_t index = tri_ix[ti * 3 + ci];
-					int32_t vertex_id = fbx_mesh->vertex_indices[index];
+					int32_t vertex_id = fbx_mesh->vertex_indices.data[index];
 					ufbx_vec3 position = ufbx_get_vertex_vec3(&fbx_mesh->vertex_position, index);
 					ufbx_vec3 normal = ufbx_get_vertex_vec3(&fbx_mesh->vertex_normal, index);
 					vert->position = fbx_to_um_vec3(position);
@@ -731,7 +731,8 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 			}
 		}
 
-		size_t num_vertices = ufbx_generate_indices(vertices, indices, sizeof(vi_vertex), num_indices, NULL, NULL);
+		ufbx_vertex_stream streams[] = { vertices, sizeof(vi_vertex) };
+		size_t num_vertices = ufbx_generate_indices(streams, 1, indices, num_indices, NULL, NULL);
 
 		part->vertex_buffer = make_buffer(vs->arena, NULL, &(sg_buffer_desc){
 			.type = SG_BUFFERTYPE_VERTEXBUFFER,
@@ -783,8 +784,8 @@ static void vi_update_globals(vi_scene *vs, const ufbx_scene *fbx_scene)
 		for (size_t i = 0; i < channel->keyframes.count; i++) {
 			ufbx_blend_keyframe key = channel->keyframes.data[i];
 			infos[i].weight = (float)key.effective_weight;
-			infos[i].f_channel_id = (float)channel->id;
-			infos[i].f_shape_id = (float)key.shape->id;
+			infos[i].f_channel_id = (float)channel->typed_id;
+			infos[i].f_shape_id = (float)key.shape->typed_id;
 			infos[i].pad = 0.0f;
 		}
 	}
@@ -951,7 +952,7 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 
 		for (size_t inst_ix = 0; inst_ix < fbx_mesh->instances.count; inst_ix++) {
 			ufbx_node *fbx_node = fbx_mesh->instances.data[inst_ix];
-			vi_node *node = &vs->nodes[fbx_node->id];
+			vi_node *node = &vs->nodes[fbx_node->typed_id];
 
 			for (size_t part_ix = 0; part_ix < mesh->num_parts; part_ix++) {
 				vi_part *part = &mesh->parts[part_ix];
@@ -1206,11 +1207,11 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 
 				for (size_t i = 0; i < fbx_mesh->instances.count; i++) {
 					ufbx_node *fbx_node = fbx_mesh->instances.data[i];
-					uint32_t vertex = fbx_mesh->vertex_indices[highlight_index];
+					uint32_t vertex = fbx_mesh->vertex_indices.data[highlight_index];
 
 					ufbx_matrix geometry_to_world = fbx_node->geometry_to_world;
 
-					um_vec3 pos = fbx_to_um_vec3(fbx_mesh->vertices[vertex]);
+					um_vec3 pos = fbx_to_um_vec3(fbx_mesh->vertices.data[vertex]);
 
 					if (fbx_mesh->blend_deformers.count > 0) {
 						ufbx_blend_deformer *blend = fbx_mesh->blend_deformers.data[0];
@@ -1225,7 +1226,7 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 					um_mat mat = fbx_to_um_mat(geometry_to_world);
 					pos = um_transform_point(&mat, pos);
 
-					if (fbx_mesh->vertex_normal.data) {
+					if (fbx_mesh->vertex_normal.exists) {
 						um_mat normal_mat = um_mat_transpose(um_mat_inverse(mat));
 
 						um_vec3 normal = fbx_to_um_vec3(ufbx_get_vertex_vec3(&fbx_mesh->vertex_normal, highlight_index));
@@ -1255,7 +1256,7 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 
 		for (size_t inst_ix = 0; inst_ix < fbx_element->instances.count; inst_ix++) {
 			ufbx_node *fbx_node = fbx_element->instances.data[inst_ix];
-			vi_node *node = &vs->nodes[fbx_node->id];
+			vi_node *node = &vs->nodes[fbx_node->typed_id];
 
 			um_mat node_to_world = node->node_to_world;
 			um_vec3 c = node_to_world.cols[3].xyz;
@@ -1284,7 +1285,7 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 		ufbx_camera *fbx_camera = vs->fbx_state->cameras.data[i];
 		for (size_t inst_ix = 0; inst_ix < fbx_camera->instances.count; inst_ix++) {
 			ufbx_node *fbx_node = fbx_camera->instances.data[inst_ix];
-			vi_node *node = &vs->nodes[fbx_node->id];
+			vi_node *node = &vs->nodes[fbx_node->typed_id];
 
 			float near = 0.5f * widget_scale;
 			float far = 2.0f * widget_scale;
@@ -1359,7 +1360,7 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 		ufbx_light *fbx_light = vs->fbx_state->lights.data[i];
 		for (size_t inst_ix = 0; inst_ix < fbx_light->instances.count; inst_ix++) {
 			ufbx_node *fbx_node = fbx_light->instances.data[inst_ix];
-			vi_node *node = &vs->nodes[fbx_node->id];
+			vi_node *node = &vs->nodes[fbx_node->typed_id];
 
 			if (fbx_light->type == UFBX_LIGHT_DIRECTIONAL) {
 				um_mat node_to_world = node->node_to_world;

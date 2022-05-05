@@ -30,14 +30,13 @@ const char *element_type_str(ufbx_element_type type)
 	case UFBX_ELEMENT_CAMERA: return "camera";
 	case UFBX_ELEMENT_BONE: return "bone";
 	case UFBX_ELEMENT_EMPTY: return "empty";
+	case UFBX_ELEMENT_MARKER: return "marker";
 	case UFBX_ELEMENT_LINE_CURVE: return "line_curve";
 	case UFBX_ELEMENT_NURBS_CURVE: return "nurbs_curve";
-	case UFBX_ELEMENT_PATCH_SURFACE: return "patch_surface";
-	case UFBX_ELEMENT_NURBS_SURFACE: return "nurbs_surface";
 	case UFBX_ELEMENT_NURBS_TRIM_SURFACE: return "nurbs_trim_surface";
 	case UFBX_ELEMENT_NURBS_TRIM_BOUNDARY: return "nurbs_trim_boundary";
 	case UFBX_ELEMENT_PROCEDURAL_GEOMETRY: return "procedural_geometry";
-	case UFBX_ELEMENT_CAMERA_STEREO: return "stereo_camera";
+	case UFBX_ELEMENT_STEREO_CAMERA: return "stereo_camera";
 	case UFBX_ELEMENT_CAMERA_SWITCHER: return "camera_switcher";
 	case UFBX_ELEMENT_LOD_GROUP: return "lod_group";
 	case UFBX_ELEMENT_SKIN_DEFORMER: return "skin_deformer";
@@ -70,8 +69,8 @@ const char *element_type_str(ufbx_element_type type)
 void serialize_props(jso_stream *s, ufbx_props *props)
 {
 	jso_array(s);
-	for (size_t i = 0; i < props->num_props; i++) {
-		ufbx_prop *prop = &props->props[i];
+	for (size_t i = 0; i < props->props.count; i++) {
+		ufbx_prop *prop = &props->props.data[i];
 		jso_single_line(s);
 		jso_object(s);
 		jso_prop_ustring(s, "name", prop->name);
@@ -166,15 +165,15 @@ void serialize_element_empty(jso_stream *s, ufbx_empty* elem)
 {
 }
 
+void serialize_element_marker(jso_stream *s, ufbx_marker* elem)
+{
+}
+
 void serialize_element_line_curve(jso_stream *s, ufbx_line_curve* elem)
 {
 }
 
 void serialize_element_nurbs_curve(jso_stream *s, ufbx_nurbs_curve* elem)
-{
-}
-
-void serialize_element_patch_surface(jso_stream *s, ufbx_patch_surface* elem)
 {
 }
 
@@ -194,7 +193,7 @@ void serialize_element_procedural_geometry(jso_stream *s, ufbx_procedural_geomet
 {
 }
 
-void serialize_element_camera_stereo(jso_stream *s, ufbx_camera_stereo* elem)
+void serialize_element_stereo_camera(jso_stream *s, ufbx_stereo_camera* elem)
 {
 }
 
@@ -336,14 +335,14 @@ void serialize_element(jso_stream *s, ufbx_element *elem)
 	case UFBX_ELEMENT_CAMERA: serialize_element_camera(s, (ufbx_camera*)elem); break;
 	case UFBX_ELEMENT_BONE: serialize_element_bone(s, (ufbx_bone*)elem); break;
 	case UFBX_ELEMENT_EMPTY: serialize_element_empty(s, (ufbx_empty*)elem); break;
+	case UFBX_ELEMENT_MARKER: serialize_element_marker(s, (ufbx_marker*)elem); break;
 	case UFBX_ELEMENT_LINE_CURVE: serialize_element_line_curve(s, (ufbx_line_curve*)elem); break;
 	case UFBX_ELEMENT_NURBS_CURVE: serialize_element_nurbs_curve(s, (ufbx_nurbs_curve*)elem); break;
-	case UFBX_ELEMENT_PATCH_SURFACE: serialize_element_patch_surface(s, (ufbx_patch_surface*)elem); break;
 	case UFBX_ELEMENT_NURBS_SURFACE: serialize_element_nurbs_surface(s, (ufbx_nurbs_surface*)elem); break;
 	case UFBX_ELEMENT_NURBS_TRIM_SURFACE: serialize_element_nurbs_trim_surface(s, (ufbx_nurbs_trim_surface*)elem); break;
 	case UFBX_ELEMENT_NURBS_TRIM_BOUNDARY: serialize_element_nurbs_trim_boundary(s, (ufbx_nurbs_trim_boundary*)elem); break;
 	case UFBX_ELEMENT_PROCEDURAL_GEOMETRY: serialize_element_procedural_geometry(s, (ufbx_procedural_geometry*)elem); break;
-	case UFBX_ELEMENT_CAMERA_STEREO: serialize_element_camera_stereo(s, (ufbx_camera_stereo*)elem); break;
+	case UFBX_ELEMENT_STEREO_CAMERA: serialize_element_stereo_camera(s, (ufbx_stereo_camera*)elem); break;
 	case UFBX_ELEMENT_CAMERA_SWITCHER: serialize_element_camera_switcher(s, (ufbx_camera_switcher*)elem); break;
 	case UFBX_ELEMENT_LOD_GROUP: serialize_element_lod_group(s, (ufbx_lod_group*)elem); break;
 	case UFBX_ELEMENT_SKIN_DEFORMER: serialize_element_skin_deformer(s, (ufbx_skin_deformer*)elem); break;
