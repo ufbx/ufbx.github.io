@@ -19,6 +19,8 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 2
+      - name: Install PyPI dependencies
+        run: pip install -r tests/requirements.txt
       - name: Setup Emscripten
         run: |
           git clone https://github.com/emscripten-core/emsdk.git
@@ -46,3 +48,5 @@ jobs:
           npm run build
       - name: Compile examples
         run: python3 tests/compile-examples.py
+      - name: Lint HTML
+        run: python3 tests/lint-html.py

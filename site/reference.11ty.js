@@ -326,7 +326,7 @@ function renderDecl(decl) {
                     } else if (inner.declKind === "typedef") {
                         prefix = `<span class="kw">typedef</span>\xa0`
                     }
-                    r.push(`<tr class="field-row" id="${inner.name}">`)
+                    r.push(`<tr class="field-row" id="${inner.name.toLowerCase()}">`)
                     r.push(`<td class="field-type">${prefix}${typeStr}\xa0</td>`)
                     r.push(`<td class="field-name">${inner.name}</td>`)
                     r.push(`</tr>`)

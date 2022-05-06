@@ -6,7 +6,7 @@ let globalContext = {
 
 const tokenTypes = {
     comment: "//[^\n]*|/\*.*?\\*/",
-    name: "[A-Za-z_][A-Za-z_0-9]*",
+    name: "[A-Za-z_\$][A-Za-z_0-9\$]*",
     string: "\"(?:\\\"|[^\"])*?\"",
     header: "<[a-zA-Z0-9\.]+>(?=\s*\n)",
     line: "\n",
@@ -220,7 +220,7 @@ function patchFields(tokens) {
 }
 
 function patchInitFields(tokens) {
-    for (const m of search(tokens, /line op:. (name:\S* )/)) {
+    for (const m of search(tokens, /line op:\. (name:\S* )/)) {
         const name = m.groups[1].token
         let pos = m.groups[1].begin
         let numOpen = 0
@@ -272,12 +272,14 @@ function highlight(str) {
             if (token.refId) attribs["data-ref-id"] = token.refId
             attribs["class"] = classes.join(" ")
 
-            if (token.text.toLocaleLowerCase().startsWith("ufbx_")) {
-                tag = "a"
-                attribs["href"] = linkRef(token.text.toLowerCase())
-            } else if (token.structType) {
-                tag = "a"
-                attribs["href"] = linkRef(`${token.structType}.${token.text}`)
+            if (!token.text.includes("$")) {
+                if (token.text.toLocaleLowerCase().startsWith("ufbx_")) {
+                    tag = "a"
+                    attribs["href"] = linkRef(token.text.toLowerCase())
+                } else if (token.structType) {
+                    tag = "a"
+                    attribs["href"] = linkRef(`${token.structType}.${token.text}`)
+                }
             }
 
             const attribStr = Object.keys(attribs).map(key => `${key}="${attribs[key]}"`).join(" ")

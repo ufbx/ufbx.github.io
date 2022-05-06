@@ -38,7 +38,7 @@
           {% if item.url == page.url %}
             <div class="guide-bottom-nav">
             {% if item.prev %}
-              <a href="{{ item.prev.url }}" class="guide-bottom-link">
+              <a href="{{ item.prev.url | removeDotHtml }}" class="guide-bottom-link">
                 ⭠ {{ item.prev.title }}
               </a>
             {% else %}
@@ -46,7 +46,7 @@
             {% endif %}
 
             {% if item.next %}
-                <a href="{{ item.next.url }}" class="guide-bottom-link">
+                <a href="{{ item.next.url | removeDotHtml }}" class="guide-bottom-link">
                   {{ item.next.title }} ⭢
                 </a>
             {% else %}

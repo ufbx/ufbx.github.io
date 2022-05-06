@@ -11,7 +11,7 @@ eleventyNavigation:
 ## Custom allocators
 
 **All** functions that might allocate memory in ufbx take in a `ufbx_allocator` structure.
-You can provide one through using the `ufbx_*_opts` structs such as `ufbx_load_opts` or `ufbx_evaluate_opts`.
+You can provide one through using the `ufbx_$TYPE_opts` structs such as `ufbx_load_opts` or `ufbx_evaluate_opts`.
 
 If you return `NULL` from allocation functions ufbx will gracefully fail with `UFBX_ERROR_OUT_OF_MEMORY`.
 
@@ -84,8 +84,8 @@ void *minimal_realloc(void *user, void *ptr, size_t old_size, size_t new_size)
 ufbx_scene *load_file(const char *filename, ufbx_error *error)
 {
     ufbx_load_opts opts = { ... };
-    opts.temp_allocator.realloc_fn = &minimal_realloc;
-    opts.result_allocator.realloc_fn = &minimal_realloc;
+    opts.temp_allocator.allocator.realloc_fn = &minimal_realloc;
+    opts.result_allocator.allocator.realloc_fn = &minimal_realloc;
     return ufbx_load_file(filename, &opts, &error);
 }
 ```
@@ -93,7 +93,7 @@ ufbx_scene *load_file(const char *filename, ufbx_error *error)
 ## Memory limits
 
 In addition to providing allocation callbacks `ufbx_allocator` contains memory limits.
-Use `ufbx_allocator.memory_limit` to set maximum amount of bytes to allocate.
+Use `ufbx_allocator_opts.memory_limit` to set maximum amount of bytes to allocate.
 If the file exceeds the memory limit loading will fail with `UFBX_ERROR_MEMORY_LIMIT`.
 
 ```c
@@ -106,7 +106,7 @@ opts.result_allocator.memory_limit = 64*1024*1024;
 
 ## Debugging
 
-If you are using [AddressSanitizer (ASAN)][asan] you might want to set `ufbx_allocator.huge_threshold` to 1.
+If you are using [AddressSanitizer (ASAN)][asan] you might want to set `ufbx_allocator_opts.huge_threshold` to 1.
 This causes ufbx to allocate small allocations separately, which lets ASAN catch more potential memory overflows.
 
 ```c

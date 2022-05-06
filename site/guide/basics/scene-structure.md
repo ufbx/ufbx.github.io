@@ -64,7 +64,7 @@ The scene contains a single root `ufbx_scene.root_node` that contains all the to
 void visit_node(ufbx_node *node)
 {
     // Print the name and local position
-    ufbx_vec3 pos = node->local_transform.position;
+    ufbx_vec3 pos = node->local_transform.translation;
     printf("Node %s: (%f, %f, %f)\n", node->name.data,
         pos.x, pos.y, pos.z);
 

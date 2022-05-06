@@ -554,7 +554,18 @@ def top_sdecls(top: ATop) -> List[SCommentDecl]:
             ], is_list=True)
         ))])]
     elif isinstance(top, ATopPreproc):
-        return [] # TODO
+        line = top.preproc.location.line
+        text = top.preproc.text()
+        m = re.match(r"#\s*define\s+(\w+)(\([^\)]*\))?\s+(.*)", text)
+        if m:
+            name = m.group(1)
+            args = m.group(2)
+            if args:
+                args = [arg.strip() for arg in args.split(",")]
+            value = m.group(3)
+            return [SDecl(line, line+1, "define", [SName(name, SType("define", "define"))], None, False, False, value)]
+        else:
+            return [] # TODO
     else:
         raise TypeError(f"Unhandled type {type(top)}")
 

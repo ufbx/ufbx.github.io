@@ -1133,7 +1133,7 @@ typedef struct ufbx_nurbs_basis {
 	// `order`. If for example `num_wrap_control_points == 3` you should repeat
 	// the first 3 control points after the end.
 	// HINT: You don't need to worry about this if you use ufbx functions
-	// like `ufbx_evaluate_nurbs_curve_point()` as they handle this internally.
+	// like `ufbx_evaluate_nurbs_curve()` as they handle this internally.
 	size_t num_wrap_control_points;
 
 	// `true` if the parametrization is well defined.
@@ -1142,7 +1142,7 @@ typedef struct ufbx_nurbs_basis {
 
 } ufbx_nurbs_basis;
 
-// Segment of a `ufbx_line_curve`, indices refer to `ufbx_line_curve.point_indces[]`
+// Segment of a `ufbx_line_curve`, indices refer to `ufbx_line_curve.point_indices[]`
 typedef struct ufbx_line_segment {
 	uint32_t index_begin;
 	uint32_t num_indices;
@@ -1208,7 +1208,7 @@ struct ufbx_nurbs_surface {
 	// them by `w` before evaluating the surface.
 	ufbx_vec4_list control_points;
 
-	// How many segments tessellate each step in `ufbx_nurbs_basis.steps`.
+	// How many segments tessellate each step in `ufbx_nurbs_basis.spans`.
 	int32_t span_subdivision_u;
 	int32_t span_subdivision_v;
 
@@ -1285,24 +1285,6 @@ typedef enum ufbx_lod_display {
 	UFBX_LOD_DISPLAY_FORCE_32BIT = 0x7fffffff,
 } ufbx_lod_display;
 
-// Single LOD level within an LOD group.
-// Specifies properties of the Nth child of the _node_ containing the LOD group.
-typedef struct ufbx_lod_level {
-
-	// Minimum distance to show this LOD level.
-	// NOTE: In world units by default, or in screen percentage if
-	// `ufbx_lod_group.relative_thresholds` is set.
-	ufbx_real distance;
-
-	// LOD display mode.
-	// NOTE: Mostly for editing, you should probably ignore this
-	// unless making a modeling program.
-	ufbx_lod_display display;
-
-} ufbx_lod_level;
-
-UFBX_LIST_TYPE(ufbx_lod_level_list, ufbx_lod_level);
-
 typedef enum ufbx_marker_type {
 	UFBX_MARKER_UNKNOWN,     // < Unknown marker type
 	UFBX_MARKER_FK_EFFECTOR, // < FK (Forward Kinematics) effector
@@ -1325,6 +1307,24 @@ struct ufbx_marker {
 	// Type of the marker
 	ufbx_marker_type type;
 };
+
+// Single LOD level within an LOD group.
+// Specifies properties of the Nth child of the _node_ containing the LOD group.
+typedef struct ufbx_lod_level {
+
+	// Minimum distance to show this LOD level.
+	// NOTE: In world units by default, or in screen percentage if
+	// `ufbx_lod_group.relative_distances` is set.
+	ufbx_real distance;
+
+	// LOD display mode.
+	// NOTE: Mostly for editing, you should probably ignore this
+	// unless making a modeling program.
+	ufbx_lod_display display;
+
+} ufbx_lod_level;
+
+UFBX_LIST_TYPE(ufbx_lod_level_list, ufbx_lod_level);
 
 // Group of LOD (Level of Detail) levels for an object.
 // The actual LOD models are defined in the parent `ufbx_node.children`.
@@ -2062,7 +2062,7 @@ typedef struct ufbx_anim_layer_desc {
 UFBX_LIST_TYPE(ufbx_const_anim_layer_desc_list, const ufbx_anim_layer_desc);
 
 typedef struct ufbx_prop_override {
-	// Element (`ufbx_element.id`) to override the property from
+	// Element (`ufbx_element.element_id`) to override the property from
 	// NOTE: You can get this from typed structs eg. `my_node->element.id`
 	uint32_t element_id;
 
@@ -2907,8 +2907,8 @@ typedef struct ufbx_load_opts {
 	// Don't allow partially broken FBX files to load
 	bool strict;
 
-	// Allow indices in `ufbx_vertex_TYPE` arrays that area larger than the data
-	// array. Enabling this makes `ufbx_get_vertex_TYPE()` unsafe as they don't
+	// Allow indices in `ufbx_vertex_$TYPE` arrays that area larger than the data
+	// array. Enabling this makes `ufbx_get_vertex_$TYPE()` unsafe as they don't
 	// do bounds checking.
 	bool allow_out_of_bounds_vertex_indices;
 
@@ -2995,7 +2995,7 @@ typedef struct ufbx_tessellate_opts {
 	ufbx_allocator_opts temp_allocator;   // < Allocator used during tessellation
 	ufbx_allocator_opts result_allocator; // < Allocator used for the final mesh
 
-	// How many segments tessellate each step in `ufbx_nurbs_basis.steps`.
+	// How many segments tessellate each span in `ufbx_nurbs_basis.spans`.
 	// NOTE: Default is `4`, _not_ `ufbx_nurbs_surface.span_subdivision_u/v` as that
 	// would make it easy to create an FBX file with an absurdly high subdivision
 	// rate (similar to mesh subdivision). Please enforce copy the value yourself
@@ -3047,7 +3047,7 @@ typedef struct ufbx_geometry_cache_opts {
 	uint32_t _end_zero;
 } ufbx_geometry_cache_opts;
 
-// Options for `ufbx_read_geometry_cache_*()`
+// Options for `ufbx_read_geometry_cache_$TYPE()`
 // NOTE: Initialize to zero with `{ 0 }` (C) or `{ }` (C++)
 typedef struct ufbx_geometry_cache_data_opts {
 	uint32_t _begin_zero;
