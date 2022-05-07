@@ -88,10 +88,6 @@ body {
     text-decoration: none;
 }
 
-.c-kw {
-    color: #008;
-}
-
 .c-builtin {
     color: #408;
 }
@@ -122,6 +118,10 @@ body {
 
 .c-kw {
     color: #00f;
+}
+
+.c-preproc {
+    color: #22a;
 }
 
 .c-type {

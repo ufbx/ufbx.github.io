@@ -29,6 +29,11 @@
 
 #ifndef ufbx_assert
 	#include <assert.h>
+	
+	// Assertion macro for programming errors (eg. out-of-bounds accesses).
+	// You can override this by defining it to something else before you include ufbx.
+	//   #define ufbx_assert(cond) my_assert(cond)
+	//   #include "ufbx.h"
 	#define ufbx_assert(cond) assert(cond)
 #endif
 
@@ -36,11 +41,15 @@
 #define ufbx_nullable
 
 #ifndef ufbx_abi
+
+	// Attributes for functions declared in `ufbx.c`.
+	// If you override this make sure it's also visible when compiling `ufbx.c`.
 	#define ufbx_abi
 #endif
 
 // -- Configuration
 
+// The main floating point type used by ufbx.
 // TODO: Support overriding `ufbx_real` with `float` or anything else.
 typedef double ufbx_real;
 
@@ -80,18 +89,31 @@ typedef double ufbx_real;
 
 // -- Version
 
+// Pack `major.minor.patch` into a single integer.
+// Can be used in the preprocessor to check for version values.
+//   #if UFBX_VERSION >= ufbx_pack_version(1, 1, 0)
+//       // 1.1.0 or newer
+//   #endif
 #define ufbx_pack_version(major, minor, patch) ((uint32_t)(major)*1000000u + (uint32_t)(minor)*1000u + (uint32_t)(patch))
+
+// Extract the `major.minor.patch` components from a packed version.
 #define ufbx_version_major(version) ((uint32_t)(version)/1000000u%1000u)
 #define ufbx_version_minor(version) ((uint32_t)(version)/1000u%1000u)
 #define ufbx_version_patch(version) ((uint32_t)(version)%1000u)
 
-#define UFBX_HEADER_VERSION ufbx_pack_version(0, 1, 1)
+// The version of ufbx.
+// Technically this is the version of the _header_, you can compare it to `ufbx_source_version`.
+// Packed using `ufbx_pack_version()`.
+#define UFBX_VERSION ufbx_pack_version(0, 1, 1)
 
 // -- Basic types
 
-// Null-terminated string within an FBX file
+// Null-terminated string within an FBX file.
+// For example `"Hello"` is represented as `ufbx_string { "Hello\0", 5 }`
 typedef struct ufbx_string {
+	// UTF-8 encoded null-terminated string.
 	const char *data;
+	// Length of `data` in bytes, does not account for the null-terminator.
 	size_t length;
 } ufbx_string;
 
@@ -261,13 +283,24 @@ typedef enum ufbx_prop_flags {
 
 // Single property with name/type/value.
 struct ufbx_prop {
+	// FBX name of the property.
 	ufbx_string name;
+
 	uint32_t _internal_key;
+
+	// Type of the property.
 	ufbx_prop_type type;
+
+	// Combination of `ufbx_prop_flags` values.
 	ufbx_prop_flags flags;
 
+	// String value of the property, `ufbx_empty_string` if not a string.
 	ufbx_string value_str;
+
+	// Integer value of the property, valid even if the property is a float/vector.
 	int64_t value_int;
+
+	// Float/vector value of the property.
 	union {
 		ufbx_real value_real_arr[3];
 		ufbx_real value_real;
@@ -2115,9 +2148,16 @@ struct ufbx_anim_stack {
 };
 
 typedef struct ufbx_anim_prop {
+	
+	// Element whose property this animation controls.
 	ufbx_element *element;
+
 	uint32_t _internal_key;
+
+	// Name of the property to animate in `element`.
 	ufbx_string prop_name;
+
+	// Animation curves for the property.
 	ufbx_anim_value *anim_value;
 } ufbx_anim_prop;
 
@@ -2148,10 +2188,19 @@ struct ufbx_anim_layer {
 	uint32_t _element_id_bitmask[4];
 };
 
+// Contains one or more animation curves for a property.
 struct ufbx_anim_value {
-	union { ufbx_element element; struct { ufbx_string name; ufbx_props props; }; };
+	union { ufbx_element element; struct {
+		ufbx_string name;
+		ufbx_props props;
+		uint32_t element_id;
+		uint32_t typed_id;
+	}; };
 
+	// Default value per channel.
 	ufbx_vec3 default_value;
+
+	// Animation curves per channel, may be `NULL`.
 	ufbx_nullable ufbx_anim_curve *curves[3];
 };
 
@@ -2194,6 +2243,7 @@ typedef struct ufbx_keyframe {
 
 UFBX_LIST_TYPE(ufbx_keyframe_list, ufbx_keyframe);
 
+// Single animated value over time.
 struct ufbx_anim_curve {
 	union { ufbx_element element; struct {
 		ufbx_string name;
@@ -2202,6 +2252,7 @@ struct ufbx_anim_curve {
 		uint32_t typed_id;
 	}; };
 
+	// List of values over time with interpolation information.
 	ufbx_keyframe_list keyframes;
 };
 
@@ -2331,7 +2382,7 @@ struct ufbx_constraint {
 	// Node to be constrained
 	ufbx_nullable ufbx_node *node;
 
-	// List of weighted targets for the constraint (pole vectors for IK)
+	// List of weighted targets for the constraint (or pole vectors for IK)
 	ufbx_constraint_target_list targets;
 
 	// State of the constraint
@@ -2346,13 +2397,14 @@ struct ufbx_constraint {
 	// Offset from the constrained position
 	ufbx_transform transform_offset;
 
-	// AIM: Target and up vectors
+	// `UFBX_CONSTRAINT_AIM`: Target and up vectors
 	ufbx_vec3 aim_vector;
 	ufbx_constraint_aim_up_type aim_up_type;
 	ufbx_node *aim_up_node;
 	ufbx_vec3 aim_up_vector;
 
-	// SINGLE_CHAIN_IK: Target for the IK, `targets` contains pole vectors!
+	// `UFBX_CONSTRAINT_SINGLE_CHAIN_IK`: Target for the IK.
+	// NOTE: `ufbx_constraint.targets` contains pole vectors!
 	ufbx_nullable ufbx_node *ik_effector;
 	ufbx_nullable ufbx_node *ik_end_node;
 	ufbx_vec3 ik_pole_vector;
@@ -2393,7 +2445,9 @@ struct ufbx_metadata_object {
 typedef struct ufbx_name_element {
 	ufbx_string name;
 	ufbx_element_type type;
+
 	uint32_t _internal_key;
+
 	ufbx_element *element;
 } ufbx_name_element;
 
@@ -2886,6 +2940,7 @@ struct ufbx_inflate_retain {
 // Options for `ufbx_load_file/memory/stream/stdio()`
 // NOTE: Initialize to zero with `{ 0 }` (C) or `{ }` (C++)
 typedef struct ufbx_load_opts {
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _begin_zero; 
 
 	ufbx_allocator_opts temp_allocator;   // < Allocator used during loading
@@ -2968,12 +3023,14 @@ typedef struct ufbx_load_opts {
 	bool use_root_transform;
 	ufbx_transform root_transform;
 
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _end_zero; 
 } ufbx_load_opts;
 
 // Options for `ufbx_evaluate_scene()`
 // NOTE: Initialize to zero with `{ 0 }` (C) or `{ }` (C++)
 typedef struct ufbx_evaluate_opts {
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _begin_zero;
 
 	ufbx_allocator_opts temp_allocator;   // < Allocator used during evaluation
@@ -2988,12 +3045,14 @@ typedef struct ufbx_evaluate_opts {
 	// External file callbacks (defaults to stdio.h)
 	ufbx_open_file_cb open_file_cb;
 
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _end_zero;
 } ufbx_evaluate_opts;
 
 // Options for `ufbx_tessellate_nurbs_surface()`
 // NOTE: Initialize to zero with `{ 0 }` (C) or `{ }` (C++)
 typedef struct ufbx_tessellate_opts {
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _begin_zero;
 
 	ufbx_allocator_opts temp_allocator;   // < Allocator used during tessellation
@@ -3007,12 +3066,14 @@ typedef struct ufbx_tessellate_opts {
 	int32_t span_subdivision_u;
 	int32_t span_subdivision_v;
 
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _end_zero;
 } ufbx_tessellate_opts;
 
 // Options for `ufbx_subdivide_mesh()`
 // NOTE: Initialize to zero with `{ 0 }` (C) or `{ }` (C++)
 typedef struct ufbx_subdivide_opts {
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _begin_zero;
 
 	ufbx_allocator_opts temp_allocator;   // < Allocator used during subdivision
@@ -3031,12 +3092,14 @@ typedef struct ufbx_subdivide_opts {
 	// Subdivide also tangent attributes
 	bool interpolate_tangents;
 
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _end_zero;
 } ufbx_subdivide_opts;
 
 // Options for `ufbx_load_geometry_cache()`
 // NOTE: Initialize to zero with `{ 0 }` (C) or `{ }` (C++)
 typedef struct ufbx_geometry_cache_opts {
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _begin_zero;
 
 	ufbx_allocator_opts temp_allocator;   // < Allocator used during loading
@@ -3048,12 +3111,14 @@ typedef struct ufbx_geometry_cache_opts {
 	// FPS value for converting frame times to seconds
 	double frames_per_second;
 
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _end_zero;
 } ufbx_geometry_cache_opts;
 
 // Options for `ufbx_read_geometry_cache_$TYPE()`
 // NOTE: Initialize to zero with `{ 0 }` (C) or `{ }` (C++)
 typedef struct ufbx_geometry_cache_data_opts {
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _begin_zero;
 
 	// External file callbacks (defaults to stdio.h)
@@ -3063,6 +3128,7 @@ typedef struct ufbx_geometry_cache_data_opts {
 	bool use_weight;
 	ufbx_real weight;
 
+	// Internal: Clear the whole structure instead of setting this to zero manually!
 	uint32_t _end_zero;
 } ufbx_geometry_cache_data_opts;
 
@@ -3089,15 +3155,27 @@ extern const ufbx_quat ufbx_identity_quat;
 
 // Commonly used coordinate axes
 
+// Coordinate system with: +X right, +Y up, +Z front.
+// Used by Maya, Modo, Godot, etc.
 extern const ufbx_coordinate_axes ufbx_axes_right_handed_y_up;
+
+// Coordinate system with: +X right, +Z up, -Y front.
+// Used by Blender, 3ds Max, etc.
 extern const ufbx_coordinate_axes ufbx_axes_right_handed_z_up;
+
+// Coordinate system with: +X right, +Y up, -Z front.
+// Used by Cinema 4D, Unity, etc.
 extern const ufbx_coordinate_axes ufbx_axes_left_handed_y_up;
+
+// Coordinate system with: +X right, +Z up, +Y front.
+// Used by Unreal Engine, etc.
 extern const ufbx_coordinate_axes ufbx_axes_left_handed_z_up;
 
 // Sizes of element types. eg `sizeof(ufbx_node)`
 extern const size_t ufbx_element_type_size[UFBX_ELEMENT_TYPE_COUNT];
 
-// Version of the source file, comparable to `UFBX_HEADER_VERSION`
+// Version of the source file, comparable to `UFBX_VERSION`
+// Packed using `ufbx_pack_version()`.
 extern const uint32_t ufbx_source_version;
 
 // Practically always `true` (see below), if not you need to be careful with threads.

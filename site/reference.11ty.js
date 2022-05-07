@@ -8,6 +8,14 @@ const md = new MarkdownIt({
 
 const forceTableEnums = new Set([])
 
+const ignoredDecls = new Set([
+    "ufbx_inline",
+    "UFBX_UFBX_H_INLCUDED",
+    "UFBX_LIST_TYPE",
+    "UFBX_VERTEX_ATTRIB_IMPL",
+    "UFBX_CALLBACK_IMPL",
+])
+
 md.renderer.rules.code_block = (tokens, idx, options, env, self) => {
     const { content } = tokens[idx]
     return `<pre>${highlight(content)}</pre>`
@@ -126,6 +134,46 @@ function isDefineGroup(decl) {
     return false
 }
 
+function shouldIgnoreDeclGroup(decl) {
+    if (decl.kind === "group") {
+        let ignoredDeclName = null
+        let nonIgnoredDeclName = null
+        for (const inner of decl.decls) {
+            if (inner.kind !== "decl") continue
+            if (ignoredDecls.has(inner.name)) {
+                ignoredDeclName = inner.name
+            } else {
+                nonIgnoredDeclName = inner.name
+            }
+        }
+        if (ignoredDeclName && nonIgnoredDeclName) {
+            throw new Error(`Group has both ignored decl ${ignoredDeclName} and non-ignored decl ${nonIgnoredDeclName}`)
+        }
+        if (ignoredDeclName) return true
+    }
+    return false
+}
+
+function shouldIgnoreFieldGroup(decl) {
+    if (decl.kind === "group") {
+        let ignoredDeclName = null
+        let nonIgnoredDeclName = null
+        for (const inner of decl.decls) {
+            if (inner.kind !== "decl") continue
+            if (inner.name.startsWith("_")) {
+                ignoredDeclName = inner.name
+            } else {
+                nonIgnoredDeclName = inner.name
+            }
+        }
+        if (ignoredDeclName && nonIgnoredDeclName) {
+            throw new Error(`Group has both ignored decl ${ignoredDeclName} and non-ignored decl ${nonIgnoredDeclName}`)
+        }
+        if (ignoredDeclName) return true
+    }
+    return false
+}
+
 function renderType(type) {
     return highlight(formatType(type))
 }
@@ -148,6 +196,8 @@ function structContext(decl) {
 function renderDeclGroup(parentName, decl, nested) {
     let r = []
     if (decl.kind === "group") {
+        if (shouldIgnoreFieldGroup(decl)) return r
+
         r.push(`<div class="field-group">`)
         r.push(`<div class="field">`)
         r.push(`<table class="code field-decls" role="presentation">`)
@@ -256,12 +306,17 @@ function renderDecl(decl) {
         r.push(`<div class="section-content">`)
         r.push(renderDescComment(decl.comment, false, "desc section-desc"))
 
+        const countName = `${decl.name.toUpperCase()}_COUNT`
+
         r.push(`<div class="section-fields">`)
         if (useTable) {
             r.push(`<table class="enum-values">`)
             for (const group of decl.decls) {
                 for (const field of group.decls) {
                     if (!field.name) continue
+                    if (field.name.includes("_FORCE_32BIT")) continue
+                    if (field.name == countName) continue
+
                     const id = field.name.toLowerCase()
                     r.push("<tr>")
                     r.push(`<td class="code enum-name"><a class="field-link" id="${id}" href="#${id}">${field.name}</a></td>`)
@@ -276,6 +331,8 @@ function renderDecl(decl) {
             for (const group of decl.decls) {
                 for (const inner of group.decls) {
                     const id = inner.name.toLowerCase()
+                    if (inner.name.includes("_FORCE_32BIT")) continue
+                    if (inner.name == countName) continue
                     r.push(`<div class="code enum-name"><a class="field-link" id="${id}" href="#${id}">${inner.name}</a></div>`)
                 }
                 r.push(renderDescComment(group.comment, true))
@@ -296,7 +353,9 @@ function renderDecl(decl) {
             previousWasSection = false
         }
 
-        if (decl.isFunction) {
+        if (shouldIgnoreDeclGroup(decl)) {
+            // Nop
+        } else if (decl.isFunction) {
             r.push(`<div class="decl toplevel">`)
             for (const field of decl.decls) {
                 const type = field.type
@@ -310,7 +369,7 @@ function renderDecl(decl) {
                     proto += `<span class="kw">extern</span>\xa0`
                 }
                 proto += renderType(type)
-                proto += ` <a id="${id}" href="#${id}" class="func-name field-link">${field.name}</a>(</div><div class="func-args">`
+                proto += ` <a href="#${id}" class="func-name field-link">${field.name}</a>(</div><div class="func-args">`
                 let first = true
                 for (const arg of func.args) {
                     if (!first) {
@@ -321,7 +380,7 @@ function renderDecl(decl) {
                 }
                 proto += ")</div></div>"
 
-                r.push(`<div class="code decl-name" id=${field.name}>${proto}</div>`)
+                r.push(`<div id="${id}" class="code decl-name func-link">${proto}</div>`)
 
             }
 
@@ -332,10 +391,11 @@ function renderDecl(decl) {
             {
                 r.push(`<table class="code field-decls" role="presentation">`)
                 for (const inner of decl.decls) {
-                    r.push(`<tr class="field-row" id="${inner.name.toLowerCase()}">`)
+                    const argString = inner.defineArgs ? inner.defineArgs.join(", ") : ""
+                    const id = inner.name.toLowerCase()
+                    r.push(`<tr class="field-row">`)
                     r.push(`<td class="field-type">#define\xa0</td>`)
-                    r.push(`<td class="field-name">${inner.name}\xa0</td>`)
-                    r.push(`<td class="field-value">${inner.value}</td>`)
+                    r.push(`<td><span class="field-name"><a id="${id}" href="#${id}" class="field-link">${inner.name}</a></span>${argString}\xa0</td>`)
                     r.push(`</tr>`)
                 }
                 r.push(`</table>`)
@@ -348,15 +408,16 @@ function renderDecl(decl) {
                 r.push(`<table class="code field-decls" role="presentation">`)
                 for (const inner of decl.decls) {
                     const typeStr = highlight(formatType(inner.type))
+                    const id = inner.name.toLowerCase()
                     let prefix = ""
                     if (inner.declKind === "extern") {
                         prefix = `<span class="kw">extern</span>\xa0`
                     } else if (inner.declKind === "typedef") {
                         prefix = `<span class="kw">typedef</span>\xa0`
                     }
-                    r.push(`<tr class="field-row" id="${inner.name.toLowerCase()}">`)
+                    r.push(`<tr class="field-row">`)
                     r.push(`<td class="field-type">${prefix}${typeStr}\xa0</td>`)
-                    r.push(`<td class="field-name">${inner.name}</td>`)
+                    r.push(`<td class="field-name"><a id="${id}" href="#${id}" class="field-link">${inner.name}</a></td>`)
                     r.push(`</tr>`)
                 }
                 r.push(`</table>`)

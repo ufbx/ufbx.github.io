@@ -75,11 +75,28 @@
     text-decoration: none;
 }
 
+.func-link:target::before {
+    content: '';
+    display: block;
+    height:      2rem;
+    margin-top: -2rem;
+}
+
 .field-link:target::before {
     content: '';
     display: block;
     height:      2rem;
     margin-top: -2rem;
+}
+
+.field-link:target {
+    background-color: #ebc4e3;
+    border-radius: 0.2em;
+}
+
+.func-link:target .field-link {
+    background-color: #ebc4e3;
+    border-radius: 0.2em;
 }
 
 code {

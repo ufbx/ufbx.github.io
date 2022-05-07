@@ -359,6 +359,7 @@ class SDecl(NamedTuple):
     comment: Optional[SComment] = None
     comment_inline: bool = False
     is_function: bool = False
+    define_args: Optional[List[str]] = None
     value: Optional[str] = None
 
 class SDeclGroup(NamedTuple):
@@ -562,8 +563,12 @@ def top_sdecls(top: ATop) -> List[SCommentDecl]:
             args = m.group(2)
             if args:
                 args = [arg.strip() for arg in args.split(",")]
+            else:
+                args = None
             value = m.group(3)
-            return [SDecl(line, line, "define", [SName(name, SType("define", "define"))], None, False, False, value)]
+            return [SDecl(line, line, "define", [SName(name, SType("define", "define"))],
+                define_args=args,
+                value=value)]
         else:
             return [] # TODO
     else:
@@ -705,6 +710,7 @@ def format_decls(decls: List[SCommentDecl], allow_groups: bool):
                         "commentInline": decl.comment_inline,
                         "isFunction": decl.is_function,
                         "value": decl.value,
+                        "defineArgs": decl.define_args,
                         "type": format_type(name.type),
                     }
         elif isinstance(decl, SDeclGroup):

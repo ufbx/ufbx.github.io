@@ -5,10 +5,11 @@ let globalContext = {
 }
 
 const tokenTypes = {
-    comment: "//[^\n]*|/\*.*?\\*/",
+    comment: "//[^\\n]*|/\\*.*?\\*/",
     name: "[A-Za-z_\$][A-Za-z_0-9\$]*",
     string: "\"(?:\\\"|[^\"])*?\"",
-    header: "<[a-zA-Z0-9\.]+>(?=\s*\n)",
+    header: "<[a-zA-Z0-9\\.]+>(?=\\s*\\n)",
+    preproc: "#\\w+",
     line: "\n",
     space: "[ \\t\\r]+",
     op: "(?:->|<<|>>|.|::|:)",
