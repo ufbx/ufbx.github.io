@@ -1,5 +1,5 @@
 ---
-title: scene-structure
+title: Scene structure
 pageTitle: Scene structure
 layout: "layouts/guide"
 eleventyNavigation:
@@ -7,6 +7,8 @@ eleventyNavigation:
   key: Scene structure
   order: 1
 ---
+
+<!-- OLD
 
 ## Elements
 
@@ -164,3 +166,5 @@ viewerDescs["blender-default-alt3"] = {
   },
 }
 </script>
+
+-->

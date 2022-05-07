@@ -193,7 +193,7 @@ All lists are represented as `struct ufbx_T_list { T *data; size_t count; }`.
 In non-C languages you can index and iterate the lists directly with bounds checking, unfortunately
 C does not support this so you need to use `list.data[index]` instead.
 
-All pointers that are not contained in `ufbx_T_list`, `ufbx_string`, `ufbx_blob` refer to a single object
+All pointers that are not contained in `ufbx_T_list`, `ufbx_string`, `ufbx_blob` refer to a single object,
 or `NULL` if the pointer is specified with `ufbx_nullable`.
 
 ## Interactive viewers
