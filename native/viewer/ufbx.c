@@ -278,7 +278,7 @@ ufbx_static_assert(sizeof_f64, sizeof(double) == 8);
 #define UFBX_SOURCE_VERSION ufbx_pack_version(0, 1, 1)
 const uint32_t ufbx_source_version = UFBX_SOURCE_VERSION;
 
-ufbx_static_assert(source_header_version, UFBX_SOURCE_VERSION/1000u == UFBX_HEADER_VERSION/1000u);
+ufbx_static_assert(source_header_version, UFBX_SOURCE_VERSION/1000u == UFBX_VERSION/1000u);
 
 // -- Debug
 
@@ -16963,7 +16963,6 @@ const ufbx_coordinate_axes ufbx_axes_left_handed_y_up = {
 const ufbx_coordinate_axes ufbx_axes_left_handed_z_up = {
 	UFBX_COORDINATE_AXIS_POSITIVE_X, UFBX_COORDINATE_AXIS_POSITIVE_Z, UFBX_COORDINATE_AXIS_POSITIVE_Y,
 };
-
 
 const size_t ufbx_element_type_size[UFBX_ELEMENT_TYPE_COUNT] = {
 	sizeof(ufbx_unknown),
