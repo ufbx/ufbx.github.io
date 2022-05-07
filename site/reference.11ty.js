@@ -329,7 +329,6 @@ function renderDecl(decl) {
                 for (const inner of group.decls) {
                     const id = inner.name.toLowerCase()
                     if (inner.name.includes("_FORCE_32BIT")) continue
-                    if (inner.name == countName) continue
                     r.push(`<div class="code enum-name"><a class="field-link" id="${id}" href="#${id}">${inner.name}</a></div>`)
                 }
                 r.push(renderDescComment(group.comment, true))
