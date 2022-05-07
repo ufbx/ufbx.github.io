@@ -106,11 +106,24 @@ function isSelfTypedef(decl) {
     return true
 }
 
+function isDefine(decl) {
+    if (decl.kind !== "decl") return false
+    if (decl.declKind !== "define") return false
+    return true
+ }
+
 function shouldRender(decl) {
     if (decl.kind === "group") {
         if (decl.decls.every(isSelfTypedef)) return false
     }
     return true
+}
+
+function isDefineGroup(decl) {
+    if (decl.kind === "group") {
+        if (decl.decls.some(isDefine)) return true
+    }
+    return false
 }
 
 function renderType(type) {
@@ -313,6 +326,21 @@ function renderDecl(decl) {
             }
 
             r.push(renderDescComment(decl.comment, true, "desc top-desc"))
+            r.push(`</div>`)
+        } else if (isDefineGroup(decl)) {
+            r.push(`<div class="decl toplevel">`)
+            {
+                r.push(`<table class="code field-decls" role="presentation">`)
+                for (const inner of decl.decls) {
+                    r.push(`<tr class="field-row" id="${inner.name.toLowerCase()}">`)
+                    r.push(`<td class="field-type">#define\xa0</td>`)
+                    r.push(`<td class="field-name">${inner.name}\xa0</td>`)
+                    r.push(`<td class="field-value">${inner.value}</td>`)
+                    r.push(`</tr>`)
+                }
+                r.push(`</table>`)
+                r.push(renderDescComment(decl.comment, true, "desc top-desc"))
+            }
             r.push(`</div>`)
         } else if (shouldRender(decl)) {
             r.push(`<div class="decl toplevel">`)

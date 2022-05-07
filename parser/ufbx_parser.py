@@ -563,7 +563,7 @@ def top_sdecls(top: ATop) -> List[SCommentDecl]:
             if args:
                 args = [arg.strip() for arg in args.split(",")]
             value = m.group(3)
-            return [SDecl(line, line+1, "define", [SName(name, SType("define", "define"))], None, False, False, value)]
+            return [SDecl(line, line, "define", [SName(name, SType("define", "define"))], None, False, False, value)]
         else:
             return [] # TODO
     else:

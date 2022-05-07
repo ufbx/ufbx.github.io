@@ -32,6 +32,7 @@
 	#define ufbx_assert(cond) assert(cond)
 #endif
 
+// This "attribute" is used on pointers that may be `NULL`.
 #define ufbx_nullable
 
 #ifndef ufbx_abi
@@ -43,7 +44,10 @@
 // TODO: Support overriding `ufbx_real` with `float` or anything else.
 typedef double ufbx_real;
 
+// Maximum call stack frames in `ufbx_error.stack[]`.
 #define UFBX_ERROR_STACK_MAX_DEPTH 8
+
+// Maximum length of `ufbx_panic.message[]`.
 #define UFBX_PANIC_MESSAGE_LENGTH 128
 
 // -- Language
