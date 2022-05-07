@@ -179,6 +179,23 @@ fn main() {
 If you prefer you can also load scenes from memory using `ufbx_load_memory()` or even custom
 streams using `ufbx_load_stream()`.
 
+## Data types
+
+Now that you have a `ufbx_scene` you can traverse and inspect it freely until you call `ufbx_free_scene()`.
+If you use MSVC or VSCode you can download [`ufbx.natvis`](https://github.com/bqqbarbhg/ufbx/blob/master/misc/ufbx.natvis)
+that lets you visualize the data structures used by *ufbx* in the debugger.
+
+Strings are represented using `ufbx_string`, you can treat `ufbx_string.data` as a null-terminated string.
+You can also use `ufbx_string.length` to get the length of the string in bytes excluding the null-terminator.
+In other languages strings are either represented as or are convertible to native strings.
+
+All lists are represented as `struct ufbx_T_list { T *data; size_t count; }`.
+In non-C languages you can index and iterate the lists directly with bounds checking, unfortunately
+C does not support this so you need to use `list.data[index]` instead.
+
+All pointers that are not contained in `ufbx_T_list`, `ufbx_string`, `ufbx_blob` refer to a single object
+or `NULL` if the pointer is specified with `ufbx_nullable`.
+
 ## Interactive viewers
 
 This guide contains interactive viewers to demonstrate the concepts. You can select elements

@@ -2504,6 +2504,7 @@ typedef struct ufbx_metadata {
 	bool animation_ignored;
 	bool embedded_ignored;
 
+	// Maximum number of triangles in any mesh in the scene.
 	size_t max_face_triangles;
 
 	size_t result_memory_used;
@@ -2878,12 +2879,17 @@ typedef struct ufbx_progress {
 } ufbx_progress;
 
 typedef enum ufbx_progress_result {
+	// Continue loading the file.
 	UFBX_PROGRESS_CONTINUE = 0x100,
+
+	// Cancel loading and fail with `UFBX_ERROR_CANCELLED`.
 	UFBX_PROGRESS_CANCEL = 0x200,
+
+	UFBX_PROGRESS_RESULT_FORCE_32BIT = 0x7fffffff,
 } ufbx_progress_result;
 
-// Called periodically with the current progress
-// Return `false` to cancel further processing
+// Called periodically with the current progress.
+// You can cancel loading by returning `UFBX_PROGRESS_CANCEL`.
 typedef ufbx_progress_result ufbx_progress_fn(void *user, const ufbx_progress *progress);
 
 typedef struct ufbx_progress_cb {
@@ -2970,8 +2976,8 @@ typedef struct ufbx_load_opts {
 	// Don't allow partially broken FBX files to load
 	bool strict;
 
-	// Allow indices in `ufbx_vertex_$TYPE` arrays that area larger than the data
-	// array. Enabling this makes `ufbx_get_vertex_$TYPE()` unsafe as they don't
+	// Allow indices in `ufbx_vertex_TYPE` arrays that area larger than the data
+	// array. Enabling this makes `ufbx_get_vertex_TYPE()` unsafe as they don't
 	// do bounds checking.
 	bool allow_out_of_bounds_vertex_indices;
 
@@ -3119,7 +3125,7 @@ typedef struct ufbx_geometry_cache_opts {
 	uint32_t _end_zero;
 } ufbx_geometry_cache_opts;
 
-// Options for `ufbx_read_geometry_cache_$TYPE()`
+// Options for `ufbx_read_geometry_cache_TYPE()`
 // NOTE: Initialize to zero with `{ 0 }` (C) or `{ }` (C++)
 typedef struct ufbx_geometry_cache_data_opts {
 	// Internal: Clear the whole structure instead of setting this to zero manually!
@@ -3357,6 +3363,7 @@ ufbx_inline ufbx_string ufbx_find_shader_prop(const ufbx_shader *shader, const c
 
 // Math
 
+// Returns `true` if `axes` forms a valid coordinate basis, ie. each X/Y/Z used exactly once.
 ufbx_abi bool ufbx_coordinate_axes_valid(ufbx_coordinate_axes axes);
 
 ufbx_abi ufbx_quat ufbx_quat_mul(ufbx_quat a, ufbx_quat b);
@@ -3378,28 +3385,72 @@ ufbx_abi ufbx_transform ufbx_matrix_to_transform(const ufbx_matrix *m);
 
 // Skinning
 
+// Get a matrix for transforming a mesh space vertex to world space.
 ufbx_abi ufbx_matrix ufbx_catch_get_skin_vertex_matrix(ufbx_panic *panic, const ufbx_skin_deformer *skin, size_t vertex, const ufbx_matrix *fallback);
 ufbx_inline ufbx_matrix ufbx_get_skin_vertex_matrix(const ufbx_skin_deformer *skin, size_t vertex, const ufbx_matrix *fallback) {
 	return ufbx_catch_get_skin_vertex_matrix(NULL, skin, vertex, fallback);
 }
 
+// Get the mesh space offset for `vertex` when `shape` is at full strength.
 ufbx_abi ufbx_vec3 ufbx_get_blend_shape_vertex_offset(const ufbx_blend_shape *shape, size_t vertex);
+
+// Get the mesh space offset for `vertex` for the `blend` deformer.
+// Depends on the current weight of the channels in `blend`.
 ufbx_abi ufbx_vec3 ufbx_get_blend_vertex_offset(const ufbx_blend_deformer *blend, size_t vertex);
 
+// Add weighted mesh space blend shape offsets to `vertices[num_vertices]`.
 ufbx_abi void ufbx_add_blend_shape_vertex_offsets(const ufbx_blend_shape *shape, ufbx_vec3 *vertices, size_t num_vertices, ufbx_real weight);
+
+// Add weighted mesh space blend offsets to `vertices[num_vertices]`.
+// Depends on the current weight of the channels in `blend`.
 ufbx_abi void ufbx_add_blend_vertex_offsets(const ufbx_blend_deformer *blend, ufbx_vec3 *vertices, size_t num_vertices, ufbx_real weight);
 
 // Curves/surfaces
 
+// Evaluate the NURBS basis functions at time `u` to `weights[num_weights]`.
+// Optionally also calculate derivatives to `derivatives[num_derivatives]`.
 ufbx_abi size_t ufbx_evaluate_nurbs_basis(const ufbx_nurbs_basis *basis, ufbx_real u, ufbx_real *weights, size_t num_weights, ufbx_real *derivatives, size_t num_derivatives);
 
+// Evaluate a point at `(u)` along the NURBS `curve`.
 ufbx_abi ufbx_curve_point ufbx_evaluate_nurbs_curve(const ufbx_nurbs_curve *curve, ufbx_real u);
+
+// Evaluate a point at `(u, v)` on the NURBS `surface`.
 ufbx_abi ufbx_surface_point ufbx_evaluate_nurbs_surface(const ufbx_nurbs_surface *surface, ufbx_real u, ufbx_real v);
 
+// Tessellate NURBS `surface` to a mesh.
+// NOTE: Use `ufbx_free_mesh()` to free the result.
 ufbx_abi ufbx_mesh *ufbx_tessellate_nurbs_surface(const ufbx_nurbs_surface *surface, const ufbx_tessellate_opts *opts, ufbx_error *error);
 
 // Mesh Topology
 
+// Triangulate `face` of `mesh` into triangles to `indices[num_indices]`.
+// Splits quads along the longest diagonal and tries to cleanly triangulate N-gons.
+//
+// In many cases the output geometry is represented as a triangle list so you can
+// iterate over the flattened triangles directly.
+//
+//   ufbx_mesh *mesh;
+//   uint32_t tri_indices[64];
+//   
+//   for (uint32_t face_ix = 0; face_ix < mesh->faces.count; face_ix++) {
+//     ufbx_face face = mesh->faces.data[face_ix];
+//     size_t num_triangles = ufbx_triangulate_face(tri_indices, 64, mesh, face);
+//     
+//     // Iterate over each _vertex_ in the triangulation.
+//     for (size_t i = 0; i < num_triangles * 3; i++) {
+//       uint32_t index = tri_indices[i];
+//       ufbx_vec3 position = ufbx_get_vertex_vec3(&mesh->vertex_position, index);
+//       ufbx_vec2 uv = ufbx_get_vertex_vec2(&mesh->vertex_uv, index);
+//       
+//       vertices[num_vertices].position = position;
+//       vertices[num_vertices].uv = uv;
+//       num_vertices++;
+//     }
+//   }
+//
+// NOTE: `num_indices` must be at least `(face.num_indices - 2) * 3` to fit all the triangles.
+// HINT: You can use `ufbx_mesh.max_face_triangles` or `ufbx_metadata.max_face_triangles` to reserve
+// space for the worst-case triangulation result.
 ufbx_abi uint32_t ufbx_catch_triangulate_face(ufbx_panic *panic, uint32_t *indices, size_t num_indices, const ufbx_mesh *mesh, ufbx_face face);
 ufbx_inline uint32_t ufbx_triangulate_face(uint32_t *indices, size_t num_indices, const ufbx_mesh *mesh, ufbx_face face) {
 	return ufbx_catch_triangulate_face(NULL, indices, num_indices, mesh, face);

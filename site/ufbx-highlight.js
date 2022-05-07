@@ -8,7 +8,7 @@ const tokenTypes = {
     comment: "//[^\\n]*|/\\*.*?\\*/",
     name: "[A-Za-z_\$][A-Za-z_0-9\$]*",
     string: "\"(?:\\\"|[^\"])*?\"",
-    header: "<[a-zA-Z0-9\\.]+>(?=\\s*\\n|\\s*$)",
+    header: "<[a-zA-Z0-9_\\.]+>(?=\\s*\\n|\\s*$)",
     preproc: "#\\w+",
     line: "\n",
     space: "[ \\t\\r]+",
@@ -28,6 +28,7 @@ const keywords = new Set([
     "struct",
     "union",
     "typedef",
+    "inline",
 ])
 
 const builtins = new Set([
@@ -57,6 +58,7 @@ const types = new Set([
     "ptrdiff_t",
     "float",
     "double",
+    "T",
 ])
 
 function tokenize(source) {
@@ -273,7 +275,12 @@ function highlight(str) {
             if (token.refId) attribs["data-ref-id"] = token.refId
             attribs["class"] = classes.join(" ")
 
-            if (!token.text.includes("$")) {
+            let doRef = true
+            if (token.text.startsWith("ufbx_") && token.text.toLowerCase() != token.text) {
+                doRef = false
+            }
+
+            if (doRef) {
                 if (token.text.toLocaleLowerCase().startsWith("ufbx_")) {
                     tag = "a"
                     attribs["href"] = linkRef(token.text.toLowerCase())
