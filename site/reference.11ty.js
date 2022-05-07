@@ -394,7 +394,7 @@ function renderDecl(decl) {
                     const argString = inner.defineArgs ? inner.defineArgs.join(", ") : ""
                     const id = inner.name.toLowerCase()
                     r.push(`<tr class="field-row">`)
-                    r.push(`<td class="field-type">#define\xa0</td>`)
+                    r.push(`<td class="field-type c-preproc">#define\xa0</td>`)
                     r.push(`<td><span class="field-name"><a id="${id}" href="#${id}" class="field-link">${inner.name}</a></span>${argString}\xa0</td>`)
                     r.push(`</tr>`)
                 }

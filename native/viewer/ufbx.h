@@ -31,7 +31,9 @@
 	#include <assert.h>
 	
 	// Assertion macro for programming errors (eg. out-of-bounds accesses).
-	// You can override this by defining it to something else before you include ufbx.
+	// May terminate the program with an error if `cond` is `false`.
+	// Defaults to `<assert.h>` but you can override this by defining it to something
+	// else before you include ufbx.
 	//   #define ufbx_assert(cond) my_assert(cond)
 	//   #include "ufbx.h"
 	#define ufbx_assert(cond) assert(cond)
@@ -2627,7 +2629,9 @@ struct ufbx_scene {
 		struct {
 			ufbx_unknown_list unknowns;
 
-			// Nodes
+			// All the nodes (objects) in the scene.
+			// HINT: Sorted by depth so you can linearly iterate over them and
+			// be sure that `ufbx_node.parent` is always before the current node.
 			ufbx_node_list nodes;
 
 			// Node attributes (common)
