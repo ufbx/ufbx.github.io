@@ -306,8 +306,6 @@ function renderDecl(decl) {
         r.push(`<div class="section-content">`)
         r.push(renderDescComment(decl.comment, false, "desc section-desc"))
 
-        const countName = `${decl.name.toUpperCase()}_COUNT`
-
         r.push(`<div class="section-fields">`)
         if (useTable) {
             r.push(`<table class="enum-values">`)
@@ -315,7 +313,6 @@ function renderDecl(decl) {
                 for (const field of group.decls) {
                     if (!field.name) continue
                     if (field.name.includes("_FORCE_32BIT")) continue
-                    if (field.name == countName) continue
 
                     const id = field.name.toLowerCase()
                     r.push("<tr>")
