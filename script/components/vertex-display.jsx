@@ -41,7 +41,6 @@ export default function VertexDisplay({ id }) {
     if (selectedElement < 0) return null
     const element = info.elements[selectedElement]
     if (element.type !== "mesh") return null
-    console.log(element)
     const { numIndices } = element
 
     return <div className="vw-top">
