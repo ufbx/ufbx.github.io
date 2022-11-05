@@ -44,7 +44,7 @@ export default function VertexDisplay({ id }) {
     const { numIndices } = element
 
     return <div className="vw-top">
-        <div className="vw-row vw-header">
+        <div className="vw-header">
             <div className="vw-index">Index</div>
             <div className="vw-index">Vertex</div>
             <div className="vw-cell">Position</div>
