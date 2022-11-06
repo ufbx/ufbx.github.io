@@ -6,7 +6,7 @@ let globalContext = {
 
 const tokenTypes = {
     comment: "//[^\\n]*|/\\*.*?\\*/",
-    name: "[A-Za-z_\$][A-Za-z_0-9\$]*",
+    name: "[A-Za-z_\$][A-Za-z_0-9\$]*(?:::[A-Za-z_\$][A-Za-z_0-9\$]*)*",
     string: "\"(?:\\\"|[^\"])*?\"",
     header: "<[a-zA-Z0-9_\\.]+>(?=\\s*\\n|\\s*$)",
     preproc: "#\\w+",
@@ -59,6 +59,10 @@ const types = new Set([
     "float",
     "double",
     "T",
+])
+
+const advancedTypes = new Set([
+    "std::vector",
 ])
 
 function tokenize(source) {
@@ -145,6 +149,10 @@ function patchTypes(tokens) {
         const text = m.token.text
         if (types.has(text)) {
             m.token.type = "type"
+        } else if (advancedTypes.has(text)) {
+            console.log(m.token)
+            m.token.type = "type"
+            m.token.viewType = "type-cpp"
         } else if (m.token.text in ufbxInfo.types) {
             m.token.type = "type"
             m.token.refType = m.token.text
@@ -156,13 +164,13 @@ function patchTypes(tokens) {
 let globalDeclId = 0
 
 function patchDecls(tokens) {
-    for (const m of search(tokens, /line (?:kw:const )?(type:\S* )(?:op:\* )*(name:\S* )(?:op:= |op:; |op:\[ )/)) {
+    for (const m of search(tokens, /line (?:kw:const )?(type:\S* )(?:op:< (?:type:\S+ (?:op:, )?)*op:> )?(?:op:\* )*(name:\S* )(?:op:= |op:; |op:\[ )/)) {
         const type = m.groups[1].token
         const name = m.groups[2].token
         name.declType = type.text
         name.declId = ++globalDeclId
     }
-    for (const m of search(tokens, /(?:op:\( |op:, )(?:kw:const )?(type:\S* )(?:op:\* )*(name:\S* )(?:op:= |op:; |op:, |op:\) |op:\[ |op:: )/)) {
+    for (const m of search(tokens, /(?:op:\( |op:, )(?:kw:const )?(type:\S* )(?:op:< (?:type:\S+ (?:op:, )?)*op:> )?(?:op:\* )*(name:\S* )(?:op:= |op:; |op:, |op:\) |op:\[ |op:: )/)) {
         const type = m.groups[1].token
         const name = m.groups[2].token
         name.declType = type.text
@@ -189,6 +197,7 @@ function patchRefs(tokens) {
                 if (ref) {
                     token.refType = ref.type
                     token.refId = ref.id
+                    break;
                 }
             }
         }
@@ -268,7 +277,9 @@ function highlight(str) {
         } else if (token.type === "comment") {
             return `<span class="c-comment">${safeText}</span>`
         } else {
-            let classes = [`c-${token.type}`]
+            const type = token.viewType ?? token.type
+
+            let classes = [`c-${type}`]
             let tag = "span"
             let attribs = { }
             if (token.declId) attribs["data-decl-id"] = token.declId
@@ -284,7 +295,7 @@ function highlight(str) {
                 if (token.text.toLocaleLowerCase().startsWith("ufbx_")) {
                     tag = "a"
                     attribs["href"] = linkRef(token.text.toLowerCase())
-                } else if (token.structType) {
+                } else if (token.structType && token.structType.startsWith("ufbx_")) {
                     tag = "a"
                     attribs["href"] = linkRef(`${token.structType}.${token.text}`)
                 }
