@@ -3,6 +3,7 @@ import subprocess
 import sys
 import re
 import shutil
+import argparse
 from collections import namedtuple
 
 g_verbose = True
@@ -14,7 +15,7 @@ def log(line):
     print(line, flush=True)
 
 def write_lines(path, lines):
-    with open(path, "wt") as f:
+    with open(path, "wt", encoding="utf-8") as f:
         f.writelines(line + "\n" for line in lines)
 
 def exec(args, cwd=None, relative_exe=False):
@@ -129,7 +130,7 @@ class CompilerCargo(Compiler):
                     yield line
 
         toml_path = os.path.join(path, "Cargo.toml")
-        with open(toml_path, "rt") as f:
+        with open(toml_path, "rt", encoding="utf-8") as f:
             toml_lines = list(patch_lines(f))
         write_lines(toml_path, toml_lines)
 
@@ -159,7 +160,7 @@ def search_examples(path):
             if not file.endswith(".md"): continue
             path = os.path.join(root, file)
 
-            with open(path, "rt") as f:
+            with open(path, "rt", encoding="utf-8") as f:
                 code_lang = None
                 code_name = None
                 code_flags = []
@@ -194,6 +195,10 @@ def search_examples(path):
                     code_lines.append(line)
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--skip-init", action="store_true", help="Skip initialization of compilers")
+    argv = parser.parse_args()
+
     compilers = { }
 
     config_default = {
@@ -210,6 +215,12 @@ def main():
         }
     }
 
+    file_ext = {
+        "c": "c",
+        "cpp": "cpp",
+        "rust": "rs",
+    }
+
     os.makedirs("build", exist_ok=True)
 
     config = config_default
@@ -218,18 +229,20 @@ def main():
         compilers[lang] = compiler_factories[type_](lang, compiler_config)
 
         compiler_path = build_path(f"compiler-{lang}")
-        if os.path.exists(compiler_path):
+        if os.path.exists(compiler_path) and not argv.skip_init:
             shutil.rmtree(compiler_path)
         os.makedirs(compiler_path, exist_ok=True)
 
-    log(f"== Checking compilers ==")
-    for compiler in compilers.values():
-        compiler.check()
+    if not argv.skip_init:
 
-    for compiler in compilers.values():
-        log("")
-        log(f"== Preparing compiler: {compiler.lang} ==")
-        compiler.prepare()
+        log(f"== Checking compilers ==")
+        for compiler in compilers.values():
+            compiler.check()
+
+        for compiler in compilers.values():
+            log("")
+            log(f"== Preparing compiler: {compiler.lang} ==")
+            compiler.prepare()
 
     os.makedirs(build_path("examples"), exist_ok=True)
     shutil.copyfile("static/models/blender_default_cube.fbx", build_path("examples", "my_scene.fbx"))
@@ -246,6 +259,20 @@ def main():
         if os.path.exists(path):
             shutil.rmtree(path)
         os.makedirs(path, exist_ok=True)
+
+        frame_name = f"{example.name}.{file_ext[example.lang]}"
+        frame_path = os.path.join("tests", "example-frames", frame_name)
+        if os.path.exists(frame_path):
+            with open(frame_path, "rt", encoding="utf-8") as f:
+                new_lines = []
+                for line in f.readlines():
+                    line = line.rstrip()
+                    if "EXAMPLE_SOURCE" in line:
+                        new_lines += example.lines
+                    else:
+                        new_lines.append(line)
+                example = example._replace(lines=new_lines)
+
         compiler.setup(path, example.lines)
         compiler.compile(path)
 
@@ -257,8 +284,11 @@ def main():
             output = output.decode("utf-8")
         output = output.splitlines(keepends=False)
 
+        output_path = os.path.join(path, "output.txt")
+        write_lines(output_path, output)
+
         ref_output_path = os.path.join("tests", "example-outputs", f"{example.name}.txt")
-        with open(ref_output_path, "rt") as f:
+        with open(ref_output_path, "rt", encoding="utf-8") as f:
             ref_output = f.read().splitlines(keepends=False)
         
         if output != ref_output:
@@ -268,7 +298,7 @@ def main():
             log(f"Expected output ({ref_output_path}):")
             log("\n".join(ref_output))
             log("")
-            log(f"Got output ({ref_output_path}):")
+            log(f"Got output ({output_path}):")
             log("\n".join(output))
             raise RuntimeError("Bad output")
 

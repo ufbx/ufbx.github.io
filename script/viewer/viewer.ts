@@ -90,6 +90,7 @@ let viewers: Map<string, Viewer> = new Map()
 let globalRealtimeCanvas: HTMLCanvasElement | null = null
 let rpcInitialized: boolean = false
 let rpcDestroyed: boolean = false
+let blobFiles: Map<string, Blob> = new Map()
 let scenes: Map<string, Scene> = new Map()
 let scenesToLoad: Array<string> = []
 let sceneInfoListeners: Array<SceneInfoListener> = []
@@ -530,12 +531,18 @@ function animationFrame() {
         for (const url of scenesToLoad) {
             const scene = scenes.get(url)!
             scene.state = "loading"
-            fetch(url)
+
+            const blob = blobFiles.has(url) 
+                ? Promise.resolve(blobFiles.get(url)!)
+                : fetch(url)
+
+            blob
                 .then(response => response.arrayBuffer())
                 .then(buffer => loadSceneFromBuffer(url, buffer))
                 .then(() => scene.state = "loaded")
                 .catch(() => scene.state = "error")
                 .then(requestFrame)
+
         }
         scenesToLoad = []
     }
@@ -796,6 +803,12 @@ export function queryResolution(id: string) {
 
 export function addSceneInfoListener(cb: SceneInfoListener) {
     sceneInfoListeners.push(cb)
+}
+
+export function addBlobFile(name: string, value: Blob) {
+    if (!blobFiles.has(name)) {
+        blobFiles.set(name, value)
+    }
 }
 
 function initializeNativeViewer() {

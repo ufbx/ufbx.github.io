@@ -1,11 +1,13 @@
 import { debugDumpViewers, renderViewer, setupViewers } from "./viewer/viewer"
 import globalState from "./components/global-state"
-import { h, Fragment, useState, useEffect, render, createState } from "kaiku"
+import { h, Fragment, useState, useEffect, render, createState, unwrap } from "kaiku"
 import FbxViewer from "./components/fbx-viewer"
 import Outliner from "./components/outliner"
 import PropertySheet from "./components/property-sheet"
 import DocViewer from "./components/doc-viewer"
 import VertexDisplay from "./components/vertex-display"
+
+window.unwrap = unwrap
 
 setupViewers()
 
@@ -82,6 +84,7 @@ const viewerDescDefaults = {
   propOverrides: { },
   latestInteractionTime: -10000.0,
   highlightVertexIndex: -1,
+  highlightFaceIndex: -1,
 }
 
 function patchDefaults(dst, defaults) {
@@ -98,10 +101,10 @@ for (const id in viewerDescs) {
     const desc = viewerDescs[id]
     const root = document.querySelector(`#root-${id}`)
     globalState.scenes[id] = patchDefaults(desc, viewerDescDefaults)
-    render(<DocViewer id={id} />, root, globalState)
+    render(<DocViewer id={id} />, root)
 }
 
 for (const elem of document.querySelectorAll("[data-viewer-id]")) {
     const id = elem.dataset.viewerId
-    render(<VertexDisplay id={id} />, elem, globalState)
+    render(<VertexDisplay id={id} />, elem)
 }

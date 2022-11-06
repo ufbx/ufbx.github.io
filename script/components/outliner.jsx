@@ -32,19 +32,17 @@ function TreeNode({ state, info, id, level=0 }) {
         }
     }
 
-    const selected = state.selectedElement === id
-
     const category = elementTypeCategory[element.type]
     const catClass = `cat-${category}`
     const structName = `ufbx_${element.type}`
 
     return <li className="ol-node">
         <div
-            className={{
+            className={() => ({
                 "ol-row": true,
-                "ol-selected": selected,
+                "ol-selected": state.selectedElement === id,
                 [catClass]: true,
-            }}
+            })}
             role="button"
             aria-label={`${element.type} ${element.name}`}
             tabIndex="0"
@@ -67,15 +65,17 @@ export default function Outliner({ id }) {
     const info = globalState.infos[state.scene]
     if (!info) return null
     const rootId = info.rootNode
-    return <div className="ol-top">
-        <ul className="ol-list" role="tree">{
-            state.outliner.includeRoot ? (
-                <TreeNode state={state} info={info} id={rootId} />
-            ) : (
-                info.elements[rootId].children.map(c => 
-                    <TreeNode state={state} info={info} id={c} />)
-            )
-        }</ul>
+    return <div class="ol-container">
+            <div className="ol-top">
+            <ul className="ol-list" role="tree">{
+                state.outliner.includeRoot ? (
+                    <TreeNode state={state} info={info} id={rootId} />
+                ) : (
+                    info.elements[rootId].children.map(c => 
+                        <TreeNode state={state} info={info} id={c} />)
+                )
+            }</ul>
+        </div>
     </div>
 }
 

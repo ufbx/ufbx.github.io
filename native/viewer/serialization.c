@@ -136,9 +136,9 @@ void serialize_element_mesh(jso_stream *s, ufbx_mesh* elem)
     }
     jso_end_array(s);
 
-	jso_prop_int(s, "numFaces", elem->num_faces);
-	jso_prop_int(s, "numVertices", elem->num_vertices);
-	jso_prop_int(s, "numIndices", elem->num_indices);
+	jso_prop_int(s, "numFaces", (int)elem->num_faces);
+	jso_prop_int(s, "numVertices", (int)elem->num_vertices);
+	jso_prop_int(s, "numIndices", (int)elem->num_indices);
 }
 
 void serialize_element_light(jso_stream *s, ufbx_light* elem)

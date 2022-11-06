@@ -147,7 +147,7 @@ function shouldIgnoreDeclGroup(decl) {
             }
         }
         if (ignoredDeclName && nonIgnoredDeclName) {
-            throw new Error(`Group has both ignored decl ${ignoredDeclName} and non-ignored decl ${nonIgnoredDeclName}`)
+            throw new Error(`Group has both ignored decl '${ignoredDeclName}' and non-ignored decl '${nonIgnoredDeclName}'`)
         }
         if (ignoredDeclName) return true
     }
@@ -167,7 +167,7 @@ function shouldIgnoreFieldGroup(decl) {
             }
         }
         if (ignoredDeclName && nonIgnoredDeclName) {
-            throw new Error(`Group has both ignored decl ${ignoredDeclName} and non-ignored decl ${nonIgnoredDeclName}`)
+            throw new Error(`Group has both ignored decl '${ignoredDeclName}' and non-ignored decl '${nonIgnoredDeclName}'`)
         }
         if (ignoredDeclName) return true
     }

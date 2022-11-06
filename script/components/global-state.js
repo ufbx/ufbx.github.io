@@ -56,6 +56,7 @@ const globalState = createState({
         */
     },
     infos: { },
+    expandedId: null,
 })
 
 window.globalState = globalState

@@ -64,6 +64,7 @@ function stateToDesc(state) {
         },
         selectedElement: state.selectedElement,
         highlightVertexIndex: state.highlightVertexIndex,
+        highlightFaceIndex: state.highlightFaceIndex,
         overrides,
     }
 }
@@ -101,68 +102,13 @@ function handleDrag(event, { id, action }) {
     return true
 }
 
-/*
-let hasCallbacks = false
-let bodyHasMouseup = true
-
-function initializeCallbacks() {
-    document.body.classList.toggle("mouseup", true)
-
-    addSceneInfoListener((name, info) => {
-        console.log(name, info)
-        globalState.infos[name] = immutable(info)
-    })
-    window.addEventListener("mousemove", (e) => {
-        if (!currentDrag) {
-            if (!bodyHasMouseup) {
-                document.body.classList.toggle("mouseup", true)
-                bodyHasMouseup = true
-            }
-            return
-        }
-        if (bodyHasMouseup) {
-            document.body.classList.toggle("mouseup", false)
-            bodyHasMouseup = false
-        }
-
-        const buttons = currentDrag.buttons & e.buttons
-        currentDrag.buttons = buttons
-        if (buttons) {
-            const dx = e.movementX
-            const dy = e.movementY
-            if (handleDrag(currentDrag.id, dx, dy, currentDrag.action)) {
-                e.preventDefault()
-            }
-        } else {
-            currentDrag = null
-        }
-    })
-    window.addEventListener("mouseup", (e) => {
-        if (!currentDrag) return
-        const buttons = buttonToButtons(e.button)
-        if (buttons & currentDrag.buttons) {
-            e.preventDefault()
-        }
-        currentDrag.buttons = currentDrag.buttons & ~buttons
-        if (!currentDrag.buttons) {
-            currentDrag = null
-            if (!bodyHasMouseup) {
-                document.body.classList.toggle("mouseup", true)
-                bodyHasMouseup = true
-            }
-        }
-    })
-    window.addEventListener("blur", resetDrag)
-}
-*/
-
 function getDragAction(buttons, shift) {
     if (shift) return "pan"
     if (buttons & 0x4) return "pan"
     return "rotate"
 }
 
-export default function FbxViewer({ id }) {
+export default function FbxViewer({ id, allowRawScroll=false }) {
     const ref = useRef()
     const state = globalState.scenes[id]
 
@@ -179,7 +125,7 @@ export default function FbxViewer({ id }) {
     }
 
     const wheel = (e) => {
-        if (!e.shiftKey) return
+        if (!e.shiftKey && !allowRawScroll) return
         rawWheel(e)
     }
 

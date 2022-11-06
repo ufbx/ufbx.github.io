@@ -237,6 +237,7 @@ typedef struct {
 struct vi_scene {
 	arena_t *arena;
 	ufbx_scene fbx;
+	ufbx_scene *fbx_scene;
 	ufbx_scene *fbx_state;
 	void *fbx_state_defer;
 
@@ -810,13 +811,14 @@ static void vi_update_globals(vi_scene *vs, const ufbx_scene *fbx_scene)
 	update_dynamic_buffer(vs->global_buffer, vs->global_buffer_cpu, vs->global_buffer_size);
 }
 
-vi_scene *vi_make_scene(const ufbx_scene *fbx_scene)
+vi_scene *vi_make_scene(ufbx_scene *fbx_scene)
 {
 	arena_t *arena = arena_create(&vig.arena);
 	vi_scene *vs = aalloc(arena, vi_scene, 1);
 	vs->arena = arena;
 	if (!vs) return NULL;
 
+	vs->fbx_scene = fbx_scene;
 	vs->fbx = *fbx_scene;
 
 	vs->meshes = aalloc(vs->arena, vi_mesh, fbx_scene->meshes.count);
@@ -1202,43 +1204,61 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 			ufbx_mesh *fbx_mesh = (ufbx_mesh*)fbx_elem;
 
    			uint32_t highlight_index = desc->highlight_vertex_index;
-			if (highlight_index < fbx_mesh->num_indices) {
-				ufbx_vec3 pos = ufbx_get_vertex_vec3(&fbx_mesh->vertex_position, highlight_index);
+   			uint32_t highlight_face = desc->highlight_face_index;
+			if (highlight_face < fbx_mesh->num_faces) {
+				ufbx_face face = fbx_mesh->faces.data[highlight_face];
 
-				for (size_t i = 0; i < fbx_mesh->instances.count; i++) {
-					ufbx_node *fbx_node = fbx_mesh->instances.data[i];
-					uint32_t vertex = fbx_mesh->vertex_indices.data[highlight_index];
+				for (size_t inst_ix = 0; inst_ix < fbx_mesh->instances.count; inst_ix++) {
+					ufbx_node *fbx_node = fbx_mesh->instances.data[inst_ix];
 
-					ufbx_matrix geometry_to_world = fbx_node->geometry_to_world;
+					um_vec3 positions[32];
 
-					um_vec3 pos = fbx_to_um_vec3(fbx_mesh->vertices.data[vertex]);
+					for (size_t i = 0; i < face.num_indices; i++) {
+						size_t index = face.index_begin + i;
+						uint32_t vertex = fbx_mesh->vertex_indices.data[index];
 
-					if (fbx_mesh->blend_deformers.count > 0) {
-						ufbx_blend_deformer *blend = fbx_mesh->blend_deformers.data[0];
-						pos = um_add3(pos, fbx_to_um_vec3(ufbx_get_blend_vertex_offset(blend, vertex)));
+						ufbx_matrix geometry_to_world = fbx_node->geometry_to_world;
+
+						um_vec3 pos = fbx_to_um_vec3(fbx_mesh->vertices.data[vertex]);
+
+						if (fbx_mesh->blend_deformers.count > 0) {
+							ufbx_blend_deformer *blend = fbx_mesh->blend_deformers.data[0];
+							pos = um_add3(pos, fbx_to_um_vec3(ufbx_get_blend_vertex_offset(blend, vertex)));
+						}
+
+						if (fbx_mesh->skin_deformers.count > 0) {
+							ufbx_skin_deformer *skin = fbx_mesh->skin_deformers.data[0];
+							geometry_to_world = ufbx_get_skin_vertex_matrix(skin, vertex, &geometry_to_world);
+						}
+
+						um_mat mat = fbx_to_um_mat(geometry_to_world);
+						pos = um_transform_point(&mat, pos);
+						if (i < 32) {
+							positions[i] = pos;
+						}
+
+						if (index == highlight_index) {
+							if (fbx_mesh->vertex_normal.exists) {
+								um_mat normal_mat = um_mat_transpose(um_mat_inverse(mat));
+
+								um_vec3 normal = fbx_to_um_vec3(ufbx_get_vertex_vec3(&fbx_mesh->vertex_normal, index));
+								normal = um_normalize3(um_transform_direction(&normal_mat, normal));
+								// TODO: Hardcoded length
+								gl_draw_line_3d(vs, pos, um_mad3(pos, normal, 10.5f), 4.0f, vi_rgb8(0x0000ff), false);
+							}
+
+							gl_draw_line_3d(vs, pos, pos, 8.0f, vi_rgb8(0xff0000), false);
+						}
 					}
 
-					if (fbx_mesh->skin_deformers.count > 0) {
-						ufbx_skin_deformer *skin = fbx_mesh->skin_deformers.data[0];
-						geometry_to_world = ufbx_get_skin_vertex_matrix(skin, vertex, &geometry_to_world);
+    				if (face.num_indices < 32) {
+						for (uint32_t ai = 0; ai < face.num_indices; ai++) {
+							uint32_t bi = (ai + 1) % face.num_indices;
+							gl_draw_line_3d(vs, positions[ai], positions[bi], 4.0f, vi_rgb8(0xffffff), false);
+						}
 					}
-
-					um_mat mat = fbx_to_um_mat(geometry_to_world);
-					pos = um_transform_point(&mat, pos);
-
-					if (fbx_mesh->vertex_normal.exists) {
-						um_mat normal_mat = um_mat_transpose(um_mat_inverse(mat));
-
-						um_vec3 normal = fbx_to_um_vec3(ufbx_get_vertex_vec3(&fbx_mesh->vertex_normal, highlight_index));
-						normal = um_normalize3(um_transform_direction(&normal_mat, normal));
-						// TODO: Hardcoded length
-						gl_draw_line_3d(vs, pos, um_mad3(pos, normal, 10.5f), 4.0f, vi_rgb8(0x0000ff), false);
-					}
-
-					gl_draw_line_3d(vs, pos, pos, 8.0f, vi_rgb8(0xff0000), false);
 				}
 			}
-
 		}
 	}
 
@@ -1484,7 +1504,7 @@ static void vi_update(vi_scene *vs, const vi_target *target, const vi_desc *desc
 	if (vs->fbx_state) {
 		arena_cancel(vs->arena, vs->fbx_state_defer, true);
 	}
-	ufbx_scene *fbx_state = ufbx_evaluate_scene(&vs->fbx, &anim, desc->time, NULL, NULL);
+	ufbx_scene *fbx_state = ufbx_evaluate_scene(vs->fbx_scene, &anim, desc->time, NULL, NULL);
 	vs->fbx_state = fbx_state;
 	vs->fbx_state_defer = arena_defer(vs->arena, ad_free_ufbx_scene, ufbx_scene*, &vs->fbx_state);
 

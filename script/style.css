@@ -25,6 +25,13 @@
     z-index: 1;
 }
 
+.ol-container {
+    overflow-y: scroll;
+    min-height: 0;
+    flex: 1 1;
+    width: 100%;
+    overflow-x: hidden;
+}
 .ol-top {
     background-color: #222;
     color: #c8c8c8;
@@ -81,19 +88,84 @@
     color: #080808;
 }
 
+.dv-inline {
+    width: 100%;
+    height: 100%;
+}
+
+.dv-vertices {
+    color: #fff;
+    flex: 0.5;
+    max-height: 20rem;
+    min-height: 0;
+}
+
+.dv-normal {
+    flex: 1;
+    min-height: 0;
+}
+
+.dv-top {
+    background-color: #222;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.dv-top ::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dv-top ::-webkit-scrollbar-track {
+    background-color: #222;
+}
+
+.dv-top ::-webkit-scrollbar-thumb {
+    background-color: #444;
+}
+
+.dv-menu {
+    color: #ddd;
+    height: 2rem;
+}
+
+.dv-content {
+    flex-shrink: 1;
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.dv-button {
+    color: inherit;
+    user-select: none;
+}
+
+.dv-expanded {
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 3rem;
+}
+
 .sp-top {
     display: flex;
     flex-direction: row;
     width: 100%;
-    height: 100%;
 }
 .sp-pane {
     width: 100%;
+    height: 100%;
 }
 .sp-outliner {
     overflow-x: hidden;
     min-width: 15em;
     max-width: 20em;
+    min-height: 0;
     width: 50%;
     display: flex;
     flex-direction: column;
@@ -205,6 +277,13 @@
     height: 10px;
 }
 
+.vw-top {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
 .vw-row {
     display: flex;
     width: 100%;
@@ -212,12 +291,20 @@
     align-items: center;
 }
 
+.vw-header {
+    display: flex;
+    width: 100%;
+    height: 2em;
+    align-items: center;
+    background-color: #333;
+}
+
 .vw-row:hover {
     background-color: salmon;
 }
 
 .vw-list {
-    height: 200px;
+    flex-grow: 1;
 }
 
 .vw-index {
@@ -227,3 +314,45 @@
 .vw-cell {
     width: 12em;
 }
+
+.vw-face-highlight {
+    background-color: #442828;
+}
+
+/*
+
+.t-top {
+    width: 100%;
+    height: 100px;
+    background-color: #f88;
+    display: flex;
+    flex-direction: column;
+}
+
+.t-split {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+}
+
+.t-left {
+    overflow-y: scroll;
+    flex: 1;
+}
+
+.t-right {
+    flex: 2;
+}
+
+.t-bottom {
+    overflow-y: scroll;
+    flex: 1;
+    min-height: 0;
+}
+
+.t-outliner {
+}
+
+*/

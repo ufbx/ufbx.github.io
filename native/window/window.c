@@ -177,7 +177,6 @@ void frame(void)
         if (time > 2.8f)
             time = 0.0f;
 
-
         jso_prop_object(&s, "animation");
         jso_prop_double(&s, "time", time);
         jso_end_object(&s);

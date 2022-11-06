@@ -8,7 +8,7 @@
         {
             "name": "ufbx",
             "url": "https://github.com/bqqbarbhg/ufbx",
-            "branch": "strong-types",
+            "branch": "fileformat-obj",
             "files": [
                 {
                     "root": "native/viewer",

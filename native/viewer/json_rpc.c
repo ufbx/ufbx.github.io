@@ -131,6 +131,8 @@ char *rpc_cmd_load_scene(arena_t *tmp, jsi_obj *args)
 
 	ufbx_load_opts opts = {
 		.allow_null_material = true,
+		.target_axes = ufbx_axes_right_handed_y_up,
+		.target_unit_meters = 1.0f,
 	};
 	ufbx_error error;
 	ufbx_scene *fbx_scene = ufbx_load_memory(data, size, &opts, &error);
@@ -235,6 +237,7 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		.far_plane = (float)jsi_get_double(camera, "farPlane", 100.0f),
 		.selected_element_id = (uint32_t)jsi_get_int(desc, "selectedElement", -1),
 		.highlight_vertex_index = (uint32_t)jsi_get_int(desc, "highlightVertexIndex", -1),
+		.highlight_face_index = (uint32_t)jsi_get_int(desc, "highlightFaceIndex", -1),
 		.time = jsi_get_double(animation, "time", 0.0),
 		.overrides = overrides,
 		.num_overrides = num_overrides,
@@ -340,6 +343,9 @@ char *rpc_cmd_get_vertex(arena_t *tmp, jsi_obj *args)
 	if (mesh->vertex_uv.exists) {
 		jso_prop_vec2(&s, "uv", ufbx_get_vertex_vec2(&mesh->vertex_uv, index));
 	}
+
+	uint32_t face_ix = ufbx_find_face_index(mesh, index);
+	jso_prop_int(&s, "face", (int)face_ix);
 
 	return end_response(&s);
 }

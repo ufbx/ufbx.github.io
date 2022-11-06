@@ -1,0 +1,36 @@
+begin polygon
+  position (1.00, 1.00, 1.00) normal (0.00, 0.00, 1.00)
+  position (-1.00, 1.00, 1.00) normal (0.00, 0.00, 1.00)
+  position (-1.00, -1.00, 1.00) normal (0.00, 0.00, 1.00)
+  position (1.00, -1.00, 1.00) normal (0.00, 0.00, 1.00)
+end polygon
+begin polygon
+  position (1.00, -1.00, -1.00) normal (0.00, -1.00, 0.00)
+  position (1.00, -1.00, 1.00) normal (0.00, -1.00, 0.00)
+  position (-1.00, -1.00, 1.00) normal (0.00, -1.00, 0.00)
+  position (-1.00, -1.00, -1.00) normal (0.00, -1.00, 0.00)
+end polygon
+begin polygon
+  position (-1.00, -1.00, -1.00) normal (-1.00, 0.00, 0.00)
+  position (-1.00, -1.00, 1.00) normal (-1.00, 0.00, 0.00)
+  position (-1.00, 1.00, 1.00) normal (-1.00, 0.00, 0.00)
+  position (-1.00, 1.00, -1.00) normal (-1.00, 0.00, 0.00)
+end polygon
+begin polygon
+  position (-1.00, 1.00, -1.00) normal (0.00, 0.00, -1.00)
+  position (1.00, 1.00, -1.00) normal (0.00, 0.00, -1.00)
+  position (1.00, -1.00, -1.00) normal (0.00, 0.00, -1.00)
+  position (-1.00, -1.00, -1.00) normal (0.00, 0.00, -1.00)
+end polygon
+begin polygon
+  position (1.00, 1.00, -1.00) normal (1.00, 0.00, 0.00)
+  position (1.00, 1.00, 1.00) normal (1.00, 0.00, 0.00)
+  position (1.00, -1.00, 1.00) normal (1.00, 0.00, 0.00)
+  position (1.00, -1.00, -1.00) normal (1.00, 0.00, 0.00)
+end polygon
+begin polygon
+  position (-1.00, 1.00, -1.00) normal (0.00, 1.00, 0.00)
+  position (-1.00, 1.00, 1.00) normal (0.00, 1.00, 0.00)
+  position (1.00, 1.00, 1.00) normal (0.00, 1.00, 0.00)
+  position (1.00, 1.00, -1.00) normal (0.00, 1.00, 0.00)
+end polygon

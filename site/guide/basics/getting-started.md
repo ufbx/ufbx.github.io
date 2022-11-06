@@ -205,10 +205,15 @@ from the left panel to inspect and adjust their properties.
 - Shift + Left mouse button / Middle mouse button: Pan camera
 - Shift + Scroll: Zoom camera
 
+<div class="doc-viewer-tall">
+<div data-dv-popout id="container-blender-default" class="dv-inline">
 {% include "viewer.md",
   id: "blender-default",
-  class: "doc-viewer doc-viewer-tall",
+  class: "doc-viewer dv-normal",
 %}
+</div>
+</div>
+
 <script>
 viewerDescs["blender-default"] = {
     scene: "/static/models/blender_default_cube.fbx",

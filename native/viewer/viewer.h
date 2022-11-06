@@ -22,6 +22,7 @@ typedef struct vi_desc {
 	float far_plane;
 	uint32_t selected_element_id;
 	uint32_t highlight_vertex_index;
+	uint32_t highlight_face_index;
 	double time;
 
 	const ufbx_prop_override *overrides;
@@ -32,7 +33,7 @@ void vi_setup();
 void vi_shutdown();
 void vi_free_targets();
 
-vi_scene *vi_make_scene(const ufbx_scene *fbx_scene);
+vi_scene *vi_make_scene(ufbx_scene *fbx_scene);
 void vi_free_scene(vi_scene *scene);
 
 void vi_render(vi_scene *scene, const vi_target *target, const vi_desc *desc);

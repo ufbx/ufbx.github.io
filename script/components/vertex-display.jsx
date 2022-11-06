@@ -10,6 +10,7 @@ function vec3ToString(v) {
 }
 
 function VertexRow({ viewerId, sceneName, elementId, index }) {
+    const sceneState = globalState.scenes[viewerId]
     const state = useState({ row: null })
     useEffect(() => {
         state.row = rpcCall({
@@ -18,14 +19,25 @@ function VertexRow({ viewerId, sceneName, elementId, index }) {
         })
     })
     if (!state.row) return null
-    const { vertexIndex, position, normal, uv } = state.row
+    const { vertexIndex, position, normal, uv, face } = state.row
 
     function onMouseOver() {
-        const state = globalState.scenes[viewerId]
-        state.highlightVertexIndex = index
+        sceneState.highlightVertexIndex = index
+        sceneState.highlightFaceIndex = face
     }
 
-    return <div className="vw-row" onMouseOver={onMouseOver}>
+    function onMouseOut() {
+        if (sceneState.highlightVertexIndex === index) {
+            sceneState.highlightVertexIndex = -1
+            sceneState.highlightFaceIndex = -1
+        }
+    }
+
+    return <div
+            className={() => ["vw-row", { "vw-face-highlight": sceneState.highlightFaceIndex === face }]}
+            onMouseOver={onMouseOver}
+            onMouseOut={onMouseOut}
+            >
         <div className="vw-index">{index}</div>
         <div className="vw-index">{vertexIndex}</div>
         <div className="vw-cell">{vec3ToString(position)}</div>
