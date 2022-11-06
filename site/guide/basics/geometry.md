@@ -211,3 +211,25 @@ fn list_triangles(mesh: &ufbx::Mesh)
     }
 }
 ```
+
+## Attributes
+
+Here's a brief summary of all the geometry data that `ufbx_mesh` contains:
+
+- For each index, indexable up to `ufbx_mesh.num_indices`:
+    - `ufbx_mesh.vertex_position`: Positions of the vertices
+    - `ufbx_mesh.vertex_normal`: Normal vector
+    - `ufbx_mesh.vertex_tangent`: Tangent space UV.x
+    - `ufbx_mesh.vertex_bitangent`: Tangent space UV.y
+    - `ufbx_mesh.vertex_uv`: Texture coordinate *(first set, see `ufbx_mesh.color_sets` for rest)*
+    - `ufbx_mesh.vertex_color`: Vertex color *(first set, see `ufbx_mesh.color_sets` for rest)*
+    - `ufbx_mesh.vertex_crease`: Vertex crease for subdivision
+- For each face, indexable up to `ufbx_mesh.num_faces`:
+    - `ufbx_mesh.face_material`: Per-face material
+    - `ufbx_mesh.face_group`: Polygon groups
+    - `ufbx_mesh.face_smoothing`: Boolean flag whether generated normals should be smooth
+    - `ufbx_mesh.face_hole`: If true the polygon should be treated as a hole
+- For each edge, indexable up to `ufbx_mesh.num_edges`:
+    - `ufbx_mesh.edge_smoothing`: Smooth flag for generating normals
+    - `ufbx_mesh.edge_visibility`: Edge visiblity for editing
+    - `ufbx_mesh.edge_crease`: Edge crease for subdivision
