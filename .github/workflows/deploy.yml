@@ -40,7 +40,7 @@ jobs:
       - name: Build native
         run: |
           cd native
-          cmake -B build -DCMAKE_TOOLCHAIN_FILE=../emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+          cmake -B build -D CMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
           cmake --build build
       - name: Build scripts
         run: |
