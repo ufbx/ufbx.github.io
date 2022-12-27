@@ -150,7 +150,6 @@ function patchTypes(tokens) {
         if (types.has(text)) {
             m.token.type = "type"
         } else if (advancedTypes.has(text)) {
-            console.log(m.token)
             m.token.type = "type"
             m.token.viewType = "type-cpp"
         } else if (m.token.text in ufbxInfo.types) {

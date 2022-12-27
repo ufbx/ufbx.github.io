@@ -10,14 +10,6 @@ eleventyNavigation:
 
 Some things about geometry
 
-Below you can see the vertices of the selected *mesh*. Notice that for example indices
-**3** and **5** refer to the same vertex **2** but they still have diffent normals. You
-can see this visualized if you hover over those lines.
-
-Below you can see the vertices of the selected *mesh*. Notice that for example indices
-**3** and **5** refer to the same vertex **2** but they still have diffent normals. You
-can see this visualized if you hover over those lines.
-
 <div class="doc-viewer doc-viewer-xtall">
 <div data-dv-popout id="container-cube" class="dv-inline">
 <div class="dv-top">
@@ -29,7 +21,7 @@ can see this visualized if you hover over those lines.
 <div class="g-inline">
 
 Below you can see the vertices of the selected *mesh*. Notice that for example indices
-**3** and **5** refer to the same vertex **2** but they still have diffent normals. You
+**3** and **4** refer to the same vertex **2** but they still have diffent normals. You
 can see this visualized if you hover over those lines.
 
 </div>

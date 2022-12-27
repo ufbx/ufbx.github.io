@@ -25,11 +25,11 @@
       <div class="g-gutter-right">
       </div>
       <main class="g-main">
-        <h1>{{ title }}</h1>
-        <aside>
-          {{ content | toc }}
-        </aside>
         <article>
+          <h1>{{ title }}</h1>
+          <aside>
+            {{ content | toc }}
+          </aside>
           {{ content }}
         </article>
         {% assign flatNavItems = collections.all | eleventyNavigation | flattenNavigationAndAddNextPrev %}

@@ -230,7 +230,6 @@ class SourceLexer:
                     best_rule = rule
                     best_end = end
             
-            line = self.line
             column = pos - self.line_end + 1
             while self.line_end < best_end:
                 line_end = source.find("\n", self.line_end, best_end)
@@ -239,14 +238,14 @@ class SourceLexer:
                 self.line += 1
             
             if best_end < 0:
-                loc = Location(self.filename, source, pos, pos + 1, line, column)
+                loc = Location(self.filename, source, pos, pos + 1, self.line, column)
                 return Token(Error, loc)
         
             if best_rule.ignore:
                 pos = best_end
             else:
                 self.pos = best_end
-                loc = Location(self.filename, source, pos, best_end, line, column)
+                loc = Location(self.filename, source, pos, best_end, self.line, column)
                 return Token(best_rule, loc)
 
         loc = Location(self.filename, source, source_end, source_end + 1, self.line + 1, 1)

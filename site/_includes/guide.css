@@ -10,18 +10,15 @@ article {
 }
 
 h1 {
-    margin-left: 2rem;
     margin-top: 1rem;
     margin-bottom: 1rem;
 }
 
 h2 {
-    margin-left: 2rem;
     margin-top: 2rem;
 }
 
 h3 {
-    margin-left: 2rem;
     margin-top: 2rem;
 }
 
@@ -94,10 +91,6 @@ code {
 .guide-bottom-link {
     text-decoration: none;
     font-size: 1.5rem;
-}
-
-.toc {
-    margin-left: 2rem;
 }
 
 .toc ol {

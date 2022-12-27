@@ -47,6 +47,10 @@
     font-weight: bold;
 }
 
+.enum-count > .field-link {
+    color: #835f85;
+}
+
 .desc {
     padding-left: 2rem;
     padding-right: 4rem;

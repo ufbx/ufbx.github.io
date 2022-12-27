@@ -185,16 +185,16 @@ Now that you have a `ufbx_scene` you can traverse and inspect it freely until yo
 If you use MSVC or VSCode you can download [`ufbx.natvis`](https://github.com/bqqbarbhg/ufbx/blob/master/misc/ufbx.natvis)
 that lets you visualize the data structures used by *ufbx* in the debugger.
 
-Strings are represented using `ufbx_string`, you can treat `ufbx_string.data` as a null-terminated string.
-You can also use `ufbx_string.length` to get the length of the string in bytes excluding the null-terminator.
-In other languages strings are either represented as or are convertible to native strings.
+Strings are represented using `ufbx_string`, `ufbx_string.data` contains a pointer to a jnull-terminated UTF-8 string.
+`ufbx_string.length` contains the length (number of bytes) excluding the null-terminator.
+Bindings in other languages attempt to use a type close to their native string representation.
 
 All lists are represented as `struct ufbx_T_list { T *data; size_t count; }`.
 In non-C languages you can index and iterate the lists directly with bounds checking, unfortunately
 C does not support this so you need to use `list.data[index]` instead.
 
 All pointers that are not contained in `ufbx_T_list`, `ufbx_string`, `ufbx_blob` refer to a single object,
-or `NULL` if the pointer is specified with `ufbx_nullable`.
+or potentially `NULL` if the pointer is specified with `ufbx_nullable`.
 
 ## Interactive viewers
 

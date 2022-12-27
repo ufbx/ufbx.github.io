@@ -306,6 +306,9 @@ function renderDecl(decl) {
         r.push(`<div class="section-content">`)
         r.push(renderDescComment(decl.comment, false, "desc section-desc"))
 
+        const { ufbxReflection } = global
+        const enumDecl = ufbxReflection.find(d => d.kind === "enumType" && d.enumName === decl.name)
+
         r.push(`<div class="section-fields">`)
         if (useTable) {
             r.push(`<table class="enum-values">`)
@@ -323,6 +326,14 @@ function renderDecl(decl) {
                     r.push("</tr>")
                 }
             }
+
+            if (enumDecl) {
+                const id = enumDecl.countName.toLowerCase();
+                r.push("<tr>")
+                r.push(`<td class="code enum-name enum-count"><a class="field-link" id="${id}" href="#${id}">${enumDecl.countName}</a></td>`)
+                r.push("</tr>")
+            }
+
             r.push(`</table>`)
         } else {
             for (const group of decl.decls) {
@@ -332,6 +343,11 @@ function renderDecl(decl) {
                     r.push(`<div class="code enum-name"><a class="field-link" id="${id}" href="#${id}">${inner.name}</a></div>`)
                 }
                 r.push(renderDescComment(group.comment, true))
+            }
+
+            if (enumDecl) {
+                const id = enumDecl.countName.toLowerCase();
+                r.push(`<div class="code enum-name enum-count"><a class="field-link" id="${id}" href="#${id}">${enumDecl.countName}</a></div>`)
             }
         }
         r.push(`</div>`)
@@ -425,168 +441,6 @@ function renderDecl(decl) {
         return r
     }
 }
-
-/*
-function renderDecl(decl) {
-    if (decl.kind === "paragraph") {
-        return [renderComment(decl.comment), "\n"]
-    } else if (decl.kind === "struct") {
-        let locals = []
-        for (const field of decl.decls) {
-            if (field.kind === "decl") {
-                locals.push(field.name)
-            } else if (field.kind === "group") {
-                for (const innerField of field.decls) {
-                    locals.push(innerField.name)
-                }
-            }
-        }
-
-        const prevContext = globalContext
-        globalContext = { prefix: `${decl.name}.`, locals }
-
-        let result = []
-        result.push(`<div class="s">`)
-        result.push(`<h3 class="sn" id=${decl.name}>${decl.name}</h3>`)
-        if (decl.comment) {
-            result.push(`<div class="d">`)
-            result.push(renderComment(decl.comment))
-            result.push(`</div>`)
-        }
-
-        result.push(`<div class="sc">`)
-        for (const field of decl.decls) {
-            if (field.kind === "group") {
-                result.push(`<div class="sg">`)
-                result.push(`<table class="sgf">`)
-                for (const inner of field.decls) {
-                    const typeStr = linkRefs(formatType(inner.type))
-                    result.push(`<tr class="f" id="${decl.name}.${inner.name}">`)
-                    result.push(`<td class="n">${inner.name}</td>`)
-                    result.push(`<td class="t">${typeStr}</td>`)
-                    result.push(`</tr>`)
-                }
-                result.push(`</table>`)
-                if (decl.comment) {
-                    result.push(`<div class="d">`)
-                    result.push(renderComment(field.comment))
-                    result.push(`</div>`)
-                }
-                result.push(`</div>`)
-            } else if (field.kind === "decl") {
-                const typeStr = linkRefs(formatType(field.type))
-                result.push(`<div class="sf">`)
-                result.push(`<div class="nf">`)
-                result.push(`<span class="f" id="${decl.name}.${field.name}">`)
-                result.push(`<span class="n">${field.name}</span>`)
-                result.push(`<span class="t">${typeStr}</td>`)
-                result.push(`</span>`)
-                result.push(`</div>`)
-                if (decl.comment) {
-                    result.push(`<div class="d">`)
-                    result.push(renderComment(field.comment))
-                    result.push(`</div>`)
-                }
-                result.push(`</div>`)
-            }
-        }
-        result.push(`</div>`)
-
-        result.push(`</div>`)
-
-        globalContext = prevContext
-        return result
-    }
-}
-*/
-
-/*
-function renderDecl(decl) {
-    if (decl.kind === "paragraph") {
-        return [renderComment(decl.comment), "\n"]
-    } else if (decl.kind === "struct") {
-        let locals = []
-        for (const field of decl.decls) {
-            if (field.name) {
-                locals.push(field.name)
-            }
-        }
-
-        const prevContext = globalContext
-        globalContext = { prefix: `${decl.name}.`, locals }
-
-        let result = []
-        result.push(`<h3 class="ref-type" id=${decl.name}>${decl.name}</h3>`)
-        result.push(renderComment(decl.comment))
-        result.push(`<div class="struct-body">`)
-        for (const field of decl.decls) {
-            if (field.kind === "paragraph") {
-                result.push(renderComment(field.comment))
-                result.push("\n")
-            } else if (field.kind === "group") {
-                for (const inner of field.decls) {
-                    const typeStr = linkRefs(formatType(inner.type))
-                    result.push(`<h4 class="ref-field" id="${decl.name}.${inner.name}"><span class="ref-fname">${inner.name}</span> <span class="ref-ftype">${typeStr}</span></h4>`)
-                }
-                result.push(renderComment(field.comment))
-            } else if (field.kind === "decl") {
-                const typeStr = linkRefs(formatType(field.type))
-                result.push(`<h4 class="ref-field" id="${decl.name}.${field.name}"><span class="ref-fname">${field.name}</span> <span class="ref-ftype">${typeStr}</span></h4>`)
-                result.push(renderComment(field.comment))
-            }
-        }
-        result.push(`</div>`)
-
-        globalContext = prevContext
-        return result
-    } else if (decl.kind === "enum") {
-        let result = []
-        result.push(`<h3 class="ref-type" id=${decl.name}>${decl.name}</h3>`)
-        result.push(renderComment(decl.comment))
-        if (decl.decls.some(d => d.commentInline)) {
-            result.push("<table>")
-            for (const field of decl.decls) {
-                if (!field.name) continue
-                result.push("<tr>")
-                result.push(`<td class="ref-ename" id="${field.name}">${field.name}</td>`)
-                result.push("<td>")
-                result.push(renderComment(field.comment))
-                result.push("</td>")
-                result.push("</tr>")
-            }
-            result.push("</table>")
-        } else {
-            for (const field of decl.decls) {
-                if (field.kind === "paragraph") {
-                    result.push(renderComment(decl.comment))
-                    result.push("\n")
-                    continue
-                }
-                if (!field.name) continue
-                result.push(`<h4 id="${field.name}">${field.name}</h4>`)
-                result.push(renderComment(field.comment))
-            }
-        }
-        return result
-    } else if (decl.kind === "decl") {
-        let result = []
-        const type = decl.type
-        if (type && type.name !== decl.name) {
-            if (type.mods.some(mod => mod.type === "function")) {
-                const typeStr = formatType(decl.type)
-                result.push(`<h3 id=${decl.name}>${typeStr} ${decl.name}()</h3>`)
-                result.push(renderComment(decl.comment))
-                return result
-            } else {
-                const typeStr = formatType(decl.type)
-                result.push(`<h3 id=${decl.name}>${typeStr} ${decl.name}</h3>`)
-                result.push(renderComment(decl.comment))
-                return result
-            }
-        }
-    }
-}
-*/
 
 class Page {
     data() {
