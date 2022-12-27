@@ -112,7 +112,7 @@ void serialize_element_node(jso_stream *s, ufbx_node* elem)
 	jso_prop_vec3(s, "rotation", elem->euler_rotation);
 	jso_prop_vec3(s, "scale", elem->local_transform.scale);
 
-	ufbx_vec3 geo_euler = ufbx_quat_to_euler(elem->geometry_transform.rotation, UFBX_ROTATION_XYZ);
+	ufbx_vec3 geo_euler = ufbx_quat_to_euler(elem->geometry_transform.rotation, UFBX_ROTATION_ORDER_XYZ);
 	jso_prop_vec3(s, "geo_translation", elem->geometry_transform.translation);
 	jso_prop_vec3(s, "geo_rotation", geo_euler);
 	jso_prop_vec3(s, "geo_scale", elem->geometry_transform.scale);
