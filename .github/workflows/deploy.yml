@@ -1,0 +1,60 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ master ]
+
+# Cancel any in-flight jobs for the same PR/branch so there's only one active
+# at a time
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - name: Setup Pages
+        uses: actions/configure-pages@v2
+      - name: Install PyPI dependencies
+        run: pip install -r tests/requirements.txt
+      - name: Setup Emscripten
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+      - name: Download SHDC
+        run: |
+          curl https://raw.githubusercontent.com/floooh/sokol-tools-bin/33d2e4cc26088c6c28eaef5467990f8940d15aab/bin/linux/sokol-shdc -o sokol-shdc
+          chmod +x sokol-shdc
+          pwd >> $GITHUB_PATH
+      - name: Build native
+        run: |
+          cd native
+          cmake -B build -DCMAKE_TOOLCHAIN_FILE=../emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+          cmake --build build
+      - name: Build scripts
+        run: |
+          cd script
+          npm install
+          npm run build
+      - name: Build site
+        run: |
+          npm install
+          npm run build
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: "build"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
