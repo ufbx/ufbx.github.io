@@ -1556,7 +1556,7 @@ void vi_render(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 
 	sg_begin_pass(render_fb->pass, &(sg_pass_action){
 		.colors[0].action = SG_ACTION_CLEAR,
-		.colors[0].value = { 0.2f, 0.2f, 0.3f, 1.0f },
+		.colors[0].value = { 0.5f, 0.5f, 0.6f, 1.0f },
 		.depth.action = SG_ACTION_CLEAR,
 		.depth.value = 1.0f,
 	});

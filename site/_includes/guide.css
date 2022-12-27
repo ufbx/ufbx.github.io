@@ -1,8 +1,12 @@
 
 p {
-    margin: 1rem 2rem;
+    margin: 1rem 0;
     line-height: 1.5;
     color: #24292f;
+}
+
+article {
+    padding: 2rem;
 }
 
 h1 {
@@ -34,7 +38,6 @@ code {
 .lang-select {
     display: flex;
     flex-flow: row wrap;
-    margin: 1em 2em;
 }
 
 .lang-radio {

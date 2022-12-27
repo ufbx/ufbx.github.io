@@ -10,11 +10,19 @@ eleventyNavigation:
 
 Some things about geometry
 
+Below you can see the vertices of the selected *mesh*. Notice that for example indices
+**3** and **5** refer to the same vertex **2** but they still have diffent normals. You
+can see this visualized if you hover over those lines.
+
+Below you can see the vertices of the selected *mesh*. Notice that for example indices
+**3** and **5** refer to the same vertex **2** but they still have diffent normals. You
+can see this visualized if you hover over those lines.
+
 <div class="doc-viewer doc-viewer-xtall">
-<div data-dv-popout id="container-blender-default" class="dv-inline">
+<div data-dv-popout id="container-cube" class="dv-inline">
 <div class="dv-top">
 {% include "viewer.md",
-  id: "blender-default",
+  id: "cube",
   class: "dv-normal",
 %}
 
@@ -26,19 +34,19 @@ can see this visualized if you hover over those lines.
 
 </div>
 
-<div data-viewer-id="blender-default" class="dv-vertices"></div>
+<div data-viewer-id="cube" class="dv-vertices" style="min-height: 14rem"></div>
 </div>
 </div>
 </div>
 
 <script>
-viewerDescs["blender-default"] = {
-  scene: "/static/models/blender_default_cube.fbx",
+viewerDescs["cube"] = {
+  scene: "/static/models/cube.fbx",
   camera: {
-    pitch: 20.0,
-    yaw: -60.0,
-    distance: 20,
-    offset: { x: 2.7, y: 2.4, z: 2.9 },
+    pitch: 30.0,
+    yaw: -40.0,
+    distance: 10,
+    offset: { x: 0.0, y: 0.0, z: 0.0 },
   },
   outliner: {
     showMaterials: true,
