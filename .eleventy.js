@@ -31,6 +31,9 @@ module.exports = function(eleventyConfig) {
   })
   
   eleventyConfig.addPassthroughCopy("static")
+  eleventyConfig.addPassthroughCopy({
+    "static/favicon.ico": "favicon.ico",
+  })
   
   eleventyConfig.addPassthroughCopy({
     "native/build/js_viewer/js_viewer.js": "native/js_viewer.js",
