@@ -1244,17 +1244,17 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 								um_vec3 normal = fbx_to_um_vec3(ufbx_get_vertex_vec3(&fbx_mesh->vertex_normal, index));
 								normal = um_normalize3(um_transform_direction(&normal_mat, normal));
 								// TODO: Hardcoded length
-								gl_draw_line_3d(vs, pos, um_mad3(pos, normal, 10.5f), 4.0f, vi_rgb8(0x0000ff), false);
+								gl_draw_line_3d(vs, pos, um_mad3(pos, normal, 0.5f), 4.0f, vi_rgb8(0xffffff), false);
 							}
 
-							gl_draw_line_3d(vs, pos, pos, 8.0f, vi_rgb8(0xff0000), false);
+							gl_draw_line_3d(vs, pos, pos, 8.0f, vi_rgb8(0xffffff), false);
 						}
 					}
 
     				if (face.num_indices < 32) {
 						for (uint32_t ai = 0; ai < face.num_indices; ai++) {
 							uint32_t bi = (ai + 1) % face.num_indices;
-							gl_draw_line_3d(vs, positions[ai], positions[bi], 4.0f, vi_rgb8(0xffffff), false);
+							gl_draw_line_3d(vs, positions[ai], positions[bi], 4.0f, vi_rgb8(0xdfbbcd), false);
 						}
 					}
 				}
