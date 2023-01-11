@@ -306,10 +306,12 @@
 
 .vw-index {
     width: 5em;
+    opacity: 95%;
 }
 
 .vw-cell {
     width: 12em;
+    opacity: 95%;
 }
 
 .vw-face-highlight {
