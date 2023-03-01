@@ -2784,6 +2784,8 @@ static ufbxi_noinline void ufbxi_fix_error_type(ufbx_error *error, const char *d
 		error->type = UFBX_ERROR_UNRECOGNIZED_FILE_FORMAT;
 	} else if (!strcmp(desc, "File not found")) {
 		error->type = UFBX_ERROR_FILE_NOT_FOUND;
+	} else if (!strcmp(desc, "External file not found")) {
+		error->type = UFBX_ERROR_EXTERNAL_FILE_NOT_FOUND;
 	} else if (!strcmp(desc, "Uninitialized options")) {
 		error->type = UFBX_ERROR_UNINITIALIZED_OPTIONS;
 	} else if (!strcmp(desc, "Zero vertex size")) {
@@ -15191,10 +15193,12 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_obj_load_mtl(ufbxi_context *uc)
 
 	ufbx_stream stream = { 0 };
 	bool has_stream = false;
+	bool needs_stream = false;
 
 	if (uc->opts.open_file_cb.fn) {
 		if (uc->opts.obj_mtl_path.length > 0) {
 			has_stream = ufbxi_open_file(&uc->opts.open_file_cb, &stream, uc->opts.obj_mtl_path.data, uc->opts.obj_mtl_path.length, NULL, &uc->ator_tmp, UFBX_OPEN_FILE_OBJ_MTL);
+			needs_stream = true;
 			if (!has_stream) {
 				ufbxi_check(ufbxi_warnf(UFBX_WARNING_MISSING_EXTERNAL_FILE, "Could not open .mtl file: %s", uc->opts.obj_mtl_path.data));
 			}
@@ -15204,6 +15208,7 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_obj_load_mtl(ufbxi_context *uc)
 			ufbx_blob dst;
 			ufbxi_check(ufbxi_resolve_relative_filename(uc, (ufbxi_strblob*)&dst, (const ufbxi_strblob*)&uc->obj.mtllib_relative_path, true));
 			has_stream = ufbxi_open_file(&uc->opts.open_file_cb, &stream, (const char*)dst.data, dst.size, &uc->obj.mtllib_relative_path, &uc->ator_tmp, UFBX_OPEN_FILE_OBJ_MTL);
+			needs_stream = true;
 			if (!has_stream) {
 				ufbxi_check(ufbxi_warnf(UFBX_WARNING_MISSING_EXTERNAL_FILE, "Could not open .mtl file: %s", dst.data));
 			}
@@ -15242,6 +15247,9 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_obj_load_mtl(ufbxi_context *uc)
 		uc->read_user = NULL;
 
 		ufbxi_check(ok);
+	} else if (needs_stream) {
+		ufbxi_set_err_info(&uc->error, filename.data, filename.length);
+		ufbxi_fail_msg("ufbxi_obj_load_mtl()", "External file not found");
 	}
 
 	return 1;
@@ -20886,9 +20894,13 @@ ufbxi_nodiscard static ufbxi_noinline int ufbxi_load_external_cache(ufbxi_contex
 	uc->result = cc.result;
 
 	if (!cache) {
-		if (cc.error.type == UFBX_ERROR_FILE_NOT_FOUND && uc->opts.ignore_missing_external_files) {
-			ufbxi_check(ufbxi_warnf(UFBX_WARNING_MISSING_EXTERNAL_FILE, "Failed to open geometry cache: %s", file->filename.data));
-			return 1;
+		if (cc.error.type == UFBX_ERROR_FILE_NOT_FOUND) {
+			if (uc->opts.ignore_missing_external_files) {
+				ufbxi_check(ufbxi_warnf(UFBX_WARNING_MISSING_EXTERNAL_FILE, "Failed to open geometry cache: %s", file->filename.data));
+				return 1;
+			} else {
+				cc.error.type = UFBX_ERROR_EXTERNAL_FILE_NOT_FOUND;
+			}
 		}
 
 		uc->error = cc.error;

@@ -693,7 +693,6 @@ struct ufbx_node {
 	ufbx_nullable ufbx_mesh *mesh;
 	ufbx_nullable ufbx_light *light;
 	ufbx_nullable ufbx_camera *camera;
-	ufbx_nullable ufbx_bone *bone;
 
 	// Less common attributes use these fields.
 	//
@@ -1857,6 +1856,9 @@ struct ufbx_blend_channel {
 	// Key morph targets to blend between depending on `weight`
 	// In usual cases there's only one target per channel
 	ufbx_blend_keyframe_list keyframes;
+
+	// Final blend shape ignoring any intermediate blend shapes.
+	ufbx_blend_shape *target_shape;
 };
 
 // Blend shape target containing the actual vertex offsets
@@ -2715,40 +2717,7 @@ struct ufbx_shader_binding {
 
 // -- Animation
 
-typedef struct ufbx_anim_layer_desc {
-	ufbx_anim_layer *layer;
-	ufbx_real weight;
-} ufbx_anim_layer_desc;
-
-UFBX_LIST_TYPE(ufbx_const_anim_layer_desc_list, const ufbx_anim_layer_desc);
-
-typedef struct ufbx_prop_override {
-	// Element (`ufbx_element.element_id`) to override the property from
-	uint32_t element_id;
-
-	// Property name to override.
-	const char *prop_name;
-
-	// Override value, use `value.x` for scalars. `value_int` is initialized
-	// from `value.x` if zero so keep `value` zeroed even if you don't need it!
-	ufbx_vec3 value;
-	const char *value_str;
-	int64_t value_int;
-
-	// Internal: Gets filled automatically by `ufbx_prepare_prop_overrides()`
-	uint32_t _internal_key;
-} ufbx_prop_override;
-
-UFBX_LIST_TYPE(ufbx_const_prop_override_list, const ufbx_prop_override);
-
 typedef struct ufbx_anim {
-	ufbx_const_anim_layer_desc_list layers;
-
-	// Override individual `ufbx_prop` values from elements
-	// NOTE: Call `ufbx_prepare_prop_overrides()` to obtain this!
-	ufbx_const_prop_override_list prop_overrides;
-
-	bool ignore_connections;
 
 	// Not used by evaluation
 	double time_begin;
@@ -2767,7 +2736,7 @@ struct ufbx_anim_stack {
 	double time_end;
 
 	ufbx_anim_layer_list layers;
-	ufbx_anim anim;
+	ufbx_anim *anim;
 };
 
 typedef struct ufbx_anim_prop {
@@ -2799,7 +2768,7 @@ struct ufbx_anim_layer {
 	ufbx_anim_value_list anim_values;
 	ufbx_anim_prop_list anim_props; // < Sorted by `element,prop_name`
 
-	ufbx_anim anim;
+	ufbx_anim *anim;
 
 	uint32_t _min_element_id;
 	uint32_t _max_element_id;
@@ -3313,10 +3282,10 @@ struct ufbx_scene {
 	ufbx_node *root_node;
 
 	// Default animation descriptor
-	ufbx_anim anim;
+	ufbx_anim *anim;
 
 	// All animation stacks combined
-	ufbx_anim combined_anim;
+	ufbx_anim *combined_anim;
 
 	union {
 		struct {
@@ -3609,6 +3578,10 @@ typedef enum ufbx_error_type UFBX_ENUM_REPR {
 	// File not found.
 	UFBX_ERROR_FILE_NOT_FOUND,
 
+	// External file not found.
+	// See `ufbx_load_opts.load_external_files` for more information.
+	UFBX_ERROR_EXTERNAL_FILE_NOT_FOUND,
+
 	// Out of memory (allocator returned `NULL`).
 	UFBX_ERROR_OUT_OF_MEMORY,
 
@@ -3870,6 +3843,9 @@ typedef struct ufbx_load_opts {
 	// NOTE: This only applies to files *implicitly* referenced by the scene, if
 	// you request additional files via eg. `ufbx_load_opts.obj_mtl_path` they
 	// are still loaded.
+	// NOTE: Will fail loading if any external files are not found by default, use
+	// `ufbx_load_opts.ignore_missing_external_files` to suppress this, in this case
+	// you can find the errors at `ufbx_metadata.warnings[]` as `UFBX_WARNING_MISSING_EXTERNAL_FILE`.
 	bool load_external_files;
 
 	// Don't fail loading if external files are not found.
@@ -4057,6 +4033,46 @@ typedef struct ufbx_evaluate_opts {
 
 	uint32_t _end_zero;
 } ufbx_evaluate_opts;
+
+typedef struct ufbx_anim_layer_desc {
+	uint32_t anim_layer_index;
+	ufbx_real weight;
+} ufbx_anim_layer_desc;
+
+UFBX_LIST_TYPE(ufbx_anim_layer_desc_list, ufbx_anim_layer_desc);
+
+typedef struct ufbx_prop_override_desc {
+	// Element (`ufbx_element.element_id`) to override the property from
+	uint32_t element_id;
+
+	// Property name to override.
+	ufbx_string prop_name;
+
+	// Override value, use `value.x` for scalars. `value_int` is initialized
+	// from `value.x` if zero so keep `value` zeroed even if you don't need it!
+	ufbx_vec4 value;
+	ufbx_string value_str;
+	int64_t value_int;
+} ufbx_prop_override_desc;
+
+UFBX_LIST_TYPE(ufbx_prop_override_desc_list, ufbx_prop_override_desc);
+
+typedef struct ufbx_anim_opts {
+	uint32_t _begin_zero;
+
+	// Animation layers and weights
+	ufbx_anim_layer_desc_list layers;
+
+	// Property overrides
+	ufbx_prop_override_desc_list overrides;
+
+	// Ignore connected properties
+	bool ignore_connections;
+
+	ufbx_allocator_opts result_allocator; // < Allocator used to create the `ufbx_anim`
+
+	uint32_t _end_zero;
+} ufbx_anim_opts;
 
 // Options for `ufbx_tessellate_nurbs_curve()`
 // NOTE: Initialize to zero with `{ 0 }` (C) or `{ }` (C++)
@@ -4368,8 +4384,6 @@ ufbx_abi ufbx_props ufbx_evaluate_props(const ufbx_anim *anim, const ufbx_elemen
 ufbx_abi ufbx_transform ufbx_evaluate_transform(const ufbx_anim *anim, const ufbx_node *node, double time);
 ufbx_abi ufbx_real ufbx_evaluate_blend_weight(const ufbx_anim *anim, const ufbx_blend_channel *channel, double time);
 
-ufbx_abi ufbx_const_prop_override_list ufbx_prepare_prop_overrides(ufbx_prop_override *overrides, size_t num_overrides);
-
 // Evaluate the whole `scene` at a specific `time` in the animation `anim`.
 // The returned scene behaves as if it had been exported at a specific time
 // in the specified animation, except that animated elements' properties contain
@@ -4378,6 +4392,11 @@ ufbx_abi ufbx_const_prop_override_list ufbx_prepare_prop_overrides(ufbx_prop_ove
 // NOTE: The returned scene refers to the original `scene` so the original
 // scene cannot be freed until all evaluated scenes are freed.
 ufbx_abi ufbx_scene *ufbx_evaluate_scene(const ufbx_scene *scene, const ufbx_anim *anim, double time, const ufbx_evaluate_opts *opts, ufbx_error *error);
+
+ufbx_abi ufbx_anim *ufbx_create_anim(const ufbx_scene *scene, const ufbx_anim_opts *opts, ufbx_error *error);
+
+ufbx_abi void ufbx_retain_anim(ufbx_anim *anim);
+ufbx_abi void ufbx_free_anim(ufbx_anim *anim);
 
 // Materials
 

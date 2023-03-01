@@ -8,7 +8,99 @@ eleventyNavigation:
   order: 1
 ---
 
-Some things about geometry
+Meshes (`ufbx_mesh`) are built from a list of polygons, also called faces
+(`ufbx_face`). Each face contains a contiguous range of *indices*, for example
+a mesh with two quads would contain the faces:
+
+```
+{ index_begin=0, num_indices=4 } // 0,1,2,3
+{ index_begin=4, num_indices=4 } // 4,5,6,7
+```
+
+The geometry data itself is stored in attributes such as position, normal, UV,
+color, etc. You can treat each attribute as a flat[^1] list of values defined for
+each *index* (ie. polygon corner). So for the above example we would have positions,
+UVs, normals ranging from 0 to 7: 0-3 beloning to the first face, 4-7 to the second one.
+
+You might wonder why the attributes are not defined per vertex and then indexed by
+the polygons (via `ufbx_mesh.vertex_indices[]`). The issue is that what we call a *vertex*
+refers to essentially a selectable point in a 3D modeling program, if this point would lie
+on an UV seam or a sharp corner then it would have two different UVs or normals. We'll get
+back to vertices and why they matter when we get to deformation and skinning, but feel free
+to ignore them for now.
+
+```c
+// ufbx-doc-example: vertices-1
+
+void draw_polygons(ufbx_mesh *mesh)
+{
+    for (size_t i = 0; i < mesh->faces.count; i++) {
+        ufbx_face face = mesh->faces.data[i];
+
+        begin_polygon();
+
+        // Loop through the corners of the polygon.
+        for (uint32_t i = 0; i < face.num_indices; i++) {
+            uint32_t index = face.index_begin + i;
+
+            // Retrieve the position and normal for the vertex.
+            ufbx_vec3 position = ufbx_get_vertex_vec3(&mesh->vertex_position, index);
+            ufbx_vec3 normal = ufbx_get_vertex_vec3(&mesh->vertex_normal, index);
+
+            polygon_corner(position, normal);
+        }
+
+        end_polygon();
+    }
+}
+```
+
+[^1]: Internally these lists are indexed (as `ufbx_vertex_attrib.values[ufbx_vertex_attrib.indices[index]]`). This
+saves some space as you don't have to store duplicated values, but it can for example represent UV topology in some cases.
+
+## Materials
+
+One mesh may contain multiple materials for different faces, `ufbx_mesh.face_material`
+provides an index into `ufbx_mesh.materials[]`. If the mesh is instanced different instances
+may use different materials for each slot defined by `ufbx_node.materials[]`.
+
+As renderers often need to split meshes along materials ufbx provides `ufbx_mesh_material.face_indices[]`
+containing a list of all faces using a specific material. TODO: Deprecate null material?
+
+## Triagnulation
+
+Often you don't want to deal with arbitrarily sized triangles in meshes. ufbx has a utility function
+`ufbx_triangulate_face()` that you can use to split a face into multiple triangles. If you want to
+be able to handle any mesh make sure to use `ufbx_mesh.max_face_triangles` to determine the size for the output.
+
+```c
+// ufbx-doc-example: vertices-2
+
+void output_triangle(ufbx_vec3 a, ufbx_vec3 b, ufbx_vec3 c);
+
+void list_triangles(ufbx_mesh *mesh)
+{
+    uint32_t indices[64];
+
+    for (size_t i = 0; i < mesh->faces.count; i++) {
+        ufbx_face face = mesh->faces.data[i];
+
+        uint32_t num_triangles = ufbx_triangulate_face(indices, 64, mesh, face);
+
+        for (uint32_t tri_ix = 0; tri_ix < num_triangles; tri_ix++) {
+            uint32_t a = indices[tri_ix*3 + 0];
+            uint32_t b = indices[tri_ix*3 + 1];
+            uint32_t c = indices[tri_ix*3 + 2];
+
+            ufbx_vec3 pos_a = ufbx_get_vertex_vec3(&mesh->vertex_position, a);
+            ufbx_vec3 pos_b = ufbx_get_vertex_vec3(&mesh->vertex_position, b);
+            ufbx_vec3 pos_c = ufbx_get_vertex_vec3(&mesh->vertex_position, c);
+
+            output_triangle(pos_a, pos_b, pos_c);
+        }
+    }
+}
+```
 
 <div class="doc-viewer doc-viewer-xtall">
 <div data-dv-popout id="container-cube" class="dv-inline">
@@ -128,35 +220,6 @@ fn list_vertices(mesh: &ufbx::Mesh)
 
 In many cases you can't do much with arbitrarily large polygons so meshes need to be triangulated.
 You can use the `ufbx_triangulate_face()` utility function to chop a polygon into triangles.
-
-```c
-// ufbx-doc-example: vertices-2
-
-void output_triangle(ufbx_vec3 a, ufbx_vec3 b, ufbx_vec3 c);
-
-void list_triangles(ufbx_mesh *mesh)
-{
-    uint32_t indices[64];
-
-    for (size_t i = 0; i < mesh->faces.count; i++) {
-        ufbx_face face = mesh->faces.data[i];
-
-        uint32_t num_triangles = ufbx_triangulate_face(indices, 64, mesh, face);
-
-        for (uint32_t tri_ix = 0; tri_ix < num_triangles; tri_ix++) {
-            uint32_t a = indices[tri_ix*3 + 0];
-            uint32_t b = indices[tri_ix*3 + 1];
-            uint32_t c = indices[tri_ix*3 + 2];
-
-            ufbx_vec3 pos_a = ufbx_get_vertex_vec3(&mesh->vertex_position, a);
-            ufbx_vec3 pos_b = ufbx_get_vertex_vec3(&mesh->vertex_position, b);
-            ufbx_vec3 pos_c = ufbx_get_vertex_vec3(&mesh->vertex_position, c);
-
-            output_triangle(pos_a, pos_b, pos_c);
-        }
-    }
-}
-```
 
 ```cpp
 // ufbx-doc-example: vertices-2

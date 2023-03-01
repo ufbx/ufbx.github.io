@@ -8,6 +8,72 @@ eleventyNavigation:
   order: 1
 ---
 
+FBX scenes are built from a scene graph consisting of objects/nodes (represented by `ufbx_node`).
+These may have attributes attached, such as meshes (`ufbx_mesh`), lights (`ufbx_light`), cameras (`ufbx_camera`).
+The node determines the transformation of the attached attribute.
+
+All of the above are more generically instances of `ufbx_element`, representing a "base class" that can have a name
+and some generic properties. One handy property is `ufbx_element.typed_id` that contains an unique index for each
+element of a type, ie. `ufbx_mesh.typed_id` refers to its position in `ufbx_scene.meshes[]`. You can use these indices
+to refer to custom data related to the element.
+
+The scene graph has one root node at `ufbx_scene.root`, each node has transformation specified in `ufbx_node.local_transform`
+which affects any attributes attached to the node and its children `ufbx_node.children[]`. You can access common attributes
+of a node via `ufbx_node.mesh`, `@rel(ufbx_node.)light`, `@rel(ufbx_node.)camera`, for other types you have to use the generic
+`ufbx_node.attrib` and convert it to the correct type (eg. using `ufbx_as_nurbs_surface()`). You might also notice `ufbx_node.all_attribs[]`,
+in theory FBX files allow you to attach multiple attributes to a node, but this is *exceedingly* rare and I recommend to ignore it unless
+you know that you're dealing with some cursed/custom files. On the other hand one attribute may belong to multiple nodes in normal files,
+see [Instancing](#Instancing).
+
+## Instancing
+
+Meshes and other attributes may belong to multiple `ufbx_node` instances, meaning clones of the mesh/light/curve/etc at different locations.
+These instances may also have different materials using `ufbx_node.materials[]` but we'll go over that in more detail later in [Geometry](/guide/basics/geometry).
+It is often easier to reverse your perspective: instead of iterating over nodes and their attributes you can iterate over attributes and their instances.
+
+```c
+// ufbx-doc-example: scene-structure/instance-order
+
+// Node -> Mesh
+for (size_t i = 0; i < scene->nodes.count; i++) {
+    ufbx_node *node = scene->nodes.data[i];
+    if (node->mesh) {
+        process_mesh(mesh);
+        process_instance(node, mesh);
+    }
+}
+
+// Mesh -> Node
+for (size_t i = 0; i < scene->meshes.count; i++) {
+    ufbx_mesh *mesh = scene->meshes.data[i];
+    process_mesh(mesh);
+    for (size_t j = 0; j < mesh->instances.count; j++) {
+        ufbx_node *node = mesh->instances.data[j];
+        process_instance(node, mesh);
+    }
+}
+```
+
+```cpp
+// ufbx-doc-example: scene-structure/instance-order
+
+// Node -> Mesh
+for (ufbx_node *node : scene->nodes) {
+    if (node->mesh) {
+        process_mesh(mesh);
+        process_instance(node, mesh);
+    }
+}
+
+// Mesh -> Node
+for (ufbx_mesh *mesh : scene->meshes) {
+    process_mesh(mesh);
+    for (ufbx_node *node : mesh->instances) {
+        process_instance(node, mesh);
+    }
+}
+```
+
 <!-- OLD
 
 ## Elements
