@@ -19,8 +19,8 @@ to refer to custom data related to the element.
 
 The scene graph has one root node at `ufbx_scene.root`, each node has transformation specified in `ufbx_node.local_transform`
 which affects any attributes attached to the node and its children `ufbx_node.children[]`. You can access common attributes
-of a node via `ufbx_node.mesh`, `@rel(ufbx_node.)light`, `@rel(ufbx_node.)camera`, for other types you have to use the generic
-`ufbx_node.attrib` and convert it to the correct type (eg. using `ufbx_as_nurbs_surface()`). You might also notice `ufbx_node.all_attribs[]`,
+of a node via `ufbx_node.mesh`, `@(ufbx_node.)light`, `@(ufbx_node.)camera`, for other types you have to use the generic
+`ufbx_node.attrib` and convert it to the correct type (eg. using `ufbx_as_nurbs_curve()`). You might also notice `ufbx_node.all_attribs[]`,
 in theory FBX files allow you to attach multiple attributes to a node, but this is *exceedingly* rare and I recommend to ignore it unless
 you know that you're dealing with some cursed/custom files. On the other hand one attribute may belong to multiple nodes in normal files,
 see [Instancing](#Instancing).
@@ -33,13 +33,15 @@ It is often easier to reverse your perspective: instead of iterating over nodes 
 
 ```c
 // ufbx-doc-example: scene-structure/instance-order
-
+@(
+  ufbx_scene *scene;
+)
 // Node -> Mesh
 for (size_t i = 0; i < scene->nodes.count; i++) {
     ufbx_node *node = scene->nodes.data[i];
     if (node->mesh) {
-        process_mesh(mesh);
-        process_instance(node, mesh);
+        process_mesh(node->mesh);
+        process_instance(node, node->mesh);
     }
 }
 
@@ -56,6 +58,9 @@ for (size_t i = 0; i < scene->meshes.count; i++) {
 
 ```cpp
 // ufbx-doc-example: scene-structure/instance-order
+@(
+  ufbx_scene *scene;
+)
 
 // Node -> Mesh
 for (ufbx_node *node : scene->nodes) {

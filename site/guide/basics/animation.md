@@ -30,7 +30,7 @@ For advanced use you can create customized `ufbx_anim` instances using `ufbx_cre
 which lets you define arbitrary layers and weights, and to override properties.
 
 Note the animation timelines can often be offset, ie. they don't start at frame
-0/1. You should consult `ufbx_anim.time_begin` and `@rel(ufbx_anim.)time_end` for
+0/1. You should consult `ufbx_anim.time_begin` and `@(ufbx_anim.)time_end` for
 the time boundaries.
 
 ### Whole-scene evaluation

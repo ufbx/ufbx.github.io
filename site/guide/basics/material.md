@@ -15,15 +15,15 @@ a heterogeneous mess of proprietrary PBR materials that ufbx unifies as `ufbx_ma
 
 ### Legacy model
 
-- `@rel(ufbx_material_fbx_maps.)diffuse_color`
-- `@rel(ufbx_material_fbx_maps.)specular_color`
-- `@rel(ufbx_material_fbx_maps.)specular_exponent`
+- `@(ufbx_material_fbx_maps.)diffuse_color`
+- `@(ufbx_material_fbx_maps.)specular_color`
+- `@(ufbx_material_fbx_maps.)specular_exponent`
 
 ### PBR model
 
-- `@rel(ufbx_material_pbr_maps.)base_color`
-- `@rel(ufbx_material_pbr_maps.)roughness`
-- `@rel(ufbx_material_pbr_maps.)metalness`
+- `@(ufbx_material_pbr_maps.)base_color`
+- `@(ufbx_material_pbr_maps.)roughness`
+- `@(ufbx_material_pbr_maps.)metalness`
 
 ## Textures
 

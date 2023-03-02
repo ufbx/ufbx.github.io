@@ -21,11 +21,11 @@ handle all of the above deformers.
 ## Skinning
 
 Skins in FBX consist of clusters (`ufbx_skin_cluster`) that connect vertices to bones. Each cluster contains
-a reference to a bone `@rel(ufbx_skin_cluster.)bone_node`, matrix mapping from the geometry to the bone `@rel(ufbx_skin_cluster.)geometry_to_bone`
+a reference to a bone `@(ufbx_skin_cluster.)bone_node`, matrix mapping from the geometry to the bone `@(ufbx_skin_cluster.)geometry_to_bone`
 (also often called an inverse bind matrix), and a list of vertices affected by the bone and their respective weights
-`@rel(ufbx_skin_cluster.)vertices[]` and `@rel(ufbx_skin_cluster.)weights[]`.
+`@(ufbx_skin_cluster.)vertices[]` and `@(ufbx_skin_cluster.)weights[]`.
 
-Often you want to know which bones influence a given vertex, so ufbx provides `ufbx_skin_deformer.vertices[]` and `@rel(ufbx_skin_deformer.)weights[]`
+Often you want to know which bones influence a given vertex, so ufbx provides `ufbx_skin_deformer.vertices[]` and `@(ufbx_skin_deformer.)weights[]`
 which lets you iterate over per-vertex clusters. These are sorted by descending weight so taking the first N will be a good approximation
 for a limited amount of weights.
 
@@ -118,7 +118,7 @@ If you want to get more advanced FBX supports multiple skinning modes via `ufbx_
 - `UFBX_SKINNING_METHOD_LINEAR`: Classic linear blend skinning
 - `UFBX_SKINNING_METHOD_DUAL_QUATERNION`: Dual quaternion
 - `UFBX_SKINNING_METHOD_BLENDED_DQ_LINEAR`: This is the spicy one: Every vertex contains an extra "Dual quaternion weight"
-that blends between `@rel(UFBX_SKINNING_METHOD_)LINEAR` and `@rel(UFBX_SKINNING_METHOD_)DUAL_QUATERNION` modes.
+that blends between `@(UFBX_SKINNING_METHOD_)LINEAR` and `@(UFBX_SKINNING_METHOD_)DUAL_QUATERNION` modes.
 
 ## Blend shapes
 

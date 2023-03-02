@@ -1251,7 +1251,7 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 						}
 					}
 
-    				if (face.num_indices < 32) {
+					if (face.num_indices < 32) {
 						for (uint32_t ai = 0; ai < face.num_indices; ai++) {
 							uint32_t bi = (ai + 1) % face.num_indices;
 							gl_draw_line_3d(vs, positions[ai], positions[bi], 4.0f, vi_rgb8(0xdfbbcd), false);
@@ -1496,15 +1496,17 @@ static void vi_update(vi_scene *vs, const vi_target *target, const vi_desc *desc
 {
 	float aspect = (float)target->width / (float)target->height;
 
-	ufbx_anim anim = vs->fbx.anim;
+	ufbx_anim *anim = vs->fbx.anim;
+	#if 0
 	anim.prop_overrides.data = desc->overrides;
 	anim.prop_overrides.count = desc->num_overrides;
+	#endif
 
 	// TODO: Cache
 	if (vs->fbx_state) {
 		arena_cancel(vs->arena, vs->fbx_state_defer, true);
 	}
-	ufbx_scene *fbx_state = ufbx_evaluate_scene(vs->fbx_scene, &anim, desc->time, NULL, NULL);
+	ufbx_scene *fbx_state = ufbx_evaluate_scene(vs->fbx_scene, anim, desc->time, NULL, NULL);
 	vs->fbx_state = fbx_state;
 	vs->fbx_state_defer = arena_defer(vs->arena, ad_free_ufbx_scene, ufbx_scene*, &vs->fbx_state);
 

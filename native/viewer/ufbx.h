@@ -687,9 +687,12 @@ struct ufbx_node {
 	// List of child nodes parented to this node.
 	ufbx_node_list children;
 
-	// Attached element type and typed pointers.
+	// Common attached element type and typed pointers. Set to `NULL` if not in
+	// use, so checking `attrib_type` is not required.
 	//
-	// Set to `NULL` if not in use, so checking `attrib_type` is not required.
+	// HINT: If you need less common attributes access `ufbx_node.attrib`, you
+	// can use utility functions like `ufbx_as_nurbs_curve(attrib)` to convert
+	// and check the attribute in one step.
 	ufbx_nullable ufbx_mesh *mesh;
 	ufbx_nullable ufbx_light *light;
 	ufbx_nullable ufbx_camera *camera;
@@ -2717,9 +2720,28 @@ struct ufbx_shader_binding {
 
 // -- Animation
 
-typedef struct ufbx_anim {
+typedef struct ufbx_prop_override {
+	uint32_t element_id;
 
-	// Not used by evaluation
+	uint32_t _internal_key;
+
+	ufbx_string prop_name;
+	ufbx_vec4 value;
+	ufbx_string value_str;
+	int64_t value_int;
+} ufbx_prop_override;
+
+UFBX_LIST_TYPE(ufbx_prop_override_list, ufbx_prop_override);
+
+typedef struct ufbx_anim {
+	bool ignore_connections;
+
+	ufbx_prop_override_list overrides;
+	ufbx_anim_layer_list layers;
+	ufbx_real_list override_layer_weights;
+
+	bool custom;
+
 	double time_begin;
 	double time_end;
 } ufbx_anim;
@@ -3283,9 +3305,6 @@ struct ufbx_scene {
 
 	// Default animation descriptor
 	ufbx_anim *anim;
-
-	// All animation stacks combined
-	ufbx_anim *combined_anim;
 
 	union {
 		struct {
@@ -4616,7 +4635,6 @@ ufbx_abi void ufbx_ffi_evaluate_prop_len(ufbx_prop *retval, const ufbx_anim *ani
 ufbx_abi void ufbx_ffi_evaluate_props(ufbx_props *retval, const ufbx_anim *anim, ufbx_element *element, double time, ufbx_prop *buffer, size_t buffer_size);
 ufbx_abi void ufbx_ffi_evaluate_transform(ufbx_transform *retval, const ufbx_anim *anim, const ufbx_node *node, double time);
 ufbx_abi ufbx_real ufbx_ffi_evaluate_blend_weight(const ufbx_anim *anim, const ufbx_blend_channel *channel, double time);
-ufbx_abi void ufbx_ffi_prepare_prop_overrides(ufbx_const_prop_override_list *retval, ufbx_prop_override *overrides, size_t num_overrides);
 ufbx_abi void ufbx_ffi_quat_mul(ufbx_quat *retval, const ufbx_quat *a, const ufbx_quat *b);
 ufbx_abi void ufbx_ffi_quat_normalize(ufbx_quat *retval, const ufbx_quat *q);
 ufbx_abi void ufbx_ffi_quat_fix_antipodal(ufbx_quat *retval, const ufbx_quat *q, const ufbx_quat *reference);

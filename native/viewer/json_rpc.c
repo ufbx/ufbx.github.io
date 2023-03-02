@@ -199,6 +199,7 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		scene->vi_scene = vi_make_scene(scene->fbx_scene);
 	}
 
+#if 0
 	ufbx_prop_override *overrides = NULL;
 	size_t num_overrides = 0;
 	jsi_arr *js_overrides = jsi_get_arr(desc, "overrides");
@@ -226,6 +227,7 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 
 		ufbx_prepare_prop_overrides(overrides, num_overrides);
 	}
+#endif
 
 	jsi_obj *camera = jsi_get_obj(desc, "camera");
 	jsi_obj *animation = jsi_get_obj(desc, "animation");
@@ -239,8 +241,10 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		.highlight_vertex_index = (uint32_t)jsi_get_int(desc, "highlightVertexIndex", -1),
 		.highlight_face_index = (uint32_t)jsi_get_int(desc, "highlightFaceIndex", -1),
 		.time = jsi_get_double(animation, "time", 0.0),
+#if 0
 		.overrides = overrides,
 		.num_overrides = num_overrides,
+#endif
 	};
 
 	vi_render(scene->vi_scene, &vtarget, &vdesc);

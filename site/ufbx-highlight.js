@@ -12,7 +12,7 @@ const tokenTypes = {
     preproc: "#\\w+",
     line: "\n",
     space: "[ \\t\\r]+",
-    op: "(?:->|<<|>>|.|::|:)",
+    op: "(?:->|<<|>>|::|:|@\\(|\\(|\\)|.)",
 }
 
 const tokenNames = Object.keys(tokenTypes)
@@ -69,12 +69,19 @@ function tokenize(source) {
     const re = new RegExp(tokenRegex)
     let match = null
     let tokens = [{ type: "line", text: "" }]
+    let hide = false
     while ((match = re.exec(source)) !== null) {
         for (let i = 0; i < tokenNames.length; i++) {
             const text = match[i + 1]
             if (text) {
                 const type = tokenNames[i]
-                tokens.push({ type, text })
+                if (text == "@(") {
+                    hide = true
+                } else if (hide && text == ")") {
+                    hide = false
+                } else {
+                    tokens.push({ type, text, hide })
+                }
                 break
             }
         }
@@ -267,7 +274,12 @@ function highlight(str) {
     patchFields(tokens)
     patchInitFields(tokens)
 
+    let prevTokenNext = null
     return tokens.map((token) => {
+        let prevToken = prevTokenNext
+        prevTokenNext = token
+        if (token.hide) return ""
+
         const safeText = token.text.replace("<", "&lt;").replace(">", "&gt;")
         if (token.type === "op" || token.type === "line" || token.type === "space") {
             return safeText
@@ -285,18 +297,23 @@ function highlight(str) {
             if (token.refId) attribs["data-ref-id"] = token.refId
             attribs["class"] = classes.join(" ")
 
+            let refText = token.text
+            if (token.type === "name" && prevToken && prevToken.hide && prevToken.type === "name") {
+                refText = prevToken.text + refText
+            }
+
             let doRef = true
-            if (token.text.startsWith("ufbx_") && token.text.toLowerCase() != token.text) {
+            if (refText.startsWith("ufbx_") && refText.toLowerCase() != refText) {
                 doRef = false
             }
 
             if (doRef) {
-                if (token.text.toLocaleLowerCase().startsWith("ufbx_")) {
+                if (refText.toLocaleLowerCase().startsWith("ufbx_")) {
                     tag = "a"
-                    attribs["href"] = linkRef(token.text.toLowerCase())
+                    attribs["href"] = linkRef(refText.toLowerCase())
                 } else if (token.structType && token.structType.startsWith("ufbx_")) {
                     tag = "a"
-                    attribs["href"] = linkRef(`${token.structType}.${token.text}`)
+                    attribs["href"] = linkRef(`${token.structType}.${refText}`)
                 }
             }
 

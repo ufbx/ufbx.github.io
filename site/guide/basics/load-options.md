@@ -36,13 +36,13 @@ FBX files may be authored in various coordinate/unit spaces, some exporter resul
 - 3ds Max: inches (`unit_meters=0.0254`), right-handed Z-up
 
 The coordinate space of the file is retained in `ufbx_scene.settings` fields `ufbx_scene_settings.axes`
-and `@rel(ufbx_scene_settings.)unit_meters` which describe how you should interpret the scene.
+and `@(ufbx_scene_settings.)unit_meters` which describe how you should interpret the scene.
 
 ufbx can automatically convert the scene into any convention you want to use via `ufbx_load_opts.target_axes`
-and `@rel(ufbx_load_opts.)target_unit_meters`. By default the transformation is written into the `@rel(ufbx_node.)local_transform`
+and `@(ufbx_load_opts.)target_unit_meters`. By default the transformation is written into the `@(ufbx_node.)local_transform`
 of the root node (`UFBX_SPACE_CONVERSION_TRANSFORM_ROOT`) in an attempt to preserve the scene as authentically as possible.
 If you specify `ufbx_load_opts.space_conversion` to `UFBX_SPACE_CONVERSION_ADJUST_TRANSFORMS` the transformation is propagated
-to the `@rel(ufbx_node.)local_transform` of the top-level non-root nodes.
+to the `@(ufbx_node.)local_transform` of the top-level non-root nodes.
 
 ## Geometry transforms
 
@@ -54,7 +54,7 @@ the geometry statically which has `ufbx_node.geometry_to_node` included.
 Geometry transforms are not often supported in scene graphs so ufbx has options via `ufbx_load_opts.geometry_transform_handling`
 for converting the geometry transforms to forms that are easier to handle:
 
-- `@rel(UFBX_GEOMETRY_TRANSFORM_HANDLING_)PRESERVE`: (default) preserve the geometry transforms as-is
-- `@rel(UFBX_GEOMETRY_TRANSFORM_HANDLING_)HELPER_NODES`: create synthetic intermediate nodes that handle the geometry transformation
-- `@rel(UFBX_GEOMETRY_TRANSFORM_HANDLING_)MODIFY_GEOMETRY`: modify the geometry data itself if possible but fall back to `@rel(UFBX_GEOMETRY_TRANSFORM_HANDLING_)HELPER_NODES` if impossible (eg. if the mesh is instanced)
-- `@rel(UFBX_GEOMETRY_TRANSFORM_HANDLING_)MODIFY_GEOMETRY_NO_FALLBACK`: like `@rel(UFBX_GEOMETRY_TRANSFORM_HANDLING_)MODIFY_GEOMETRY` but instead of falling back to helper nodes it retains the geometry transform in `ufbx_node.geometry_transform`
+- `@(UFBX_GEOMETRY_TRANSFORM_HANDLING_)PRESERVE`: (default) preserve the geometry transforms as-is
+- `@(UFBX_GEOMETRY_TRANSFORM_HANDLING_)HELPER_NODES`: create synthetic intermediate nodes that handle the geometry transformation
+- `@(UFBX_GEOMETRY_TRANSFORM_HANDLING_)MODIFY_GEOMETRY`: modify the geometry data itself if possible but fall back to `@(UFBX_GEOMETRY_TRANSFORM_HANDLING_)HELPER_NODES` if impossible (eg. if the mesh is instanced)
+- `@(UFBX_GEOMETRY_TRANSFORM_HANDLING_)MODIFY_GEOMETRY_NO_FALLBACK`: like `@(UFBX_GEOMETRY_TRANSFORM_HANDLING_)MODIFY_GEOMETRY` but instead of falling back to helper nodes it retains the geometry transform in `ufbx_node.geometry_transform`

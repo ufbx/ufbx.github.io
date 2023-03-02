@@ -10,11 +10,11 @@ eleventyNavigation:
 
 FBX supports [Catmull-Clark sudbivision](https://en.wikipedia.org/wiki/Catmull%E2%80%93Clark_subdivision_surface)
 for meshes. Subdivision may be enabled if `ufbx_mesh.subdivision_preview_levels` or
-`@rel(ufbx_mesh.)subdivision_render_levels` if specified.
+`@(ufbx_mesh.)subdivision_render_levels` if specified.
 
 ## Creases
 
-Subdivided meshes may contain semi-sharp features using `ufbx_mesh.edge_crease` and `@rel(ufbx_mesh).vertex_crease`.
+Subdivided meshes may contain semi-sharp features using `ufbx_mesh.edge_crease` and `@(ufbx_mesh).vertex_crease`.
 These values generally range from 0 (smooth) to 1 (infinitely sharp). The common interpretation
 is that you multiply the crease value by 10 to get the number of subdivision levels where you
 use the crease rule[^1] for subdivision, if non-integer you should blend between the standard
