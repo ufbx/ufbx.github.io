@@ -74,10 +74,19 @@ function parseComment(comment, pos=0, type="text") {
     }
 }
 
+const patches = [
+    { from: /\b([dn])\^([2-3])/g, to: "$1<sup>$2</sup>" },
+]
+
 function renderComment(comment) {
     if (comment && comment.length > 0) {
         return parseComment(comment).map(({ type, lines }) => {
-            const html = md.render(lines.join("\n"))
+            let html = md.render(lines.join("\n"))
+
+            for (const { from, to } of patches) {
+                html = html.replace(from, to)
+            }
+
             return `<div class="desc-${type}">${html}</div>`
         }).join("\n")
     } else {
