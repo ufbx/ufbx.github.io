@@ -20,14 +20,95 @@ handle all of the above deformers.
 
 ## Skinning
 
+Let's start off with skinning which means deforming a mesh with a control skeleton. A skin deformer
+is defined via `ufbx_skin_deformer` found from `ufbx_mesh.skin_deformers[]`, usually you only have a single one per mesh.
+Vertices are attached to bones via `ufbx_skin_cluster` elements (found in `ufbx_skin_deformer.clusters[]`).
+Each cluster contains a list of bound vertices `ufbx_skin_cluster.vertices[]` and a matrix `@(ufbx_skin_cluster).geometry_to_bone` that maps from mesh-space to bone-space often called inverse bind matrix.
+One vertex may be influenced by multiple clusters with varying weights defined via `ufbx_skin_cluster.weights[]`.
+
+Often you want to know which bones influence a given vertex, so ufbx provides `ufbx_skin_deformer.vertices[]` and `@(ufbx_skin_deformer.)weights[]`
+which contains per-vertex information about clusters and weights.
+
+```c
+Vector3 transform_vertex(ufbx_mesh *mesh, ufbx_skin_deformer *skin, uint32_t vertex)
+{
+    Vector3 result = Vector3_new(0.0f, 0.0f, 0.0f);
+
+    ufbx_skin_vertex vert = skin->vertices.data[vertex];
+    for (uint32_t i = 0; i < vert.num_weights; i++) {
+        ufbx_skin_weight weight = skin->weights.data[vert.weight_begin + i];
+        ufbx_skin_cluster *cluster = skin->clusters.data[weight.cluster_index];
+        ufbx_node *node = cluster->bone_node;
+
+        Matrix geometry_to_bone = Matrix4_ufbx(cluster->geometry_to_bone);
+        Matrix bone_to_world = Matrix4_ufbx(node->geometry_to_world);
+        Matrix geometry_to_world = Matrix4_mul(bone_to_world, geometry_to_bone);
+
+        Vector3 local_vertex = Vector3_ufbx(mesh->vertices.data[vertex]);
+        Vector3 world_vertex = Matrix4_transform_point(geometry_to_world, local_vertex);
+        result = Vector3_add(result, Vector3_mul(world_vertex, (float)weight.weight));
+    }
+
+    return result;
+}
+```
+
+```cpp
+Vector3 transform_vertex(ufbx_mesh *mesh, ufbx_skin_deformer *skin, uint32_t vertex)
+{
+    Vector3 result = { };
+
+    ufbx_skin_vertex vert = skin->vertices[vertex];
+    for (uint32_t i = 0; i < vert.num_weights; i++) {
+        ufbx_skin_weight weight = skin->weights[vert.weight_begin + i];
+        ufbx_skin_cluster *cluster = skin->clusters[weight.cluster_index];
+        ufbx_node *node = cluster->bone_node;
+
+        Matrix geometry_to_bone = cluster->geometry_to_bone;
+        Matrix bone_to_world = node->geometry_to_world;
+        Matrix geometry_to_world = bone_to_world * geometry_to_bone;
+
+        Vector3 local_vertex = mesh->vertices[vertex];
+        Vector3 world_vertex = Matrix4_transform_point(geometry_to_world, local_vertex);
+        result += world_vertex * (float)weight.weight;
+    }
+
+    return result;
+}
+```
+
+```rust
+fn transform_vertex(mesh: &ufbx::Mesh, skin: &ufbx::SkinDeformer, vertex: u32) -> Vector3 {
+    let mut result: Vector3 = {};
+
+    let vert = skin.vertices[vertex];
+    for (let i in 0..vert.num_weights) {
+        let weight = skin.weights[vert.weight_begin + i];
+        let cluster = skin.clusters[weight.cluster_index];
+        let node = cluster.bone_node;
+
+        let geometry_to_bone: Matrix4 = cluster->geometry_to_bone.into();
+        let bone_to_world: Matrix4 = node->geometry_to_world.into();
+        let geometry_to_world = bone_to_world * geometry_to_bone;
+
+        let local_vertex: Vector3 = mesh->vertices[vertex].into();
+        let world_vertex = geometry_to_world.transform_point(local_vertex);
+        result += world_vertex * weight.weight as f32;
+    }
+
+    return result;
+}
+```
+
+Typically for real time applications you would want to compute the `geometry_to_world` matrix on the CPU
+for each bone and transform vertices in a vertex shader based on the matrices.
+
+Each vertex may be influenced by one or more bones, represented as `ufbx_skin_cluster` elements. 
+
 Skins in FBX consist of clusters (`ufbx_skin_cluster`) that connect vertices to bones. Each cluster contains
 a reference to a bone `@(ufbx_skin_cluster.)bone_node`, matrix mapping from the geometry to the bone `@(ufbx_skin_cluster.)geometry_to_bone`
 (also often called an inverse bind matrix), and a list of vertices affected by the bone and their respective weights
 `@(ufbx_skin_cluster.)vertices[]` and `@(ufbx_skin_cluster.)weights[]`.
-
-Often you want to know which bones influence a given vertex, so ufbx provides `ufbx_skin_deformer.vertices[]` and `@(ufbx_skin_deformer.)weights[]`
-which lets you iterate over per-vertex clusters. These are sorted by descending weight so taking the first N will be a good approximation
-for a limited amount of weights.
 
 ```c
 struct Vertex {
