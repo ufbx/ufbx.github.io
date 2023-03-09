@@ -25,7 +25,7 @@ typedef struct vi_desc {
 	uint32_t highlight_face_index;
 	double time;
 
-	const ufbx_prop_override *overrides;
+	const ufbx_prop_override_desc *overrides;
 	size_t num_overrides;
 } vi_desc;
 

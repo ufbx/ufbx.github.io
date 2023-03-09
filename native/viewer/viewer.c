@@ -240,6 +240,7 @@ struct vi_scene {
 	ufbx_scene *fbx_scene;
 	ufbx_scene *fbx_state;
 	void *fbx_state_defer;
+	void *fbx_anim_defer;
 
 	vi_node *nodes;
 	vi_mesh *meshes;
@@ -1491,20 +1492,39 @@ static void vi_draw_present(vi_framebuffer *src)
 }
 
 static void ad_free_ufbx_scene(void *user) { ufbx_free_scene(*(ufbx_scene**)user); }
+static void ad_free_ufbx_anim(void *user) { ufbx_free_anim(*(ufbx_anim**)user); }
 
 static void vi_update(vi_scene *vs, const vi_target *target, const vi_desc *desc)
 {
 	float aspect = (float)target->width / (float)target->height;
 
 	ufbx_anim *anim = vs->fbx.anim;
-	#if 0
-	anim.prop_overrides.data = desc->overrides;
-	anim.prop_overrides.count = desc->num_overrides;
-	#endif
 
 	// TODO: Cache
 	if (vs->fbx_state) {
 		arena_cancel(vs->arena, vs->fbx_state_defer, true);
+		arena_cancel(vs->arena, vs->fbx_anim_defer, true);
+		vs->fbx_state_defer = NULL;
+		vs->fbx_anim_defer = NULL;
+	}
+
+	if (desc->num_overrides > 0) {
+		ufbx_anim_opts opts = { };
+
+		opts.overrides.data = desc->overrides;
+		opts.overrides.count = desc->num_overrides;
+
+		arena_t tmp;
+		arena_init(&tmp, NULL);
+		uint32_t *layers = aalloc(&tmp, uint32_t, anim->layers.count);
+		for (size_t i = 0; i < anim->layers.count; i++) {
+			layers[i] = anim->layers.data[i]->typed_id;
+		}
+
+		anim = ufbx_create_anim(vs->fbx_scene, &opts, NULL);
+		arena_free(&tmp);
+
+		vs->fbx_anim_defer = arena_defer(vs->arena, ad_free_ufbx_anim, ufbx_anim*, &anim);
 	}
 	ufbx_scene *fbx_state = ufbx_evaluate_scene(vs->fbx_scene, anim, desc->time, NULL, NULL);
 	vs->fbx_state = fbx_state;

@@ -4,7 +4,6 @@ import sys
 import re
 import shutil
 import argparse
-from collections import namedtuple
 
 g_verbose = True
 
@@ -15,11 +14,14 @@ def log(line):
     print(line, flush=True)
 
 def write_lines(path, lines):
-    with open(path, "wt", encoding="utf-8") as f:
+    with open(path, "wt", encoding="utf-8", newline="\n") as f:
         f.writelines(line + "\n" for line in lines)
 
 def exec(args, cwd=None, relative_exe=False):
     if g_verbose:
+        print_args = args
+        if relative_exe:
+            print_args[0] = f"./{print_args[0]}"
         if cwd:
             log(f"{cwd}$ " + subprocess.list2cmdline(args))
         else:
@@ -27,7 +29,10 @@ def exec(args, cwd=None, relative_exe=False):
     try:
         exe_args = args
         if relative_exe:
-            exe_abs = os.path.abspath(args[0])
+            if cwd:
+                exe_abs = os.path.abspath(os.path.join(cwd, args[0]))
+            else:
+                exe_abs = os.path.abspath(args[0])
             exe_args = [exe_abs] + args[1:]
         return subprocess.check_output(exe_args, stderr=subprocess.STDOUT, cwd=cwd)
     except subprocess.CalledProcessError as exc:
@@ -37,121 +42,15 @@ def exec(args, cwd=None, relative_exe=False):
         log(output)
         raise
 
-class Compiler:
-    def __init__(self, lang):
+class Example:
+    def __init__(self, name, lang, flags, lines):
+        self.name = name
         self.lang = lang
-        self.compiler_path = build_path(f"compiler-{lang}")
-        if sys.platform == "win32":
-            self.exe_path = "example.exe"
-        else:
-            self.exe_path = "example"
-
-    def prepare(self):
-        pass
-
-    def run(self, path):
-        exe_path = os.path.join(path, self.exe_path)
-        return exec([exe_path], cwd=build_path("examples"), relative_exe=True)
-
-class CompilerC(Compiler):
-    def __init__(self, lang):
-        super().__init__(lang)
-        if sys.platform == "win32":
-            self.ufbx_obj = os.path.join(self.compiler_path, "ufbx.obj")
-        else:
-            self.ufbx_obj = os.path.join(self.compiler_path, "ufbx.o")
-
-    def setup(self, path, source_lines):
-        main_path = os.path.join(path, "main.c")
-        write_lines(main_path, source_lines)
-
-class CompilerGCC(CompilerC):
-    def __init__(self, lang, args, default_exe=None):
-        super().__init__(lang)
-        if not default_exe:
-            default_exe = "g++" if lang == "cpp" else "gcc"
-        self.exe = args.get("exe", default_exe)
-        if isinstance(self.exe, str):
-            self.exe = [self.exe]
-
-    def check(self):
-        args = self.exe + ["--version"]
-        exec(args)
-
-    def prepare(self):
-        args = self.exe + ["-c", "native/viewer/ufbx.c", "-o", self.ufbx_obj]
-        exec(args)
-
-    def compile(self, path):
-        main_path = os.path.join(path, "main.c")
-        exe_path = os.path.join(path, self.exe_path)
-        lm = []
-        if sys.platform != "win32":
-            lm = ["-lm"]
-        args = self.exe + ["-I", "native/viewer"] + lm + [self.ufbx_obj, main_path, "-o", exe_path]
-        exec(args)
-
-class CompilerClang(CompilerGCC):
-    def __init__(self, lang, args, default_exe=None):
-        if not default_exe:
-            default_exe = "clang++" if lang == "cpp" else "clang"
-        super().__init__(lang, args, default_exe)
-
-class CompilerCargo(Compiler):
-    def __init__(self, lang, args, default_exe="cargo"):
-        super().__init__(lang)
-        self.exe = args.get("exe", default_exe)
-        if isinstance(self.exe, str):
-            self.exe = [self.exe]
-
-        if sys.platform == "win32":
-            self.exe_path = os.path.join("target", "debug", "example.exe")
-        else:
-            self.exe_path = os.path.join("target", "debug", "example")
-
-    def check(self):
-        args = self.exe + ["--version"]
-        exec(args)
-
-    def prepare(self):
-        path = self.compiler_path
-
-        exec(self.exe + ["init"], cwd=path)
-
-        def patch_lines(lines):
-            for line in lines:
-                line = line.strip()
-                if "[dependencies]" in line:
-                    yield "[dependencies]"
-                    yield "ufbx = \"0.3.0\""
-                elif "name = " in line:
-                    yield "name = \"example\""
-                else:
-                    yield line
-
-        toml_path = os.path.join(path, "Cargo.toml")
-        with open(toml_path, "rt", encoding="utf-8") as f:
-            toml_lines = list(patch_lines(f))
-        write_lines(toml_path, toml_lines)
-
-        exec(self.exe + ["build"], cwd=path)
-
-    def setup(self, path, source_lines):
-        shutil.copytree(self.compiler_path, path, dirs_exist_ok=True)
-
-        main_path = os.path.join(path, "src", "main.rs")
-        write_lines(main_path, source_lines)
-
-    def compile(self, path):
-        exec(self.exe + ["build"], cwd=path)
-
-compiler_factories = {
-    "gcc": CompilerGCC,
-    "clang": CompilerClang,
-    "cargo": CompilerCargo,
-}
-
-Example = namedtuple("Example", "name lang flags lines")
+        self.flags = flags
+        self.lines = lines
+        self.setup_lines = []
+        self.path = ""
+        self.crates = []
 
 def search_examples(path):
     seen_examples = set()
@@ -194,26 +93,69 @@ def search_examples(path):
                         continue
                     code_lines.append(line)
 
+def setup_c(example):
+    main_path = os.path.join(example.path, "main.c")
+    run_path = os.path.join(example.path, "build_and_run.sh")
+    write_lines(main_path, example.lines)
+    write_lines(run_path, example.setup_lines)
+
+def setup_cpp(example):
+    main_path = os.path.join(example.path, "main.cpp")
+    write_lines(main_path, example.lines)
+
+def setup_rust(example):
+    os.makedirs(os.path.join(example.path, "src"))
+    main_path = os.path.join(example.path, "src", "main.rs")
+
+    crate_versions = {
+        "cgmath": "\"0.18.0\"",
+        "glam": "\"0.23.0\"",
+        "mint": "\"0.5.9\"",
+    }
+
+    cargo_lines = []
+
+    crate_name = example.name
+    if "/" in crate_name:
+        crate_name = crate_name[crate_name.rindex("/") + 1:]
+
+    cargo_lines.extend(l.strip() for l in f"""
+        [package]
+        name = "{crate_name}"
+        version = "0.1.0"
+        edition = "2021"
+    """.splitlines()[1:-1])
+
+    cargo_lines.append("")
+
+    cargo_lines.extend(l.strip() for l in """
+        [dependencies]
+        ufbx = "0.3.0"
+    """.splitlines()[1:-1])
+
+    for crate in example.crates:
+        version = crate_versions[crate]
+        cargo_lines.append(f"{crate} = {version}")
+
+    cargo_path = os.path.join(example.path, "Cargo.toml")
+    write_lines(cargo_path, cargo_lines)
+    write_lines(main_path, example.lines)
+
+def diff_lines(a_lines, b_lines):
+    num_lines = max(len(a_lines), len(b_lines))
+    for i in range(num_lines):
+        a = a_lines[i] if i < len(a_lines) else ""
+        b = b_lines[i] if i < len(b_lines) else ""
+        if a != b:
+            print(f"Diff error at line {1+i}:\n{a}\n{b}\n")
+            return False
+    return True
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--skip-init", action="store_true", help="Skip initialization of compilers")
+    parser.add_argument("--example", nargs="+", help="Test single example")
     argv = parser.parse_args()
-
-    compilers = { }
-
-    config_default = {
-        "compilers": {
-            "c": {
-                "type": "clang",
-            },
-            "cpp": {
-                "type": "clang",
-            },
-            "rust": {
-                "type": "cargo",
-            },
-        }
-    }
 
     file_ext = {
         "c": "c",
@@ -222,43 +164,59 @@ def main():
     }
 
     os.makedirs("build", exist_ok=True)
-
-    config = config_default
-    for lang, compiler_config in config["compilers"].items():
-        type_ = compiler_config["type"]
-        compilers[lang] = compiler_factories[type_](lang, compiler_config)
-
-        compiler_path = build_path(f"compiler-{lang}")
-        if os.path.exists(compiler_path) and not argv.skip_init:
-            shutil.rmtree(compiler_path)
-        os.makedirs(compiler_path, exist_ok=True)
-
-    if not argv.skip_init:
-
-        log(f"== Checking compilers ==")
-        for compiler in compilers.values():
-            compiler.check()
-
-        for compiler in compilers.values():
-            log("")
-            log(f"== Preparing compiler: {compiler.lang} ==")
-            compiler.prepare()
-
     os.makedirs(build_path("examples"), exist_ok=True)
-    shutil.copyfile("static/models/blender_default_cube.fbx", build_path("examples", "my_scene.fbx"))
 
     examples = list(search_examples("site"))
 
-    for example in examples:
-        log("")
-        log(f"== Compiling: {example.name} {example.lang} ==")
+    dep_names = {
+        "ufbx": [
+            ("ufbx.h", "native/viewer/ufbx.h"),
+            ("ufbx.c", "native/viewer/ufbx.c"),
+        ],
+        "example_base": [
+            ("example_base.h", "native/example/example_base.h"),
+        ],
+    }
 
-        compiler = compilers[example.lang]
+    setup_fn = {
+        "c": setup_c,
+        "cpp": setup_cpp,
+        "rust": setup_rust,
+    }
+
+    dep_paths = [
+        "static/models",
+    ]
+
+    num_ok = 0
+    num_total = 0
+
+    new_examples = []
+    for example in examples:
+        # compiler = compilers[example.lang]
         key = f"{example.name}-{example.lang}"
+
+        if argv.example:
+            if len(argv.example) == 1:
+                if example.name != argv.example[0]:
+                    continue
+            elif len(argv.example) == 2:
+                if example.name != argv.example[0]:
+                    continue
+                if example.lang != argv.example[1]:
+                    continue
+            else:
+                raise RuntimeError("Bad --example, expected 1 or 2 arguments")
+
+        key = key.replace("/", os.sep)
         path = build_path("examples", key)
         if os.path.exists(path):
             shutil.rmtree(path)
         os.makedirs(path, exist_ok=True)
+
+        in_meta = True
+
+        example.path = path
 
         frame_name = f"{example.name}.{file_ext[example.lang]}"
         frame_path = os.path.join("tests", "example-frames", frame_name)
@@ -267,43 +225,78 @@ def main():
                 new_lines = []
                 for line in f.readlines():
                     line = line.rstrip()
+
+                    if in_meta:
+                        meta_line = line.strip()
+                        if meta_line.startswith("//"):
+                            meta_line = meta_line[2:].strip()
+                        if meta_line.startswith("$"):
+                            tokens = meta_line.split()
+                            if tokens[0] == "$dep":
+                                for tok in tokens[1:]:
+                                    if tok in dep_names:
+                                        for dst, src in dep_names[tok]:
+                                            dst = os.path.join(path, dst)
+                                            shutil.copyfile(src, dst)
+                                    else:
+                                        for dep_path in dep_paths:
+                                            maybe_src = os.path.join(dep_path, tok)
+                                            if os.path.exists(maybe_src):
+                                                src = maybe_src
+                                                break
+                                        dst = os.path.join(path, tok)
+                                        shutil.copyfile(src, dst)
+                            elif tokens[0] == "$crate":
+                                example.crates += tokens[1:]
+                            else:
+                                example.setup_lines.append(meta_line[1:].strip())
+                            continue
+                        else:
+                            in_meta = False
+
                     if "EXAMPLE_SOURCE" in line:
                         new_lines += example.lines
                     else:
                         new_lines.append(line)
-                example = example._replace(lines=new_lines)
+                example.lines = new_lines
 
-        compiler.setup(path, example.lines)
-        compiler.compile(path)
+        setup_fn[example.lang](example)
+        new_examples.append(example)
 
-        log("")
-        log(f"== Executing: {example.name} {example.lang} ==")
+    for example in new_examples:
+        num_total += 1
+        try:
+            log(f"== {example.name} {example.lang} ==")
+            for line in example.setup_lines:
+                args = line.split()
+                relative_exe = False
+                if args[0].startswith("./"):
+                    args[0] = args[0][2:]
+                    relative_exe = True
+                if ">" in args:
+                    redirect = args.index(">")
+                    args = args[:redirect]
+                output = exec(args, cwd=example.path, relative_exe=relative_exe)
 
-        output = compiler.run(path)
-        if isinstance(output, bytes):
-            output = output.decode("utf-8")
-        output = output.splitlines(keepends=False)
+            output = output.decode("utf-8").splitlines(keepends=False)
+            output_path = os.path.join(example.path, "output.txt")
+            write_lines(output_path, output)
 
-        output_path = os.path.join(path, "output.txt")
-        write_lines(output_path, output)
+            ref_output_path = os.path.join("tests", "example-outputs", f"{example.name}.txt")
+            with open(ref_output_path, "rt", encoding="utf-8") as f:
+                ref_output = f.read().splitlines(keepends=False)
 
-        ref_output_path = os.path.join("tests", "example-outputs", f"{example.name}.txt")
-        with open(ref_output_path, "rt", encoding="utf-8") as f:
-            ref_output = f.read().splitlines(keepends=False)
-        
-        if output != ref_output:
-            log("")
-            log("-- FAILED --")
-            log("")
-            log(f"Expected output ({ref_output_path}):")
-            log("\n".join(ref_output))
-            log("")
-            log(f"Got output ({output_path}):")
-            log("\n".join(output))
-            raise RuntimeError("Bad output")
+            if diff_lines(ref_output, output):
+                num_ok += 1
+        except subprocess.CalledProcessError:
+            pass
+
+    log("")
+    if num_ok == num_total:
+        log(f"-- OK: {num_ok}/{num_total} succeeded --")
+    else:
+        log(f"-- FAIL: {num_ok}/{num_total} succeeded --")
+        exit(1)
 
 if __name__ == "__main__":
     main()
-
-log("")
-log("-- SUCCESS --")

@@ -30,9 +30,11 @@ Often you want to know which bones influence a given vertex, so ufbx provides `u
 which contains per-vertex information about clusters and weights.
 
 ```c
+// ufbx-doc-example: deformers/skin-vertex
 Vector3 transform_vertex(ufbx_mesh *mesh, ufbx_skin_deformer *skin, uint32_t vertex)
 {
     Vector3 result = Vector3_new(0.0f, 0.0f, 0.0f);
+    float total_weight = 0.0f;
 
     ufbx_skin_vertex vert = skin->vertices.data[vertex];
     for (uint32_t i = 0; i < vert.num_weights; i++) {
@@ -40,23 +42,27 @@ Vector3 transform_vertex(ufbx_mesh *mesh, ufbx_skin_deformer *skin, uint32_t ver
         ufbx_skin_cluster *cluster = skin->clusters.data[weight.cluster_index];
         ufbx_node *node = cluster->bone_node;
 
-        Matrix geometry_to_bone = Matrix4_ufbx(cluster->geometry_to_bone);
-        Matrix bone_to_world = Matrix4_ufbx(node->geometry_to_world);
-        Matrix geometry_to_world = Matrix4_mul(bone_to_world, geometry_to_bone);
+        Matrix4 geometry_to_bone = Matrix4_ufbx(cluster->geometry_to_bone);
+        Matrix4 bone_to_world = Matrix4_ufbx(node->node_to_world);
+        Matrix4 geometry_to_world = Matrix4_mul(bone_to_world, geometry_to_bone);
 
         Vector3 local_vertex = Vector3_ufbx(mesh->vertices.data[vertex]);
         Vector3 world_vertex = Matrix4_transform_point(geometry_to_world, local_vertex);
         result = Vector3_add(result, Vector3_mul(world_vertex, (float)weight.weight));
+        total_weight += (float)weight.weight;
     }
 
-    return result;
+    return Vector3_mul(result, 1.0f / total_weight);
 }
 ```
 
 ```cpp
+// ufbx-doc-example: deformers/skin-vertex
+
 Vector3 transform_vertex(ufbx_mesh *mesh, ufbx_skin_deformer *skin, uint32_t vertex)
 {
     Vector3 result = { };
+    float total_weight = 0.0f;
 
     ufbx_skin_vertex vert = skin->vertices[vertex];
     for (uint32_t i = 0; i < vert.num_weights; i++) {
@@ -64,39 +70,44 @@ Vector3 transform_vertex(ufbx_mesh *mesh, ufbx_skin_deformer *skin, uint32_t ver
         ufbx_skin_cluster *cluster = skin->clusters[weight.cluster_index];
         ufbx_node *node = cluster->bone_node;
 
-        Matrix geometry_to_bone = cluster->geometry_to_bone;
-        Matrix bone_to_world = node->geometry_to_world;
-        Matrix geometry_to_world = bone_to_world * geometry_to_bone;
+        Matrix4 geometry_to_bone = cluster->geometry_to_bone;
+        Matrix4 bone_to_world = node->geometry_to_world;
+        Matrix4 geometry_to_world = bone_to_world * geometry_to_bone;
 
         Vector3 local_vertex = mesh->vertices[vertex];
         Vector3 world_vertex = Matrix4_transform_point(geometry_to_world, local_vertex);
         result += world_vertex * (float)weight.weight;
+        total_weight += (float)weight.weight;
     }
 
-    return result;
+    return Vector3_mul(result, 1.0f / total_weight);
 }
 ```
 
 ```rust
-fn transform_vertex(mesh: &ufbx::Mesh, skin: &ufbx::SkinDeformer, vertex: u32) -> Vector3 {
-    let mut result: Vector3 = {};
+// ufbx-doc-example: deformers/skin-vertex
+
+fn transform_vertex(mesh: &ufbx::Mesh, skin: &ufbx::SkinDeformer, vertex: usize) -> Vec3 {
+    let mut result = Vec3::ZERO;
+    let mut total_weight: f32 = 0.0;
 
     let vert = skin.vertices[vertex];
-    for (let i in 0..vert.num_weights) {
-        let weight = skin.weights[vert.weight_begin + i];
-        let cluster = skin.clusters[weight.cluster_index];
-        let node = cluster.bone_node;
+    for i in 0..vert.num_weights {
+        let weight = skin.weights[(vert.weight_begin + i) as usize];
+        let cluster = &skin.clusters[weight.cluster_index as usize];
+        let node = cluster.bone_node.as_ref().unwrap();
 
-        let geometry_to_bone: Matrix4 = cluster->geometry_to_bone.into();
-        let bone_to_world: Matrix4 = node->geometry_to_world.into();
+        let geometry_to_bone: Mat4 = cluster.geometry_to_bone.as_glam().as_mat4();
+        let bone_to_world: Mat4 = node.geometry_to_world.as_glam().as_mat4();
         let geometry_to_world = bone_to_world * geometry_to_bone;
 
-        let local_vertex: Vector3 = mesh->vertices[vertex].into();
-        let world_vertex = geometry_to_world.transform_point(local_vertex);
+        let local_vertex: Vec3 = mesh.vertices[vertex].as_glam().as_vec3();
+        let world_vertex = geometry_to_world.transform_point3(local_vertex);
         result += world_vertex * weight.weight as f32;
+        total_weight += weight.weight as f32;
     }
 
-    return result;
+    return result * (1.0 / total_weight);
 }
 ```
 
@@ -105,10 +116,34 @@ for each bone and transform vertices in a vertex shader based on the matrices.
 
 Each vertex may be influenced by one or more bones, represented as `ufbx_skin_cluster` elements. 
 
-Skins in FBX consist of clusters (`ufbx_skin_cluster`) that connect vertices to bones. Each cluster contains
-a reference to a bone `@(ufbx_skin_cluster.)bone_node`, matrix mapping from the geometry to the bone `@(ufbx_skin_cluster.)geometry_to_bone`
-(also often called an inverse bind matrix), and a list of vertices affected by the bone and their respective weights
-`@(ufbx_skin_cluster.)vertices[]` and `@(ufbx_skin_cluster.)weights[]`.
+<div class="doc-viewer doc-viewer-xtall">
+<div data-dv-popout id="container-skinning" class="dv-inline">
+<div class="dv-top">
+{% include "viewer.md",
+  id: "skinning",
+  class: "dv-normal",
+%}
+</div>
+</div>
+</div>
+
+<script>
+viewerDescs["skinning"] = {
+  scene: "/static/models/skinned_human.fbx",
+  camera: {
+    pitch: 30.0,
+    yaw: -40.0,
+    distance: 10,
+    offset: { x: 0.0, y: 0.0, z: 0.0 },
+  },
+  outliner: {
+    showDeformers: true,
+  },
+  props: {
+    show: true,
+  },
+}
+</script>
 
 ```c
 struct Vertex {

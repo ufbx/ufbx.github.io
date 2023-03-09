@@ -1,4 +1,0 @@
-
-Cube
-Light
-Camera

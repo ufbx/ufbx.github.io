@@ -32,7 +32,6 @@ These instances may also have different materials using `ufbx_node.materials[]` 
 It is often easier to reverse your perspective: instead of iterating over nodes and their attributes you can iterate over attributes and their instances.
 
 ```c
-// ufbx-doc-example: scene-structure/instance-order
 @(
   ufbx_scene *scene;
 )
@@ -57,7 +56,6 @@ for (size_t i = 0; i < scene->meshes.count; i++) {
 ```
 
 ```cpp
-// ufbx-doc-example: scene-structure/instance-order
 @(
   ufbx_scene *scene;
 )

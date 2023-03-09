@@ -30,7 +30,6 @@ back to vertices and why they matter when we get to deformation and skinning, bu
 to ignore them for now.
 
 ```c
-// ufbx-doc-example: vertices-1
 
 void draw_polygons(ufbx_mesh *mesh)
 {
@@ -74,7 +73,6 @@ Often you don't want to deal with arbitrarily sized triangles in meshes. ufbx ha
 be able to handle any mesh make sure to use `ufbx_mesh.max_face_triangles` to determine the size for the output.
 
 ```c
-// ufbx-doc-example: vertices-2
 
 void output_triangle(ufbx_vec3 a, ufbx_vec3 b, ufbx_vec3 c);
 
@@ -141,7 +139,6 @@ viewerDescs["cube"] = {
 You can retrieve the geometry data from `ufbx_mesh` through vertex attributes.
 
 ```c
-// ufbx-doc-example: vertices-1
 
 void list_vertices(ufbx_mesh *mesh)
 {
@@ -169,7 +166,6 @@ void list_vertices(ufbx_mesh *mesh)
 ```
 
 ```cpp
-// ufbx-doc-example: vertices-1
 void list_vertices(ufbx_mesh *mesh)
 {
     for (ufbx_face face : mesh->faces) {
@@ -194,7 +190,6 @@ void list_vertices(ufbx_mesh *mesh)
 ```
 
 ```rust
-// ufbx-doc-example: vertices-1
 fn list_vertices(mesh: &ufbx::Mesh)
 {
     for face in &mesh.faces {
@@ -222,7 +217,6 @@ In many cases you can't do much with arbitrarily large polygons so meshes need t
 You can use the `ufbx_triangulate_face()` utility function to chop a polygon into triangles.
 
 ```cpp
-// ufbx-doc-example: vertices-2
 
 void output_triangle(ufbx_vec3 a, ufbx_vec3 b, ufbx_vec3 c);
 
@@ -251,7 +245,6 @@ void list_triangles(ufbx_mesh *mesh)
 ```
 
 ```rust
-// ufbx-doc-example: vertices-2
 
 fn list_triangles(mesh: &ufbx::Mesh)
 {
