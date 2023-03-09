@@ -200,7 +200,7 @@ function patchRefs(tokens) {
         } else if (token.declType) {
             const scope = scopes[scopes.length - 1]
             scope[token.text] = { type: token.declType, id: token.declId }
-        } else if (token.type === "name" && prevToken.text !== ".") {
+        } else if (token.type === "name" && prevToken.text !== "." && prevToken.text !== "->") {
             for (let i = scopes.length - 1; i >= 0; i--) {
                 const scope = scopes[i]
                 const ref = scope[token.text]
