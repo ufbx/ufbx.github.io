@@ -17,13 +17,13 @@ and some generic properties. One handy property is `ufbx_element.typed_id` that 
 element of a type, ie. `ufbx_mesh.typed_id` refers to its position in `ufbx_scene.meshes[]`. You can use these indices
 to refer to custom data related to the element.
 
-The scene graph has one root node at `ufbx_scene.root`, each node has transformation specified in `ufbx_node.local_transform`
+The scene graph has one root node at `ufbx_scene.root_node`, each node has transformation specified in `ufbx_node.local_transform`
 which affects any attributes attached to the node and its children `ufbx_node.children[]`. You can access common attributes
 of a node via `ufbx_node.mesh`, `@(ufbx_node.)light`, `@(ufbx_node.)camera`, for other types you have to use the generic
 `ufbx_node.attrib` and convert it to the correct type (eg. using `ufbx_as_nurbs_curve()`). You might also notice `ufbx_node.all_attribs[]`,
 in theory FBX files allow you to attach multiple attributes to a node, but this is *exceedingly* rare and I recommend to ignore it unless
 you know that you're dealing with some cursed/custom files. On the other hand one attribute may belong to multiple nodes in normal files,
-see [Instancing](#Instancing).
+see [Instancing](#instancing).
 
 ## Instancing
 

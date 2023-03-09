@@ -14,8 +14,8 @@ Geometry can be morphed using various deformers, FBX supports three types of def
 - `ufbx_blend_deformer`: Blend shapes (aka morph targets) containing per-vertex offsets
 - `ufbx_cache_deformer`: Overrides geometry data from a cache file containing per-frame positions
 
-Note that unlike what we've previously gone over in [Geometry](/guide/basics/geometry.md), deformers
-affect *vertices* so we need to use `ufbx_mesh.vertex_index[]` to map from indices to vertices to
+Note that unlike what we've previously gone over in [Geometry](/guide/basics/geometry), deformers
+affect *vertices* so we need to use `ufbx_mesh.vertex_indices[]` to map from indices to vertices to
 handle all of the above deformers.
 
 ## Skinning
@@ -271,7 +271,7 @@ Mesh process_blend_mesh(ufbx_mesh *mesh)
     result.num_vertices = mesh->num_triangles * 3;
     result.vertices = (Vertex*)calloc(result.num_vertices, sizeof(Vertex));
 
-    size_t num_tri_indices = mesh->max_fae_triangles;
+    size_t num_tri_indices = mesh->max_face_triangles;
     uint32_t *tri_indices = (uint32_t*)calloc(num_tri_indices, sizeof(uint32_t));
 
     Vertex *dst = result->vertices;
