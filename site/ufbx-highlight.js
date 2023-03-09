@@ -63,6 +63,10 @@ const types = new Set([
 
 const advancedTypes = new Set([
     "std::vector",
+    "Vector2",
+    "Vector3",
+    "Vector4",
+    "Matrix4",
 ])
 
 function tokenize(source) {
