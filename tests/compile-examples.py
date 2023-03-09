@@ -94,16 +94,20 @@ def search_examples(path):
                     code_lines.append(line)
 
 def setup_c(example):
-    main_path = os.path.join(example.path, "main.c")
     run_path = os.path.join(example.path, "build_and_run.sh")
-    write_lines(main_path, example.lines)
     write_lines(run_path, example.setup_lines)
+    main_path = os.path.join(example.path, "main.c")
+    write_lines(main_path, example.lines)
 
 def setup_cpp(example):
+    run_path = os.path.join(example.path, "build_and_run.sh")
+    write_lines(run_path, example.setup_lines)
     main_path = os.path.join(example.path, "main.cpp")
     write_lines(main_path, example.lines)
 
 def setup_rust(example):
+    run_path = os.path.join(example.path, "build_and_run.sh")
+    write_lines(run_path, example.setup_lines)
     os.makedirs(os.path.join(example.path, "src"))
     main_path = os.path.join(example.path, "src", "main.rs")
 
