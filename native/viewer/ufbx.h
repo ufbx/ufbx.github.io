@@ -441,7 +441,7 @@ typedef enum ufbx_prop_flags UFBX_FLAG_REPR {
 	UFBX_PROP_FLAG_NO_VALUE = 0x10000,
 
 	// This property has been overridden by the user.
-	// See `ufbx_anim.prop_overrides` for more information.
+	// See `ufbx_anim_opts.overrides` for more information.
 	UFBX_PROP_FLAG_OVERRIDDEN = 0x20000,
 
 	// Value type.
