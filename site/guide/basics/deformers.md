@@ -80,7 +80,7 @@ Vector3 transform_vertex(ufbx_mesh *mesh, ufbx_skin_deformer *skin, uint32_t ver
         total_weight += (float)weight.weight;
     }
 
-    return Vector3_mul(result, 1.0f / total_weight);
+    return result * (1.0f / total_weight);
 }
 ```
 

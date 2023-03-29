@@ -138,6 +138,10 @@ body {
     color: #00f;
 }
 
+.c-type-cpp {
+    color: #00a;
+}
+
 .token.keyword {
     color: #00f;
 }
@@ -163,6 +167,10 @@ a.c-type {
 a.c-name {
     text-decoration: underline #9815cc31;
     color: #71067a;
+}
+
+.c-call {
+    color: #448;
 }
 
 article > ul li {

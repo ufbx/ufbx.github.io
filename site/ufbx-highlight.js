@@ -260,6 +260,13 @@ function patchInitFields(tokens) {
     }
 }
 
+function patchCalls(tokens) {
+    for (const m of search(tokens, /(name:\S* )(op:\( )/)) {
+        let pos = m.groups[1].begin
+        tokens[pos].isCall = true
+    }
+}
+
 function linkRef(ref) {
     if (globalContext.inReference) {
         return `#${ref}`
@@ -277,6 +284,7 @@ function highlight(str) {
     patchFields(tokens)
     patchFields(tokens)
     patchInitFields(tokens)
+    patchCalls(tokens)
 
     let prevTokenNext = null
     return tokens.map((token) => {
@@ -299,6 +307,7 @@ function highlight(str) {
             let attribs = { }
             if (token.declId) attribs["data-decl-id"] = token.declId
             if (token.refId) attribs["data-ref-id"] = token.refId
+            if (token.isCall) classes.push("c-call")
             attribs["class"] = classes.join(" ")
 
             let refText = token.text
