@@ -201,10 +201,12 @@ from the left panel to inspect and adjust their properties.
 
 <div class="doc-viewer-tall">
 <div data-dv-popout id="container-blender-default" class="dv-inline">
+<div class="dv-top">
 {% include "viewer.md",
   id: "blender-default",
   class: "doc-viewer dv-normal",
 %}
+</div>
 </div>
 </div>
 
