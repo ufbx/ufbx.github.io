@@ -59,6 +59,4 @@ jobs:
       - name: Compile examples
         run: python3 tests/compile-examples.py
       - name: ZIP and upload examples
-        run: python3 tests/zip-examples.py \
-          --upload-to https://storage.bunnycdn.com/ufbx-examples \
-          --api-key $BUNNY_API_TOKEN
+        run: python3 tests/zip-examples.py --upload-to https://storage.bunnycdn.com/ufbx-examples --api-key $BUNNY_API_TOKEN
