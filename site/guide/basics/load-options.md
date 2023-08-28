@@ -18,7 +18,7 @@ ufbx_load_opts opts = {
     .target_axes = ufbx_axes_right_handed_y_up,
     .target_unit_meters = 1.0f,
 
-    // Adjust the node transforms directly to perform the above covnersion
+    // Adjust the node transforms directly to perform the above conversion
     .space_conversion = UFBX_SPACE_CONVERSION_ADJUST_TRANSFORMS,
 
     // Convert geometry transforms into helper nodes

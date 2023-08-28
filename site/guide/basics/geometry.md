@@ -20,7 +20,7 @@ a mesh with two quads would contain the faces:
 The geometry data itself is stored in attributes such as position, normal, UV,
 color, etc. You can treat each attribute as a flat[^1] list of values defined for
 each *index* (ie. polygon corner). So for the above example we would have positions,
-UVs, normals ranging from 0 to 7: 0-3 beloning to the first face, 4-7 to the second one.
+UVs, normals ranging from 0 to 7: 0-3 belonging to the first face, 4-7 to the second one.
 
 You might wonder why the attributes are not defined per vertex and then indexed by
 the polygons (via `ufbx_mesh.vertex_indices[]`). The issue is that what we call a *vertex*
@@ -66,7 +66,7 @@ may use different materials for each slot defined by `ufbx_node.materials[]`.
 As renderers often need to split meshes along materials ufbx provides `ufbx_mesh_material.face_indices[]`
 containing a list of all faces using a specific material. TODO: Deprecate null material?
 
-## Triagnulation
+## Triangulation
 
 Often you don't want to deal with arbitrarily sized triangles in meshes. ufbx has a utility function
 `ufbx_triangulate_face()` that you can use to split a face into multiple triangles. If you want to
@@ -111,7 +111,7 @@ void list_triangles(ufbx_mesh *mesh)
 <div class="g-inline">
 
 Below you can see the vertices of the selected *mesh*. Notice that for example indices
-**3** and **4** refer to the same vertex **2** but they still have diffent normals. You
+**3** and **4** refer to the same vertex **2** but they still have different normals. You
 can see this visualized if you hover over those lines.
 
 </div>
@@ -287,5 +287,5 @@ Here's a brief summary of all the geometry data that `ufbx_mesh` contains:
     - `ufbx_mesh.face_hole`: If true the polygon should be treated as a hole
 - For each edge, indexable up to `ufbx_mesh.num_edges`:
     - `ufbx_mesh.edge_smoothing`: Smooth flag for generating normals
-    - `ufbx_mesh.edge_visibility`: Edge visiblity for editing
+    - `ufbx_mesh.edge_visibility`: Edge visibility for editing
     - `ufbx_mesh.edge_crease`: Edge crease for subdivision

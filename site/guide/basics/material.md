@@ -11,7 +11,7 @@ eleventyNavigation:
 Materials are represented using `ufbx_material` which are collections of "maps" (`ufbx_material_map`).
 Each map represents a material attribute such as diffuse color, roughness, etc. and may have a constant
 value or an attached texture (`ufbx_texture`). FBX has a built-in legacy Phong-style material model `ufbx_material.fbx` and
-a heterogeneous mess of proprietrary PBR materials that ufbx unifies as `ufbx_material.pbr`.
+a heterogeneous mess of proprietary PBR materials that ufbx unifies as `ufbx_material.pbr`.
 
 ### Legacy model
 

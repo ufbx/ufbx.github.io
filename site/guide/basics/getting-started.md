@@ -179,7 +179,7 @@ Now that you have a `ufbx_scene` you can traverse and inspect it freely until yo
 If you use MSVC or VSCode you can download [`ufbx.natvis`](https://github.com/bqqbarbhg/ufbx/blob/master/misc/ufbx.natvis)
 that lets you visualize the data structures used by *ufbx* in the debugger.
 
-Strings are represented using `ufbx_string`, `ufbx_string.data` contains a pointer to a jnull-terminated UTF-8 string.
+Strings are represented using `ufbx_string`, `ufbx_string.data` contains a pointer to a null-terminated UTF-8 string.
 `ufbx_string.length` contains the length (number of bytes) excluding the null-terminator.
 Bindings in other languages attempt to use a type close to their native string representation.
 
