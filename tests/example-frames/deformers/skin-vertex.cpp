@@ -1,6 +1,6 @@
 // $dep ufbx example_base skinned_human.fbx
-// $ clang++ ufbx.c main.cpp -lm -o skin-vertex
-// $ ./skin-vertex skinned_human.fbx Female > result.obj
+// $ clang++ ufbx.c main.cpp -lm -o example
+// $ ./example skinned_human.fbx Female > result.obj
 #include "ufbx.h"
 #include "example_base.h"
 #include <stdio.h>

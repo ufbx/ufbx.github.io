@@ -42,6 +42,7 @@ After loading a scene you can get pretty far by just inspecting the returned `uf
 Let's load a scene from a file and print the names of all the nodes (aka objects in the scene hierarchy).
 
 ```c
+// ufbx-doc-example: getting-started/load-scene
 #include <stdio.h>
 #include "ufbx.h"
 
@@ -60,6 +61,7 @@ int main()
 ```
 
 ```cpp
+// ufbx-doc-example: getting-started/load-scene
 #include <stdio.h>
 #include "ufbx.h"
 
@@ -77,6 +79,7 @@ int main()
 ```
 
 ```rust
+// ufbx-doc-example: getting-started/load-scene
 use ufbx;
 
 fn main() {
@@ -96,6 +99,7 @@ FBX scenes have varying coordinate and unit systems and *ufbx* supports normaliz
 Here we request a right-handed Y up coordinate system with 1 meter units.
 
 ```c
+// ufbx-doc-example: getting-started/load-scene-normalized
 #include <stdio.h>
 #include "ufbx.h"
 
@@ -124,6 +128,7 @@ int main()
 ```
 
 ```cpp
+// ufbx-doc-example: getting-started/load-scene-normalized
 #include <stdio.h>
 #include "ufbx.h"
 
@@ -150,6 +155,7 @@ int main()
 ```
 
 ```rust
+// ufbx-doc-example: getting-started/load-scene-normalized
 use ufbx;
 
 fn main() {

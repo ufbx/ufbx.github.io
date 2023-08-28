@@ -41,6 +41,17 @@ body {
     width: 100%;
 }
 
+.no-js .doc-viewer-mid {
+    height: unset;
+}
+
+.no-js .doc-viewer-tall {
+    height: unset;
+}
+
+.no-js .doc-viewer-xtall {
+    height: unset;
+}
 
 .g-toplevel {
     display: flex;

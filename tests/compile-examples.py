@@ -4,6 +4,7 @@ import sys
 import re
 import shutil
 import argparse
+import stat
 
 g_verbose = True
 
@@ -16,6 +17,17 @@ def log(line):
 def write_lines(path, lines):
     with open(path, "wt", encoding="utf-8", newline="\n") as f:
         f.writelines(line + "\n" for line in lines)
+
+def write_setup_lines(path, lines):
+    setup_lines = [
+        "#!/usr/bin/env bash",
+        "",
+        *lines,
+    ]
+    write_lines(path, setup_lines)
+
+    st = os.stat(path)
+    os.chmod(path, st.st_mode | stat.S_IEXEC)
 
 def exec(args, cwd=None, relative_exe=False):
     if g_verbose:
@@ -50,6 +62,7 @@ class Example:
         self.lines = lines
         self.setup_lines = []
         self.path = ""
+        self.path_run = ""
         self.crates = []
 
 def search_examples(path):
@@ -95,19 +108,19 @@ def search_examples(path):
 
 def setup_c(example):
     run_path = os.path.join(example.path, "build_and_run.sh")
-    write_lines(run_path, example.setup_lines)
+    write_setup_lines(run_path, example.setup_lines)
     main_path = os.path.join(example.path, "main.c")
     write_lines(main_path, example.lines)
 
 def setup_cpp(example):
     run_path = os.path.join(example.path, "build_and_run.sh")
-    write_lines(run_path, example.setup_lines)
+    write_setup_lines(run_path, example.setup_lines)
     main_path = os.path.join(example.path, "main.cpp")
     write_lines(main_path, example.lines)
 
 def setup_rust(example):
     run_path = os.path.join(example.path, "build_and_run.sh")
-    write_lines(run_path, example.setup_lines)
+    write_setup_lines(run_path, example.setup_lines)
     os.makedirs(os.path.join(example.path, "src"))
     main_path = os.path.join(example.path, "src", "main.rs")
 
@@ -214,6 +227,7 @@ def main():
 
         key = key.replace("/", os.sep)
         path = build_path("examples", key)
+        path_run = build_path("examples-run", key)
         if os.path.exists(path):
             shutil.rmtree(path)
         os.makedirs(path, exist_ok=True)
@@ -221,6 +235,7 @@ def main():
         in_meta = True
 
         example.path = path
+        example.path_run = path_run
 
         frame_name = f"{example.name}.{file_ext[example.lang]}"
         frame_path = os.path.join("tests", "example-frames", frame_name)
@@ -267,7 +282,24 @@ def main():
         setup_fn[example.lang](example)
         new_examples.append(example)
 
+    os.makedirs(build_path("examples-run"), exist_ok=True)
     for example in new_examples:
+        if os.path.exists(example.path_run):
+            shutil.rmtree(example.path_run)
+        os.makedirs(example.path_run)
+        for root,dirs,files in os.walk(example.path):
+            root = os.path.relpath(root, example.path)
+            for d in dirs:
+                d = os.path.join(root, d)
+                os.mkdir(os.path.join(example.path_run, d))
+
+            for f in files:
+                f = os.path.join(root, f)
+                shutil.copy(
+                    os.path.join(example.path, f),
+                    os.path.join(example.path_run, f))
+
+
         num_total += 1
         try:
             log(f"== {example.name} {example.lang} ==")
@@ -280,10 +312,10 @@ def main():
                 if ">" in args:
                     redirect = args.index(">")
                     args = args[:redirect]
-                output = exec(args, cwd=example.path, relative_exe=relative_exe)
+                output = exec(args, cwd=example.path_run, relative_exe=relative_exe)
 
             output = output.decode("utf-8").splitlines(keepends=False)
-            output_path = os.path.join(example.path, "output.txt")
+            output_path = os.path.join(example.path_run, "output.txt")
             write_lines(output_path, output)
 
             ref_output_path = os.path.join("tests", "example-outputs", f"{example.name}.txt")

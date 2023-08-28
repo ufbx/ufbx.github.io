@@ -3,6 +3,10 @@
   {% include "style.css" %}
   {% include "guide.css" %}
 {% endcapture %}
+<!--
+License information:
+  https://tabler-icons.io/ (MIT, https://github.com/tabler/tabler-icons/blob/master/LICENSE)
+-->
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -13,7 +17,7 @@
     </style>
     {% include "interactive.md" %}
   </head>
-  <body>
+  <body class="no-js">
     <div class="g-toplevel">
       <div class="g-gutter-left">
       </div>
@@ -58,6 +62,7 @@
       </main>
     </div>
   <script>
+    document.body.classList.toggle("no-js", false)
     {% include "hover.js" %}
   </script>
   </body>

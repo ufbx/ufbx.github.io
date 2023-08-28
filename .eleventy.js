@@ -110,9 +110,12 @@ module.exports = function(eleventyConfig) {
       let content = token.content
       const checked = index === 0 ? "checked" : ""
 
-      const match = content.match(/^\s*(\/\/|#)\s*ufbx-doc-example\s*:[^\n]*\n/m)
+      let match = content.match(/^\s*(?:\/\/|#)\s*ufbx-doc-example\s*:\s*(\S+)\s*[^\n]*\n/m)
+      let examplePath = ""
       if (match) {
         content = content.substring(match[0].length)
+        examplePath = match[1]
+        console.log(examplePath)
       }
 
       if (!lang) {
@@ -130,10 +133,18 @@ module.exports = function(eleventyConfig) {
         throw new Error(`Unknown language: ${lang}`)
       }
 
+      let exampleDownload = ""
+      if (examplePath !== "") {
+        const exampleUrl = `https://ufbx-examples.b-cdn.net/${examplePath}-${lang}.zip`
+        exampleDownload = `<a class="example-dl" href="${exampleUrl}">
+          <img alt="Download" title="Download example" src="/static/icons/tabler/download.svg">
+        </a>\n`
+      }
+
       return `
 <input type="radio" id="${id}" name="${globalPrefix}" class="lang-radio" ${checked} />
 <label for="${id}" class="lang-label">${name}</label>
-<pre class="lang-content">${highlightedContent}</pre>`
+<div class="lang-content">${exampleDownload}<pre>${highlightedContent}</pre></div>`
     }
 
     return `

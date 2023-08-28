@@ -95,6 +95,10 @@
     min-height: 0;
 }
 
+.no-js .dv-vertices {
+    display: none;
+}
+
 .dv-normal {
     flex: 1;
     min-height: 0;
