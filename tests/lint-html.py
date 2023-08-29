@@ -10,11 +10,10 @@ for root, _, files in os.walk("build"):
         if not name.endswith(".html"): continue
         path = os.path.join(root, name)
 
-        if name == "index.html":
-            url_path = os.path.relpath(root, "build").replace("\\", "/")
-            urls.add(f"{url_path}/")
-
         url_path = os.path.relpath(path, "build").replace("\\", "/").replace(".html", "")
+        if url_path.endswith("index"):
+            url_path = url_path[:-5]
+
         with open(path, "rt") as f:
             soup = BeautifulSoup(f, "html.parser")
             htmls[url_path] = soup
