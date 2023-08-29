@@ -186,6 +186,9 @@ void main()
 #extension GL_OES_standard_derivatives : enable
 
 uniform ubo_mesh_pixel {
+    vec3 base_color;
+    vec3 emission_color;
+
     vec3 highlight_color;
     float pixel_scale;
 };
@@ -210,8 +213,11 @@ void main()
     vec2 pixelPos = gl_FragCoord.xy;
     vec3 l = normalize(vec3(1.0, 1.7, 1.4));
     vec3 n = normalize(v_normal);
-    float x = dot(n, l) * 0.4 + 0.4;
-    vec3 col = vec3(x);
+    float x = dot(n, l) * 0.5 + 0.5;
+    vec3 col = base_color * x;
+    col += emission_color;
+
+    col = sqrt(clamp(col, 0.0, 1.0));
     float wire = wireframeWeight(1.2 * pixel_scale);
     col = mix(col, highlight_color, v_highlight * mix(wire, 1.0, 0.3));
     o_color = vec4(col, 1.0);

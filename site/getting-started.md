@@ -272,6 +272,8 @@ from the left panel to inspect and adjust their properties.
 - Shift + Left mouse button / Middle mouse button: Pan camera
 - Shift + Scroll: Zoom camera
 
+You can also import local fbx files into the viewers using the *Select file* button (might be unstable for large files).
+
 <div class="doc-viewer doc-viewer-tall">
 <div data-dv-popout id="container-blender-default" class="dv-inline">
 <div class="dv-top">

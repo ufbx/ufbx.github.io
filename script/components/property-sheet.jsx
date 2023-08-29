@@ -62,6 +62,7 @@ function NumberInput({ label, value, onInput, spec }) {
         currentTime: 0,
         prevDrag: false,
         prevTime: 0,
+        mouseDown: false,
     })
 
     useEffect(() => {
@@ -108,7 +109,11 @@ function NumberInput({ label, value, onInput, spec }) {
         const precision = spec.integer ? 0 : Math.min(Math.max(4 - Math.ceil(Math.log10(Math.abs(value))), 0), 2)
         const str = value.toFixed(precision)
         return <div
-            className="ps-input ps-draggable"
+            className={{
+                "ps-input": true,
+                "ps-draggable": true,
+                "ps-dragging": state.mouseDown,
+            }}
             tabIndex="0"
             onMouseDown={e => {
                 if (e.ctrlKey || e.shiftKey) return
@@ -119,12 +124,12 @@ function NumberInput({ label, value, onInput, spec }) {
                     const x = e.clientX
                     state.currentTime = startTime
                     state.currentDrag = false
+                    state.mouseDown = true
                     beginDrag(buttons, (de) => {
                         const dx = (de.clientX - x) * 0.01 * scale
                         const curTime = Date.now()
                         if (Math.abs(de.clientX - x) > 4 || (curTime - startTime) > 100) {
                             dragActivated = true
-                            state.currentDrag = true
                         }
                         if (dragActivated) {
                             onInput(maybeRound(integer, Math.min(Math.max(value + dx, min), max)))
@@ -138,6 +143,7 @@ function NumberInput({ label, value, onInput, spec }) {
                                 state.inputValue = parseFloat(str) === value ? str : value.toString()
                             }
 
+                            state.mouseDown = false
                             state.prevTime = state.currentTime
                             state.prevDrag = state.currentDrag
                         },
@@ -166,7 +172,6 @@ function OverrideIndicator({ override, onClick }) {
             "ps-override": override,
         }}
         onClick={onClick}
-        tabIndex={override ? 0 : -1}
         title="Reset to default"
         enabled={override}
     />
@@ -179,25 +184,41 @@ function Label({ name, text }) {
     </div>
 }
 
+function Name({ ctx, name, label }) {
+    const { override } = getField(ctx, name)
+
+    const onClick = () => {
+        resetField(ctx, name)
+    }
+
+    return <div className="ps-name">
+        <span
+            className={{
+                "ps-override": override,
+            }}
+            tabIndex={override ? 0 : -1}
+            onClick={onClick}
+        >{label}</span>
+    </div>
+}
+
 function FieldVec2({ ctx, name, label, spec }) {
-    const { value, override } = getField(ctx, name)
+    const { value } = getField(ctx, name)
     const { x, y } = value
 
     return <div className="ps-field" aria-label={name}>
-        <OverrideIndicator override={override} onClick={() => resetField(ctx, name)} />
-        <div className="ps-name">{label}</div>
+        <Name ctx={ctx} name={name} label={label} />
         <NumberInput label={`${name} X`} spec={spec} value={x} onInput={v => setField(ctx, name, { x:v, y }) } />
         <NumberInput label={`${name} Y`} spec={spec} value={y} onInput={v => setField(ctx, name, { x, y:v }) } />
     </div>
 }
 
 function FieldVec3({ ctx, name, label, spec }) {
-    const { value, override } = getField(ctx, name)
+    const { value } = getField(ctx, name)
     const { x, y, z } = value
 
     return <div className="ps-field" aria-label={name}>
-        <OverrideIndicator override={override} onClick={() => resetField(ctx, name)} />
-        <div className="ps-name">{label}</div>
+        <Name ctx={ctx} name={name} label={label} />
         <NumberInput label={`${name} X`} spec={spec} value={x} onInput={v => setField(ctx, name, { x:v, y, z }) } />
         <NumberInput label={`${name} Y`} spec={spec} value={y} onInput={v => setField(ctx, name, { x, y:v, z }) } />
         <NumberInput label={`${name} Z`} spec={spec} value={z} onInput={v => setField(ctx, name, { x, y, z:v }) } />
@@ -205,7 +226,7 @@ function FieldVec3({ ctx, name, label, spec }) {
 }
 
 function FieldColor({ ctx, name, spec }) {
-    const { value, override } = getField(ctx, name)
+    const { value } = getField(ctx, name)
     const { x, y, z } = value
 
     // TODO: Linear to sRGB?
@@ -215,7 +236,6 @@ function FieldColor({ ctx, name, spec }) {
     const cssColor = `rgb(${cssR}, ${cssG}, ${cssB})`
 
     return <div className="ps-field" aria-label={name}>
-        <OverrideIndicator override={override} onClick={() => resetField(ctx, name)} />
         <div className="ps-name">{name}</div>
         <div className="ps-color-square" style={{
             backgroundColor: cssColor,
@@ -227,10 +247,9 @@ function FieldColor({ ctx, name, spec }) {
 }
 
 function FieldNumber({ ctx, name, spec }) {
-    const { value, override } = getField(ctx, name)
+    const { value } = getField(ctx, name)
 
     return <div className="ps-field" aria-label={name}>
-        <OverrideIndicator override={override} onClick={() => resetField(ctx, name)} />
         <div className="ps-name">{name}</div>
         <NumberInput label={`${name}`} spec={spec} value={value} onInput={v => setField(ctx, name, v) } />
     </div>
@@ -250,13 +269,12 @@ function replaceAt(arr, index, value) {
 }
 
 function FieldProp({ ctx, index, prop }) {
-    const { value, override } = getProp(ctx, index)
+    const { value } = getProp(ctx, index)
     const label = prop.name
     const spec = { }
 
     if (prop.type === "translation" || prop.type === "rotation" || prop.type === "scale" || prop.type === "vector") {
         return <div className="ps-field">
-            <OverrideIndicator override={override} onClick={() => resetProp(ctx, index)} />
             <div className="ps-name">{label}</div>
             <NumberInput spec={spec} value={value[0]} onInput={v => setProp(ctx, index, replaceAt(value, 0, v)) } />
             <NumberInput spec={spec} value={value[1]} onInput={v => setProp(ctx, index, replaceAt(value, 1, v)) } />
@@ -264,14 +282,12 @@ function FieldProp({ ctx, index, prop }) {
         </div>
     } else if (prop.type === "number") {
         return <div className="ps-field">
-            <OverrideIndicator override={override} onClick={() => resetProp(ctx, index)} />
             <div className="ps-name">{label}</div>
             <NumberInput spec={spec} value={value[0]} onInput={v => setProp(ctx, index, replaceAt(value, 0, v)) } />
         </div>
     } else if (prop.type === "integer") {
         spec.integer = true
         return <div className="ps-field">
-            <OverrideIndicator override={override} onClick={() => resetProp(ctx, index)} />
             <div className="ps-name">{label}</div>
             <NumberInput spec={spec} value={value[0]} onInput={v => setProp(ctx, index, replaceAt(value, 0, v)) } />
         </div>

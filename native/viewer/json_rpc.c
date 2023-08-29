@@ -237,6 +237,7 @@ char *rpc_cmd_render(arena_t *tmp, jsi_obj *args)
 		.selected_element_id = (uint32_t)jsi_get_int(desc, "selectedElement", -1),
 		.highlight_vertex_index = (uint32_t)jsi_get_int(desc, "highlightVertexIndex", -1),
 		.highlight_face_index = (uint32_t)jsi_get_int(desc, "highlightFaceIndex", -1),
+		.widget_scale = (float)jsi_get_double(desc, "widgetScale", 1.0),
 		.time = jsi_get_double(animation, "time", 0.0),
 		.overrides = overrides,
 		.num_overrides = num_overrides,

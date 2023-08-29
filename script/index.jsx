@@ -70,6 +70,7 @@ const viewerDescDefaults = {
   },
   outliner: {
     includeRoot: false,
+    showAttributes: false,
     showMaterials: false,
     showDeformers: false,
   },
@@ -86,6 +87,7 @@ const viewerDescDefaults = {
   latestInteractionTime: -10000.0,
   highlightVertexIndex: -1,
   highlightFaceIndex: -1,
+  widgetScale: 1,
 }
 
 function patchDefaults(dst, defaults) {

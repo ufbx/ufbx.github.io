@@ -1,3 +1,7 @@
+:root {
+    --ps-pad: 0.5rem;
+}
+
 .ufbx-canvas-container {
     position: relative;
 }
@@ -183,6 +187,7 @@
     display: flex;
     flex-direction: row;
     width: 100%;
+    font-size: calc(1rem - 1px);
 }
 .sp-pane {
     width: 100%;
@@ -190,17 +195,17 @@
 }
 .sp-outliner {
     overflow-x: hidden;
-    min-width: 15em;
-    max-width: 20em;
+    min-width: 15rem;
+    max-width: 20rem;
     min-height: 0;
-    width: 50%;
+    width: 70%;
     display: flex;
     flex-direction: column;
     align-items: stretch;
 }
 .sp-viewer {
     overflow: hidden;
-    background-color: #33334c;
+    background-color: rgb(128, 128, 153);
 }
 
 .ps-top {
@@ -213,21 +218,35 @@
 .ps-field {
     display: flex;
     flex-direction: row;
+    align-items: baseline;
+    margin-left: calc(-var(--ps-pad));
     margin-top: 0.3em;
+    height: 1.5rem;
 }
+
 .ps-name {
     flex-basis: 35%;
     flex-shrink: 0;
-    padding: 0.2em;
     user-select: none;
+    color: var(--text-light);
 }
+
+.ps-name span {
+    padding: 0.2em;
+}
+
+.ps-override {
+    font-weight: bold;
+    color: var(--text-light-hi);
+    cursor: pointer;
+}
+
 .ps-input {
-    font-size: 0.9em;
-    margin-right: 0.3em;
-    padding: 0.3em;
-    background-color: #665774;
-    border-radius: 0.4em;
-    color: #edeaf3;
+    font-size: calc(1rem - 2px);
+    margin-left: 0.3em;
+    padding: 0.1rem 0.4rem;
+    background-color: var(--bg-bluish-mid);
+    color: #33334c;
     display: inline-block;
     flex-grow: 1;
     min-width: 1em;
@@ -236,18 +255,20 @@
     overflow: hidden;
 }
 .ps-input.ps-draggable:hover {
-    background-color: #2a2a2a;
+    background-color: var(--bg-bluish-hi);
     cursor: ew-resize;
 }
 .ps-input.ps-typing {
-    background-color: rgb(49, 49, 77);
+    background-color: var(--bg-bluish-hi);
 }
+.ps-input.ps-dragging {
+    background-color: var(--bg-bluish-hi);
+}
+
 .ps-left {
-    width: 0.5em;
-}
-.ps-override {
-    background-color: #7c7cc9;
-    cursor: pointer;
+    width: 0.5rem;
+    height: 100%;
+    align-self: start;
 }
 .ps-left:focus-visible {
     border: 0.2em solid #ccf;
@@ -258,7 +279,7 @@
     margin-right: 0.3em;
 }
 .ps-group {
-    color: #666;
+    color: var(--text-light);
     font-size: 0.8em;
     margin-top: 0.5em;
     margin-left: 1.5em;
@@ -301,7 +322,10 @@
     overflow-y: auto;
     flex-grow: 1;
     flex-shrink: 1;
+    padding-left: var(--ps-pad);
+    padding-right: var(--ps-pad);
     height: 10px;
+    font-size: calc(1rem - 1px);
 }
 
 .vw-top {

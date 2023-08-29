@@ -203,7 +203,7 @@ typedef struct {
 } vi_cluster_info;
 
 typedef struct {
-	uint32_t material_id;
+	uint32_t material_index;
 	sg_buffer vertex_buffer;
 	sg_buffer index_buffer;
 	uint32_t num_indices;
@@ -211,7 +211,8 @@ typedef struct {
 } vi_part;
 
 typedef struct {
-	um_vec3 albedo_color;
+	um_vec3 base_color;
+	um_vec3 emission_color;
 } vi_material;
 
 typedef struct {
@@ -673,11 +674,7 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 
 		vi_part *part = &parts[num_parts++];
 
-		if (fbx_mesh_mat->material) {
-			part->material_id = fbx_mesh_mat->material->typed_id;
-		} else {
-			part->material_id = (uint32_t)vs->fbx.materials.count;
-		}
+		part->material_index = (uint32_t)pi;
 
 		arena_t tmp_inner;
 		arena_init(&tmp_inner, NULL);
@@ -754,6 +751,16 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 
 	arena_free(&tmp);
 	mesh->num_parts = num_parts;
+}
+
+static void vi_init_material(vi_scene *vs, vi_material *material, ufbx_material *fbx_material)
+{
+	material->base_color = um_mul3(
+		fbx_to_um_vec3(fbx_material->pbr.base_color.value_vec3),
+		(float)fbx_material->pbr.base_factor.value_real);
+	material->emission_color = um_mul3(
+		fbx_to_um_vec3(fbx_material->pbr.emission_color.value_vec3),
+		(float)fbx_material->pbr.emission_factor.value_real);
 }
 
 void vi_init_globals(vi_scene *vs)
@@ -837,10 +844,15 @@ vi_scene *vi_make_scene(ufbx_scene *fbx_scene)
 		vi_init_mesh(vs, &vs->meshes[i], vs->fbx.meshes.data[i]);
 	}
 
+	for (size_t i = 0; i < vs->fbx.materials.count; i++) {
+		vi_init_material(vs, &vs->materials[i], vs->fbx.materials.data[i]);
+	}
+
 	// NULL material
 	{
 		vi_material *mat = &vs->materials[vs->fbx.materials.count];
-		mat->albedo_color = um_dup3(0.8f);
+		mat->base_color = um_dup3(0.8f);
+		mat->emission_color = um_dup3(0.0f);
 	}
 
 	vi_update_globals(vs, fbx_scene);
@@ -963,8 +975,14 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 				sg_apply_pipeline(ps->mesh_pipe);
 
 				ufbx_material *fbx_material = NULL;
-				if (part->material_id < vs->fbx.materials.count) {
-					fbx_material = vs->fbx.materials.data[part->material_id];
+				if (part->material_index < fbx_node->materials.count) {
+					fbx_material = fbx_node->materials.data[part->material_index];
+				}
+
+				// Use NULL material by default
+				vi_material *material = &vs->materials[vs->fbx.materials.count];
+				if (fbx_material) {
+					material = &vs->materials[fbx_material->typed_id];
 				}
 
 				int highlight_cluster = -1;
@@ -1014,10 +1032,11 @@ static void vi_draw_meshes(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 				};
 				sg_apply_uniforms(SG_SHADERSTAGE_VS, 0, SG_RANGE_REF(vu));
 
-
 				ubo_mesh_pixel_t pu = {
 					.highlight_color = highlight_color,
 					.pixel_scale = vs->pixel_scale,
+					.base_color = material->base_color,
+					.emission_color = material->emission_color,
 				};
 				sg_apply_uniforms(SG_SHADERSTAGE_FS, 0, SG_RANGE_REF(pu));
 
@@ -1175,7 +1194,7 @@ static void gl_draw_icon_4d(vi_scene *vs, vi_rect rect, um_vec4 pos, float exten
 
 static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 {
-	float widget_scale = 1.0f;
+	float widget_scale = desc->widget_scale;
 
 	if (desc->selected_element_id < vs->fbx.elements.count) {
 		ufbx_element *fbx_elem = vs->fbx_state->elements.data[desc->selected_element_id];

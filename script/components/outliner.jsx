@@ -5,11 +5,13 @@ import { elementTypeCategory, typeToIconUrl } from "./common"
 function TreeNode({ state, info, id, level=0 }) {
     const element = info.elements[id]
     const icon = typeToIconUrl(element.type)
-    const padding = `${level}em`
+    const padding = `${0.25+level}rem`
 
     let children = []
     if (element.type === "node") {
-        children = [...element.attribs, ...element.children]
+        console.log(element)
+        if (state.outliner.showAttributes) children.push(...element.attribs)
+        children.push(...element.children)
     } else if (element.type === "mesh") {
         if (state.outliner.showMaterials) children.push(...element.materials)
         if (state.outliner.showDeformers) children.push(...element.deformers)

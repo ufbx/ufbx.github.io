@@ -65,6 +65,7 @@ function stateToDesc(state) {
         selectedElement: state.selectedElement,
         highlightVertexIndex: state.highlightVertexIndex,
         highlightFaceIndex: state.highlightFaceIndex,
+        widgetScale: state.widgetScale,
         overrides,
     }
 }

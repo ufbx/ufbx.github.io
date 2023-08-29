@@ -20,6 +20,7 @@ typedef struct vi_desc {
 	float field_of_view;
 	float near_plane;
 	float far_plane;
+	float widget_scale;
 	uint32_t selected_element_id;
 	uint32_t highlight_vertex_index;
 	uint32_t highlight_face_index;

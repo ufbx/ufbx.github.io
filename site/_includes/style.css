@@ -8,6 +8,8 @@
     --fg-dark: #f0f0f8;
     --edge-bluish: #ddddeb;
     --edge-bluish-hi: #b3b3cc;
+    --text-light: #5f5f73;
+    --text-light-hi: #3c3c4b;
 }
 
 * {
@@ -281,4 +283,10 @@ code, pre {
 
 .footnotes {
     margin-top: 2rem;
+}
+
+.inline-elem {
+    position: relative;
+    top: 4px;
+    height: 1.2rem;
 }
