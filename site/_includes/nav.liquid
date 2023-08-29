@@ -1,0 +1,12 @@
+<nav class="g-nav">
+    <div id="g-left-nav" class="g-nav-sticky">
+        <div class="g-nav-header">
+            ufbx documentation
+        </div>
+        
+        {{ collections.all | eleventyNavigation | eleventyNavigationToHtml | removeDotHtml }}
+    </div>
+    <script>
+        {% include "highlight-page.js" %}
+    </script>
+</nav>

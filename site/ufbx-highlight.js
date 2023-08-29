@@ -29,6 +29,8 @@ const keywords = new Set([
     "union",
     "typedef",
     "inline",
+    "break",
+    "continue",
 ])
 
 const builtins = new Set([

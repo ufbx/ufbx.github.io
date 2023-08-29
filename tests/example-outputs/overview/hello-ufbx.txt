@@ -1,0 +1,4 @@
+Object: Cube
+-> mesh with 6 faces
+Object: Light
+Object: Camera

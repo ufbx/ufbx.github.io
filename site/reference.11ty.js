@@ -42,8 +42,27 @@ function parseComment(comment, pos=0, type="text") {
     if (type === "code") {
         for (; pos < comment.length; pos++) {
             const line = comment[pos]
-            if (!line.startsWith("  ")) break
-            lines.push("  " + line)
+            if (!line.startsWith("  ")) {
+                let followedByCode = false
+                for (let scan = pos; scan < comment.length; scan++) {
+                    const lookahead = comment[scan]
+                    if (lookahead === "") {
+                        continue
+                    } else if (lookahead.startsWith("  ")) {
+                        followedByCode = true
+                        break
+                    } else {
+                        break
+                    }
+                }
+                if (followedByCode) {
+                    lines.push("    ")
+                } else {
+                    break
+                }
+            } else {
+                lines.push("  " + line)
+            }
         }
         return [{ type, lines }, ...parseComment(comment, pos)]
     } else {
@@ -458,7 +477,7 @@ class Page {
             layout: "layouts/reference",
             eleventyNavigation: {
                 key: "Reference",
-                order: 2,
+                order: 300,
             }
         }
     }

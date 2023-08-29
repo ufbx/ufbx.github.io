@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Refresh" content="0; url='{{ target }}'" />
+    <style>
+        body {
+            background-color: #222;
+        }
+        .redirect {
+            display: block;
+            color: #fff;
+            font-family: sans-serif;
+            font-size: 1.2rem;
+            margin: 2rem auto;
+            width: max-content;
+        }
+        .redirect a {
+            color: #bbf;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="redirect">
+        This article has been moved to <a href="{{ target }}">{{ target }}</a>
+    </div>
+  </body>
+</html>

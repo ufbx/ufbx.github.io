@@ -1,3 +1,15 @@
+:root {
+    --bg-gutter: #222;
+    --bg-bluish: #f1f1f4;
+    --bg-bluish-dark: #f1f1f4;
+    --bg-bluish-mid: #e4e4ec;
+    --bg-bluish-hi: #d0d0e0;
+    --bg-dark: #333344;
+    --fg-dark: #f0f0f8;
+    --edge-bluish: #ddddeb;
+    --edge-bluish-hi: #b3b3cc;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -8,12 +20,15 @@
 }
 
 body {
-    font-family: sans-serif;
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";
     position: relative;
 }
 
+a {
+    color: #4749ce;
+}
+
 .doc-viewer {
-    background-color: #222;
     font-size: 1rem;
 }
 
@@ -41,54 +56,60 @@ body {
     width: 100%;
 }
 
-.no-js .doc-viewer-mid {
-    height: unset;
-}
-
-.no-js .doc-viewer-tall {
-    height: unset;
-}
-
-.no-js .doc-viewer-xtall {
-    height: unset;
-}
-
 .g-toplevel {
     display: flex;
     flex-direction: row;
-    background-color: #f0f0f0;
+    background-color: var(--bg-bluish);
     min-height: 100vh;
 }
 
 .g-nav {
-    min-width: 7rem;
-    max-width: 12rem;
-    width: 12rem;
+    min-width: 9rem;
+    max-width: 14rem;
+    width: 14rem;
     flex-shrink: 0.1;
+    background-color: var(--bg-bluish-dark);
+    border-right: 1px solid var(--edge-bluish);
+}
+
+html {
+    scrollbar-gutter: stable;
+}
+
+body {
+    background-color: var(--bg-gutter);
 }
 
 .g-gutter-left {
-    min-width: 0.1rem;
-    max-width: 1rem;
     flex-grow: 1;
+    background-color: var(--bg-gutter);
 }
 
+
 .g-gutter-right {
-    min-width: 1rem;
-    max-width: 5rem;
-    flex-grow: 1;
+    flex-grow: 1.5;
+    background-color: var(--bg-gutter);
+    order: 10;
 }
 
 .g-main {
     flex-grow: 8;
     min-width: 35rem;
-    max-width: 55rem;
+    max-width: 54rem;
     font-size: 1rem;
-    background-color: #fff;
+    color: #222;
+    width: 100%;
+    background-color: #fcfcfc;
 }
 
 .g-inline {
     background-color: #fff;
+}
+
+.g-nav-header {
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    color: #242425;
 }
 
 .g-nav-sticky {
@@ -97,16 +118,42 @@ body {
 }
 
 .g-nav ul {
-    padding-left: 1em;
     list-style: none;
 }
 
-.g-nav li {
-    padding-top: 0.2em;
+.g-nav a {
+    display: block;
+    color: #38384d;
+    font-size: calc(1rem - 1px);
+    border-top: 1px solid rgba(0,0,0,0);
+    border-bottom: 1px solid rgba(0,0,0,0);
+    text-decoration: none;
+    letter-spacing: 0.15px;
+    margin-top: -0.07rem;
+    margin-bottom: -0.07rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    padding-right: 0.25rem;
+    line-height: 1.0;
 }
 
-.g-nav a {
-    text-decoration: none;
+.g-nav a:hover:not(.active) {
+    background-color: var(--bg-bluish-mid);
+}
+
+.g-nav a.active {
+    color: #2d2d42;
+    background-color: var(--bg-bluish-hi);
+    border-top: 1px solid var(--edge-bluish-hi);
+    border-bottom: 1px solid var(--edge-bluish-hi);
+}
+
+.g-nav ul a { 
+    padding-left: 1rem;
+}
+
+.g-nav ul ul a { 
+    padding-left: 2rem;
 }
 
 .c-builtin {
@@ -185,9 +232,9 @@ a.c-name {
 }
 
 article > ul li {
-    list-style: none;
+    list-style: unset;
     margin-left: 2em;
-    line-height: 1.3;
+    margin-top: 0.25em;
 }
 
 .header-anchor {
@@ -216,4 +263,9 @@ article > ul li {
 
 .header-parent:hover .header-anchor {
     visibility: visible;
+}
+
+code, pre {
+    font-family: monospace;
+    font-size: calc(1rem - 1px);
 }

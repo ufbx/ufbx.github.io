@@ -16,13 +16,9 @@
     <div class="g-toplevel">
       <div class="g-gutter-left">
       </div>
-      <nav class="g-nav">
-        <div class="g-nav-sticky">
-          {{ collections.all | eleventyNavigation | eleventyNavigationToHtml | removeDotHtml }}
-        </div>
-      </nav>
       <div class="g-gutter-right">
       </div>
+      {% include "nav.liquid" %}
       <main class="g-main">
         <article>
           {{ content }}

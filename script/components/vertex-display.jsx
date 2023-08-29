@@ -48,7 +48,7 @@ function VertexRow({ viewerId, sceneName, elementId, index }) {
 export default function VertexDisplay({ id }) {
     const state = globalState.scenes[id]
     const info = globalState.infos[state.scene]
-    if (!state) return null
+    if (!state || !info) return null
     const { selectedElement } = state
     if (selectedElement < 0) return null
     const element = info.elements[selectedElement]

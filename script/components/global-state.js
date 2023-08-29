@@ -55,6 +55,7 @@ const globalState = createState({
         },
         */
     },
+    originalScenes: { },
     infos: { },
     expandedId: null,
 })

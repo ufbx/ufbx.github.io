@@ -110,12 +110,11 @@ module.exports = function(eleventyConfig) {
       let content = token.content
       const checked = index === 0 ? "checked" : ""
 
-      let match = content.match(/^\s*(?:\/\/|#)\s*ufbx-doc-example\s*:\s*(\S+)\s*[^\n]*\n/m)
+      let match = content.match(/^\s*(?:\/\/|#)\s*ufbx-doc-example\s*: *(\S+) *\n/m)
       let examplePath = ""
       if (match) {
         content = content.substring(match[0].length)
         examplePath = match[1]
-        console.log(examplePath)
       }
 
       if (!lang) {
@@ -131,6 +130,11 @@ module.exports = function(eleventyConfig) {
         highlightedContent = Prism.highlight(content, Prism.languages.bash, "bash")
       } else {
         throw new Error(`Unknown language: ${lang}`)
+      }
+
+      let snipMatch = highlightedContent.match(/ufbx-doc-snip[^\n]+\n/m)
+      if (snipMatch) {
+        highlightedContent = highlightedContent.substring(snipMatch.index + snipMatch[0].length)
       }
 
       let exampleDownload = ""

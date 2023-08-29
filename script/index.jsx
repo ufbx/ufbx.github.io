@@ -6,6 +6,7 @@ import Outliner from "./components/outliner"
 import PropertySheet from "./components/property-sheet"
 import DocViewer from "./components/doc-viewer"
 import VertexDisplay from "./components/vertex-display"
+import { deepUnwrap } from "./common"
 
 window.unwrap = unwrap
 
@@ -100,7 +101,9 @@ function patchDefaults(dst, defaults) {
 for (const id in viewerDescs) {
     const desc = viewerDescs[id]
     const root = document.querySelector(`#root-${id}`)
-    globalState.scenes[id] = patchDefaults(desc, viewerDescDefaults)
+    const scene = patchDefaults(desc, viewerDescDefaults)
+    globalState.scenes[id] = deepUnwrap(scene)
+    globalState.originalScenes[id] = deepUnwrap(scene)
     render(<DocViewer id={id} />, root)
 }
 

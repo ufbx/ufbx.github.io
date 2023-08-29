@@ -31,6 +31,24 @@ export function deepEqual(a, b) {
     }
 }
 
+export function deepUnwrap(a) {
+    if (Array.isArray(a)) {
+        const v = []
+        for (let i = 0; i < a.length; i++) {
+            v.push(deepUnwrap(a[i]))
+        }
+        return v
+    } else if (typeof a === "object" && a !== null) {
+        const v = { }
+        for (const key of Object.keys(a)) {
+            v[key] = deepUnwrap(a[key])
+        }
+        return v
+    } else {
+        return a
+    }
+}
+
 export function getTime() {
     return performance.now() * (1.0 / 1000.0)
 }

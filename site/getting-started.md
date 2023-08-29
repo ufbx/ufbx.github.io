@@ -1,11 +1,10 @@
 ---
 title: Getting started
-pageTitle: Scene structure
+pageTitle: Getting started
 layout: "layouts/guide"
 eleventyNavigation:
-  parent: Basics
   key: Getting started
-  order: 0
+  order: 1
 ---
 
 ## Setup
@@ -13,7 +12,7 @@ eleventyNavigation:
 ### C / C++
 
 *ufbx* is a single source library which means all you need is two files `ufbx.c` and `ufbx.h`.
-The simplest way to get started is to download them from [https://github.com/bqqbarbhg/ufbx](https://github.com/bqqbarbhg/ufbx).
+The simplest way to get started is to download them from [https://github.com/bqqbarbhg/ufbx](https://github.com/bqqbarbhg/ufbx). The `master` branch contains the latest stable version of the library.
 
 Unlike single *header* libraries you'll need to compile `ufbx.c` along the rest of your code.
 Alternatively you can `#include "ufbx.c"` in a single file to compile it.
@@ -39,10 +38,12 @@ cargo install ufbx
 To get started with *ufbx* we need to first load a scene.
 After loading a scene you can get pretty far by just inspecting the returned `ufbx_scene` structure.
 
-Let's load a scene from a file and print the names of all the nodes (aka objects in the scene hierarchy).
+Let's load a scene from a file and print the names of all the nodes,
+which represent objects in the scene hierarchy.
 
 ```c
 // ufbx-doc-example: getting-started/load-scene
+
 #include <stdio.h>
 #include "ufbx.h"
 
@@ -62,6 +63,7 @@ int main()
 
 ```cpp
 // ufbx-doc-example: getting-started/load-scene
+
 #include <stdio.h>
 #include "ufbx.h"
 
@@ -80,6 +82,7 @@ int main()
 
 ```rust
 // ufbx-doc-example: getting-started/load-scene
+
 use ufbx;
 
 fn main() {
@@ -100,6 +103,7 @@ Here we request a right-handed Y up coordinate system with 1 meter units.
 
 ```c
 // ufbx-doc-example: getting-started/load-scene-normalized
+
 #include <stdio.h>
 #include "ufbx.h"
 
@@ -129,6 +133,7 @@ int main()
 
 ```cpp
 // ufbx-doc-example: getting-started/load-scene-normalized
+
 #include <stdio.h>
 #include "ufbx.h"
 
@@ -156,6 +161,7 @@ int main()
 
 ```rust
 // ufbx-doc-example: getting-started/load-scene-normalized
+
 use ufbx;
 
 fn main() {
@@ -181,20 +187,81 @@ streams using `ufbx_load_stream()`.
 
 ## Data types
 
-Now that you have a `ufbx_scene` you can traverse and inspect it freely until you call `ufbx_free_scene()`.
-If you use MSVC or VSCode you can download [`ufbx.natvis`](https://github.com/bqqbarbhg/ufbx/blob/master/misc/ufbx.natvis)
-that lets you visualize the data structures used by *ufbx* in the debugger.
+*ufbx* aims to represent the scene as data so you can do a lot simply by
+inspecting the returned `ufbx_scene`.
 
-Strings are represented using `ufbx_string`, `ufbx_string.data` contains a pointer to a null-terminated UTF-8 string.
-`ufbx_string.length` contains the length (number of bytes) excluding the null-terminator.
-Bindings in other languages attempt to use a type close to their native string representation.
+Unlike many C libraries *ufbx* does not expose raw pointers without length information
+which allows doing bounds checking in non-C languages. All varying length data in
+*ufbx* is represented by the following types:
 
-All lists are represented as `struct ufbx_T_list { T *data; size_t count; }`.
-In non-C languages you can index and iterate the lists directly with bounds checking, unfortunately
-C does not support this so you need to use `list.data[index]` instead.
+```c
+// UTF-8 encoded string of `length` bytes, always NULL terminated
+struct ufbx_string {
+    const char *@(ufbx_string.)data;
+    size_t @(ufbx_string.)length;
+};
 
-All pointers that are not contained in `ufbx_T_list`, `ufbx_string`, `ufbx_blob` refer to a single object,
+// Arbitrary binary data of `size` bytes
+struct ufbx_blob {
+    const char *@(ufbx_blob.)data;
+    size_t @(ufbx_blob.)size;
+};
+
+// List of `count` objects of type T
+struct ufbx_T_list {
+    T *@(ufbx_void_list.)data;
+    size_t @(ufbx_void_list.)count;
+};
+```
+
+```cpp
+// UTF-8 encoded string of `length` bytes, always NULL terminated
+struct ufbx_string {
+    const char *@(ufbx_string.)data;
+    size_t @(ufbx_string.)length;
+};
+
+// Arbitrary binary data of `size` bytes
+struct ufbx_blob {
+    const char *@(ufbx_blob.)data;
+    size_t @(ufbx_blob.)size;
+};
+
+// List of `count` objects of type T
+struct ufbx_T_list {
+    T *@(ufbx_void_list.)data;
+    size_t @(ufbx_void_list.)count;
+
+    // Bounds-checked indexing and iterator support in C++
+    T &operator[](size_t index) const;
+    T *begin() const;
+    T *end() const;
+};
+```
+
+```rust
+// Convertible to `&str` implicitly via `as_ref()` and `deref()`
+pub struct String {
+    pub length: usize,
+}
+
+// Convertible to `&[u8]` implicitly via `as_ref()` and `deref()`
+pub struct Blob {
+    pub size: usize,
+}
+
+// Convertible to `&[T]` implicitly via `as_ref()` and `deref()`
+pub struct List<T> {
+    pub count: usize,
+}
+```
+
+All pointers that are not contained in `ufbx_string`, `ufbx_blob`, or `ufbx_T_list` always refer to a single object,
 or potentially `NULL` if the pointer is specified with `ufbx_nullable`.
+Conversely non-`ufbx_nullable` pointers are guaranteed to point to a single valid object.
+
+To make visualizing these structures easier during debugging you can download [`ufbx.natvis`](https://github.com/bqqbarbhg/ufbx/blob/master/misc/ufbx.natvis),
+which is supported by at least MSVC and VS Code.
 
 ## Interactive viewers
 
@@ -205,12 +272,12 @@ from the left panel to inspect and adjust their properties.
 - Shift + Left mouse button / Middle mouse button: Pan camera
 - Shift + Scroll: Zoom camera
 
-<div class="doc-viewer-tall">
+<div class="doc-viewer doc-viewer-tall">
 <div data-dv-popout id="container-blender-default" class="dv-inline">
 <div class="dv-top">
 {% include "viewer.md",
   id: "blender-default",
-  class: "doc-viewer dv-normal",
+  class: "dv-normal",
 %}
 </div>
 </div>

@@ -104,19 +104,24 @@
 }
 
 code {
-    background-color: #f4f4f4;
     padding: 0.1em 0.15em;
     border-radius: 0.2em;
 }
 
 pre {
-    background-color: #f4f4f4;
-    padding: 0.1em 0.15em;
+    padding: 0.25em 0.3rem;
+    margin-left: -0.3rem;
+    margin-right: -0.3rem;
     border-radius: 0.2em;
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
     overflow-x: auto;
 }
+
+code, pre {
+    background-color: var(--bg-bluish);
+}
+
 
 .desc p {
     margin-top: 0.5em;
@@ -133,7 +138,12 @@ pre {
     margin-bottom: 0.5em;
     padding: 0rem 0.6rem;
     border-left: 3px solid #f88;
+    background-color: #fee;
     display: inline-block;
+}
+
+.desc-note pre, .desc-note code {
+    background-color: #edd8d8;
 }
 
 .desc-hint {
@@ -141,7 +151,12 @@ pre {
     margin-bottom: 0.5em;
     padding: 0rem 0.6rem;
     border-left: 3px solid #88f;
+    background-color: #eef;
     display: inline-block;
+}
+
+.desc-hint pre, .desc-hint code {
+    background-color: #d8d8ed;
 }
 
 table.enum-values {

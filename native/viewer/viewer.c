@@ -1255,7 +1255,7 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 					if (face.num_indices < 32) {
 						for (uint32_t ai = 0; ai < face.num_indices; ai++) {
 							uint32_t bi = (ai + 1) % face.num_indices;
-							gl_draw_line_3d(vs, positions[ai], positions[bi], 4.0f, vi_rgb8(0xdfbbcd), false);
+							gl_draw_line_3d(vs, positions[ai], positions[bi], 4.0f, vi_rgb8(0xcdcde0), false);
 						}
 					}
 				}

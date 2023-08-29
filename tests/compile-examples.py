@@ -274,7 +274,11 @@ def main():
                             in_meta = False
 
                     if "EXAMPLE_SOURCE" in line:
-                        new_lines += example.lines
+                        indent = ""
+                        m = re.match(r" +", line)
+                        if m:
+                            indent = m.group(0)
+                        new_lines += [indent + l for l in example.lines]
                     else:
                         new_lines.append(line)
                 example.lines = new_lines

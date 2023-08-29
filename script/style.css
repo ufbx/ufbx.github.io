@@ -105,7 +105,7 @@
 }
 
 .dv-top {
-    background-color: #f1f1f4;
+    background-color: var(--bg-bluish);
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -125,8 +125,9 @@
 }
 
 .dv-menu {
-    color: #222;
-    height: 2rem;
+    display: flex;
+    background-color: var(--bg-dark);
+    justify-content: end;
 }
 
 .dv-content {
@@ -136,8 +137,35 @@
 }
 
 .dv-button {
-    color: inherit;
+    all: unset;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    background-color: #61597d;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    margin-right: 3px;
+    color: #cdcde0;
+    padding: 0.2rem 0.4rem;
     user-select: none;
+    font-size: 12px;
+}
+
+
+.dv-button:hover {
+    background-color: #736b91;
+    color: #eef;
+}
+
+.dv-button .icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    color: #eef;
+}
+
+.dv-file-input {
+    display: none;
 }
 
 .dv-expanded {
@@ -176,7 +204,7 @@
 }
 
 .ps-top {
-    background-color: #f1f1f4;
+    background-color: var(--bg-bluish);
     color: #444;
     flex-basis: 50%;
     display: flex;
@@ -237,7 +265,7 @@
     user-select: none;
 }
 .ps-titlearea {
-    background-color: #f9f9fb;
+    background-color: var(--bg-bluish-mid);
     padding-top: 0.2em;
     padding-bottom: 0.2em;
 }
@@ -296,11 +324,12 @@
     width: 100%;
     height: 2em;
     align-items: center;
-    background-color: #e4e4e7;
+    background-color: var(--bg-dark);
+    color: var(--fg-dark);
 }
 
 .vw-row:hover {
-    background-color: #dfbbcd;
+    background-color: var(--bg-bluish-hi);
     color: #222;
 }
 
@@ -319,7 +348,7 @@
 }
 
 .vw-face-highlight {
-    background-color: #ebccd6;
+    background-color: var(--bg-bluish-mid);
 }
 
 /*

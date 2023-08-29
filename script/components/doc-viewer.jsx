@@ -4,6 +4,9 @@ import { addBlobFile } from "../viewer/viewer"
 import Outliner from "./outliner"
 import PropertySheet from "./property-sheet"
 import globalState from "./global-state"
+import Icon from "./icon"
+import { IconMaximize, IconMinimize, IconUpload, IconReset } from "../icons"
+import { deepUnwrap } from "../common"
 
 function closeExpandedDocViewer(event) {
     if (!event.target.hasAttribute("data-dv-popout")) return
@@ -56,6 +59,13 @@ export default function DocViewer({ id }) {
         state.selectedElement = -1
     };
 
+    const reset = () => {
+        const original = globalState.originalScenes[id]
+        for (const key of Object.keys(original)) {
+            state[key] = deepUnwrap(original[key])
+        }
+    }
+
     const expand = () => {
         globalState.expandedId = globalState.expandedId === id ? null : id
     };
@@ -65,8 +75,24 @@ export default function DocViewer({ id }) {
     return (
         <div className="dv-top">
             <div className="dv-menu">
-                <input className="dv-file-input" type="file" onChange={uploadFile} />
-                <button className="dv-button" onClick={expand}>{expanded ? "Close" : "Expand"}</button>
+                <button key="reset" className="dv-button" onClick={reset}>
+                    <Icon svg={IconReset} />
+                    Reset
+                </button>
+                <label className="dv-button">
+                    <input className="dv-file-input" type="file" onChange={uploadFile} />
+                    <Icon svg={IconUpload} />
+                    Select file
+                </label>
+                {expanded ?
+                    <button key="expanded" className="dv-button" onClick={expand}>
+                        <Icon svg={IconMinimize} />
+                        Close
+                    </button> :
+                    <button key="inline" className="dv-button" onClick={expand}>
+                        <Icon svg={IconMaximize} />
+                        Expand
+                    </button>}
             </div>
             <div className="sp-top dv-content">
                 <div className="sp-pane sp-outliner">

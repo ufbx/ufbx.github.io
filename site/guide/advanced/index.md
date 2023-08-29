@@ -4,7 +4,7 @@ pageTitle: Advanced
 layout: "layouts/guide"
 eleventyNavigation:
   key: Advanced
-  order: 1
+  order: 200
   url: false
 ---
 

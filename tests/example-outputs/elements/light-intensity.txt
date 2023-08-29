@@ -1,0 +1,2 @@
+ufbx_light.intensity: 2.00
+ufbx_props.Intensity: 200.00
