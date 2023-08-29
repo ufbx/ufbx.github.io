@@ -133,13 +133,30 @@ code, pre {
     padding-top: 1rem;
 }
 
-.desc-note {
+.desc-note, .desc-hint {
+    width: 100%;
     margin-top: 0.5em;
     margin-bottom: 0.5em;
     padding: 0rem 0.6rem;
+    display: inline-block;
+}
+
+.desc-note::before, .desc-hint::before {
+    margin-top: 0.5em;
+    font-size: 0.8rem;
+    font-weight: bold;
+    display: block;
+    text-transform: uppercase;
+}
+
+.desc-note {
     border-left: 3px solid #f88;
     background-color: #fee;
-    display: inline-block;
+}
+
+.desc-note::before {
+    color: #f66;
+    content: 'Note';
 }
 
 .desc-note pre, .desc-note code {
@@ -147,12 +164,13 @@ code, pre {
 }
 
 .desc-hint {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-    padding: 0rem 0.6rem;
     border-left: 3px solid #88f;
     background-color: #eef;
-    display: inline-block;
+}
+
+.desc-hint::before {
+    color: #66f;
+    content: 'Hint';
 }
 
 .desc-hint pre, .desc-hint code {
