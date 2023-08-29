@@ -278,3 +278,7 @@ code, pre {
 .footnote-ref a {
     text-decoration: none;
 }
+
+.footnotes {
+    margin-top: 2rem;
+}
