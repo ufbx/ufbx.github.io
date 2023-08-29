@@ -475,6 +475,7 @@ class Page {
         return {
             permalink: "/reference.html",
             layout: "layouts/reference",
+            title: "Reference",
             eleventyNavigation: {
                 key: "Reference",
                 order: 300,
