@@ -9,7 +9,6 @@ function TreeNode({ state, info, id, level=0 }) {
 
     let children = []
     if (element.type === "node") {
-        console.log(element)
         if (state.outliner.showAttributes) children.push(...element.attribs)
         children.push(...element.children)
     } else if (element.type === "mesh") {
