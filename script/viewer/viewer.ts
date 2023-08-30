@@ -24,7 +24,7 @@ type ImageViewer = {
 type CanvasViewer = {
     readonly state: "canvas"
     canvas: HTMLCanvasElement
-    ctx: ImageBitmapRenderingContext
+    ctx: ImageBitmapRenderingContext | CanvasRenderingContext2D
     canvasResolution: Resolution
     renderResolution: Resolution
 }
@@ -275,7 +275,7 @@ function presentTarget(targetIndex: number, resolution: Resolution) {
     })
 }
 
-async function renderToBitmap(targetIndex: number, desc: SceneDesc, resolution: Resolution, pixelScale: number) {
+async function renderToImageData(targetIndex: number, desc: SceneDesc, resolution: Resolution, pixelScale: number) {
     return acquireTarget(0, async () => {
         await renderToTarget(0, desc, resolution, pixelScale)
         await finishRendering()
@@ -287,9 +287,13 @@ async function renderToBitmap(targetIndex: number, desc: SceneDesc, resolution: 
         })
         const ptr = result.dataPointer
         const pixels = new Uint8ClampedArray(rpcMemory(), ptr, resolution.width*resolution.height*4)
-        const imageData = new ImageData(pixels, resolution.width, resolution.height)
-        return createImageBitmap(imageData)
+        return new ImageData(pixels, resolution.width, resolution.height)
     })
+}
+
+async function renderToBitmap(targetIndex: number, desc: SceneDesc, resolution: Resolution, pixelScale: number) {
+    const imageData = await renderToImageData(targetIndex, desc, resolution, pixelScale)
+    return createImageBitmap(imageData)
 }
 
 function getRenderResolution(resolution: Resolution, realtime: boolean): Resolution {
@@ -397,9 +401,14 @@ async function transitionViewer(viewer: Viewer, target: ViewerTag) {
         setRenderResolution(canvas, renderResolution)
         setElementResolution(canvas, canvasResolution)
 
+        /*
         const ctx = canvas.getContext("bitmaprenderer")!
         const bitmap = await renderToBitmap(0, viewer.desc, renderResolution, pixelScale)
         ctx.transferFromImageBitmap(bitmap)
+        */
+        const ctx = canvas.getContext("2d")!
+        const imageData = await renderToImageData(0, viewer.desc, renderResolution, pixelScale)
+        ctx.putImageData(imageData, 0, 0)
 
         if (source === "realtime") {
             viewer.root.removeChild(state.realtimeCanvas)
@@ -460,8 +469,6 @@ async function refreshViewer(viewer: Viewer) {
         const renderResolution = getRenderResolution(canvasResolution, false)
         const pixelScale = renderResolution.width / canvasResolution.width
 
-        const bitmap = await renderToBitmap(0, viewer.desc, renderResolution, pixelScale)
-
         if (!resolutionEqual(renderResolution, state.renderResolution)) {
             setRenderResolution(canvas, renderResolution)
             state.renderResolution = renderResolution
@@ -471,8 +478,16 @@ async function refreshViewer(viewer: Viewer) {
             state.canvasResolution = canvasResolution
         }
 
+        /*
+        const bitmap = await renderToBitmap(0, viewer.desc, renderResolution, pixelScale)
         const ctx = canvas.getContext("bitmaprenderer")!
         ctx.transferFromImageBitmap(bitmap)
+        */
+        const imageData = await renderToImageData(0, viewer.desc, renderResolution, pixelScale)
+        const ctx = canvas.getContext("2d")!
+        ctx.putImageData(imageData, 0, 0)
+        
+
     } else if (state.state === "realtime") {
         const canvas = state.realtimeCanvas
         const canvasResolution = viewer.rootResolution
