@@ -182,6 +182,7 @@ void frame(void)
         jso_end_object(&s);
 
         jso_prop_int(&s, "selectedElement", 50);
+        jso_prop_int(&s, "selectedNode", 50);
 
 		jso_end_object(&s); // desc
 

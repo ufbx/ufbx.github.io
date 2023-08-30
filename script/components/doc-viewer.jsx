@@ -57,6 +57,7 @@ export default function DocViewer({ id }) {
         addBlobFile(name, file)
         state.scene = name
         state.selectedElement = -1
+        state.selectedNode = -1
     };
 
     const reset = () => {

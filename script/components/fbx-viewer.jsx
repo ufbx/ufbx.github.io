@@ -63,6 +63,7 @@ function stateToDesc(state) {
             time: animation.time,
         },
         selectedElement: state.selectedElement,
+        selectedNode: state.selectedNode,
         highlightVertexIndex: state.highlightVertexIndex,
         highlightFaceIndex: state.highlightFaceIndex,
         widgetScale: state.widgetScale,

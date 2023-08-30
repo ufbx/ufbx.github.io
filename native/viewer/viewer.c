@@ -152,6 +152,10 @@ static vi_color8 vi_rgb8(uint32_t hex) {
 	return (vi_color8){ (hex>>16u)&0xff, (hex>>8u)&0xff, hex&0xff, 0xff };
 }
 
+static vi_color8 vi_rgba8(uint32_t hex) {
+	return (vi_color8){ (hex>>24u)&0xff, (hex>>16u)&0xff, (hex>>8u)&0xff, hex&0xff };
+}
+
 typedef struct {
 	um_vec4 position;
 	vi_color8 color;
@@ -1309,8 +1313,8 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 				color = vi_rgb8(0x6cb9da);
 				outline_color = vi_rgb8(0x342e25);
 			} else {
-				color = vi_rgb8(0x888888);
-				outline_color = vi_rgb8(0x2c2c2c);
+				color = vi_rgba8(0xdddddd88);
+				outline_color = vi_rgba8(0x2c2c2c);
 			}
 
 			um_vec4 c4;

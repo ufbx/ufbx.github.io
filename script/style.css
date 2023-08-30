@@ -2,6 +2,10 @@
     --ps-pad: 0.5rem;
 }
 
+html:has(.dv-expanded) {
+    scrollbar-gutter: unset;
+}
+
 .ufbx-canvas-container {
     position: relative;
 }
@@ -38,41 +42,48 @@
 }
 .ol-top {
     color: #444;
-    padding-left: 0.25em;
     user-select: none;
     flex: 1 1;
 }
 .ol-icon {
     height: 1.5em;
     width: 1.5em;
-    margin-right: 0.25em;
     -webkit-user-drag: none;
 }
 .ol-list {
     list-style: none;
+    position: relative;
 }
 .ol-row {
     display: flex;
     flex-direction: row;
     align-items: center;
+    height: 1.5rem;
 }
 .ol-row:focus-visible {
     border: 0.2em solid #ccf;
 }
 .ol-row:hover {
-    background-color: #ddd;
+    /*background-color: var(--bg-bluish-mid);*/
 }
-.ol-row.ol-selected.cat-node {
-    background-color: rgb(210, 216, 235);
+.ol-name {
+    border-radius: 6px;
+    padding: 0.1rem;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    height: 1.45rem;
 }
-.ol-row.ol-selected.cat-attrib {
-    background-color: rgb(230, 216, 202);
+.ol-name span {
+    margin-right: 0.25rem;
 }
-.ol-row.ol-selected.cat-shading {
-    background-color: rgb(208, 238, 213);
+.ol-row.ol-selected .ol-name {
+    background-color: var(--bg-bluish-mid);
+    color: #404040;
 }
-.ol-row.ol-selected.cat-deformer {
-    background-color: rgb(241, 192, 223);
+.ol-row.ol-node-selected .ol-name {
+    background-color: var(--bg-dark);
+    color: #f8f8ff;
 }
 .ol-type {
     flex-grow: 1;
@@ -85,6 +96,61 @@
 }
 .ol-selected .ol-type {
     color: #080808;
+}
+.ol-ruler {
+    position: absolute;
+    width: 1px;
+    top: 0.25rem;
+    height: calc(100% - 0.5rem);
+    background-color: var(--bg-bluish-hi);
+}
+.ol-space {
+    flex-grow: 1;
+    height: 1px;
+}
+.ol-attrib {
+    margin-left: 0.5rem;
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+    padding-left: 0.15rem;
+    padding-right: 0.15rem;
+    height: 1.45rem;
+    color: #556;
+}
+.ol-row.ol-selected .ol-attrib {
+    background-color: var(--bg-bluish-mid);
+}
+.ol-row:not(.ol-selected) .ol-attrib:hover:not(.ol-attrib-selected) {
+    background-color: var(--bg-bluish-mid);
+}
+.ol-row.ol-selected .ol-attrib:hover:not(.ol-attrib-selected) {
+    background-color: var(--bg-bluish-midhi);
+}
+.ol-row .ol-attrib.ol-attrib-selected {
+    background-color: var(--bg-dark);
+    color: #f8f8ff;
+}
+.ol-attrib span {
+    font-weight: normal;
+    font-size: 13px;
+    margin-right: 0.15rem;
+    margin-left: 0.15rem;
+}
+.ol-attrib .ol-icon {
+    height: 1.25rem;
+    width: 1.25rem;
+}
+.ol-row:not(.ol-selected) .ol-name:hover {
+    background-color: var(--bg-bluish-mid);
+}
+.ol-row.ol-selected:not(.ol-node-selected) .ol-name:hover {
+    background-color: var(--bg-bluish-midhi);
+}
+.ol-row:hover .ol-space {
+    background-color: var(--bg-bluish-hi);
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
 }
 
 .dv-inline {
@@ -176,11 +242,9 @@
     position: fixed;
     left: 0px;
     top: 0px;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     z-index: 5;
-    background-color: rgba(0, 0, 0, 0.8);
-    padding: 3rem;
 }
 
 .sp-top {
@@ -211,7 +275,7 @@
 .ps-top {
     background-color: var(--bg-bluish);
     color: #444;
-    flex-basis: 50%;
+    flex-basis: 10rem;
     display: flex;
     flex-direction: column;
 }

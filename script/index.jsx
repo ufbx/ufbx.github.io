@@ -82,6 +82,7 @@ const viewerDescDefaults = {
     time: 0.0,
   },
   selectedElement: -1,
+  selectedNode: -1,
   fieldOverrides: { },
   propOverrides: { },
   latestInteractionTime: -10000.0,

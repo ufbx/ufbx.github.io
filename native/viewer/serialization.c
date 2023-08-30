@@ -94,6 +94,7 @@ void serialize_element_unknown(jso_stream *s, ufbx_unknown* elem)
 void serialize_element_node(jso_stream *s, ufbx_node* elem)
 {
 	jso_prop_string(s, "attribType", element_type_str(elem->attrib_type));
+	jso_prop_boolean(s, "isRoot", elem->is_root);
 
     jso_prop_array(s, "attribs");
 	for (size_t i = 0; i < elem->all_attribs.count; i++) {
@@ -324,6 +325,7 @@ void serialize_element(jso_stream *s, ufbx_element *elem)
 	jso_prop_ustring(s, "name", elem->name);
 	jso_prop_string(s, "type", element_type_str(elem->type));
 	jso_prop_int(s, "id", (int)elem->element_id);
+	jso_prop_int(s, "typedId", (int)elem->typed_id);
 	jso_prop(s, "props");
 	serialize_props(s, &elem->props);
 

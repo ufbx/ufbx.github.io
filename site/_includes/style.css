@@ -2,14 +2,17 @@
     --bg-gutter: #383850;
     --bg-bluish: #f1f1f4;
     --bg-bluish-dark: #f1f1f4;
+    --bg-bluish-midmid: #ebebf3;
     --bg-bluish-mid: #e4e4ec;
+    --bg-bluish-midhi: #dbdbe4;
     --bg-bluish-hi: #d0d0e0;
     --bg-dark: #333344;
+    --bg-dim: #616183;
     --fg-dark: #f0f0f8;
     --edge-bluish: #ddddeb;
     --edge-bluish-hi: #b3b3cc;
     --text-light: #5f5f73;
-    --text-light-hi: #3c3c4b;
+    --text-light-hi: #5f5f73;
 }
 
 * {
