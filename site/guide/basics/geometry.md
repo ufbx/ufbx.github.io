@@ -133,6 +133,7 @@ viewerDescs["cube"] = {
   outliner: {
     showMaterials: true,
   },
+  selectedNode: 2,
   selectedElement: 1,
 }
 </script>
