@@ -106,19 +106,19 @@ def search_examples(path):
                         continue
                     code_lines.append(line)
 
-def setup_c(example):
+def setup_c(example, info):
     run_path = os.path.join(example.path, "build_and_run.sh")
     write_setup_lines(run_path, example.setup_lines)
     main_path = os.path.join(example.path, "main.c")
     write_lines(main_path, example.lines)
 
-def setup_cpp(example):
+def setup_cpp(example, info):
     run_path = os.path.join(example.path, "build_and_run.sh")
     write_setup_lines(run_path, example.setup_lines)
     main_path = os.path.join(example.path, "main.cpp")
     write_lines(main_path, example.lines)
 
-def setup_rust(example):
+def setup_rust(example, info):
     run_path = os.path.join(example.path, "build_and_run.sh")
     write_setup_lines(run_path, example.setup_lines)
     os.makedirs(os.path.join(example.path, "src"))
@@ -145,9 +145,15 @@ def setup_rust(example):
 
     cargo_lines.append("")
 
-    cargo_lines.extend(l.strip() for l in """
+    ufbx_crate = info["ufbx_crate"]
+    ufbx_path = info.get("ufbx_rust_path")
+    if ufbx_path:
+        rel_path = os.path.abspath(ufbx_path)
+        ufbx_crate = f"{{ path = \"{rel_path}\" }}"
+
+    cargo_lines.extend(l.strip() for l in f"""
         [dependencies]
-        ufbx = "0.3.0"
+        ufbx = {ufbx_crate}
     """.splitlines()[1:-1])
 
     for crate in example.crates:
@@ -171,6 +177,7 @@ def diff_lines(a_lines, b_lines):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--skip-init", action="store_true", help="Skip initialization of compilers")
+    parser.add_argument("--ufbx-rust-path", help="Override ufbx Rust crate location")
     parser.add_argument("--example", nargs="+", help="Test single example")
     argv = parser.parse_args()
 
@@ -194,6 +201,14 @@ def main():
             ("example_base.h", "native/example/example_base.h"),
         ],
     }
+
+    setup_info = {
+        "ufbx_crate": "0.3.0",
+        "ufbx_rust_path": None,
+    }
+
+    if argv.ufbx_rust_path:
+        setup_info["ufbx_rust_path"] = argv.ufbx_rust_path
 
     setup_fn = {
         "c": setup_c,
@@ -283,7 +298,7 @@ def main():
                         new_lines.append(line)
                 example.lines = new_lines
 
-        setup_fn[example.lang](example)
+        setup_fn[example.lang](example, setup_info)
         new_examples.append(example)
 
     os.makedirs(build_path("examples-run"), exist_ok=True)

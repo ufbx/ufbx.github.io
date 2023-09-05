@@ -13,47 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci_ubuntu:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
-      - name: Install PyPI dependencies
-        run: pip install -r tests/requirements.txt
-      - name: Setup Emscripten
-        run: |
-          git clone https://github.com/emscripten-core/emsdk.git
-          cd emsdk
-          ./emsdk install latest
-          ./emsdk activate latest
-      - name: Download SHDC
-        run: |
-          curl https://raw.githubusercontent.com/floooh/sokol-tools-bin/33d2e4cc26088c6c28eaef5467990f8940d15aab/bin/linux/sokol-shdc -o sokol-shdc
-          chmod +x sokol-shdc
-          pwd >> $GITHUB_PATH
-      - name: Build native
-        run: |
-          cd native
-          cmake -B build -DCMAKE_TOOLCHAIN_FILE=../emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
-          cmake --build build
-      - name: Build scripts
-        run: |
-          cd script
-          npm install
-          npm run build
-      - name: Build site
-        run: |
-          npm install
-          npm run build
-      - name: Lint HTML
-        run: python3 tests/lint-html.py
-
-  ci_examples:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
-      - name: Compile examples
-        run: python3 tests/compile-examples.py
+  ci_test:
+    uses: ./.github/workflows/test.yml
+    with:
+      ufbx-documentation-ref: ${{ github.ref }}
+      ufbx-rust-ref: main
