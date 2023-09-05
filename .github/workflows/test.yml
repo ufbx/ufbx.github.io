@@ -68,6 +68,7 @@ jobs:
       - name: Create build directory
         run: mkdir -p build
       - uses: actions/checkout@v3
+        name: Clone ufbx-rust
         with:
           repository: ufbx/ufbx-rust
           ref: ${{ inputs.ufbx-rust-ref }}
