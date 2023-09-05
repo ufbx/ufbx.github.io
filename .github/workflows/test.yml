@@ -59,19 +59,31 @@ jobs:
 
   examples:
     runs-on: ubuntu-latest
-    uses: ufbx/ufbx-rust/.github/workflows/build.yml@${{ inputs.ufbx-rust-ref }}
-      with:
-        ufbx-rust-ref: ${{ inputs.ufbx-rust-ref }}
-        ufbx-ref: ${{ inputs.ufbx-ref }}
     steps:
       - uses: actions/checkout@v3
         with:
           repository: ufbx/ufbx.github.io
           ref: ${{ inputs.ufbx-documentation-ref }}
           fetch-depth: 2
+      - name: Create build directory
+        run: mkdir -p build
+      - uses: actions/checkout@v3
+        with:
+          repository: ufbx/ufbx-rust
+          ref: ${{ inputs.ufbx-rust-ref }}
+          fetch-depth: 2
+          path: build/ufbx-rust
       - name: Update ufbx
         if: inputs.ufbx-ref
         run: python3 sfs.py --verbose update ufbx=${{ inputs.ufbx-ref }} --overwrite
-
+      - name: Update ufbx-rust
+        if: inputs.ufbx-rust-ref
+        run: |
+          cd build/ufbx-rust
+          python3 sfs.py --verbose update ufbx=${{ inputs.ufbx-ref }} --overwrite
+      - name: Build ufbx-rust
+        run: |
+          cd build/ufbx-rust
+          bash build.sh
       - name: Compile examples
-        run: python3 tests/compile-examples.py --ufbx-rust-path ../ufbx-rust
+        run: python3 tests/compile-examples.py --ufbx-rust-path build/ufbx-rust
