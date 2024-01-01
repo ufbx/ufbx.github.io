@@ -130,7 +130,6 @@ char *rpc_cmd_load_scene(arena_t *tmp, jsi_obj *args)
 	}
 
 	ufbx_load_opts opts = {
-		.allow_null_material = true,
 		.target_axes = ufbx_axes_right_handed_y_up,
 		.target_unit_meters = 1.0f,
 	};

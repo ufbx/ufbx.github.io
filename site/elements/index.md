@@ -118,7 +118,7 @@ fn print_intensity(light: &ufbx::Light) {
         .expect("expected to find 'Intensity'");
 
     println!("ufbx_light.intensity: {:.2}", light.intensity);
-    println!("ufbx_props.Intensity: {:.2}", prop.value_vec3.x);
+    println!("ufbx_props.Intensity: {:.2}", prop.value_vec4.x);
 }
 ```
 
