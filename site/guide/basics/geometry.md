@@ -63,8 +63,8 @@ One mesh may contain multiple materials for different faces, `ufbx_mesh.face_mat
 provides an index into `ufbx_mesh.materials[]`. If the mesh is instanced different instances
 may use different materials for each slot defined by `ufbx_node.materials[]`.
 
-As renderers often need to split meshes along materials ufbx provides `ufbx_mesh_material.face_indices[]`
-containing a list of all faces using a specific material. TODO: Deprecate null material?
+As renderers often need to split meshes along materials ufbx provides `ufbx_mesh.material_parts`,
+containing for example `ufbx_mesh_part.face_indices[]`, that can be used to list of all faces using a specific material.
 
 ## Triangulation
 
