@@ -125,8 +125,8 @@ void serialize_element_mesh(jso_stream *s, ufbx_mesh* elem)
 {
     jso_prop_array(s, "materials");
 	for (size_t i = 0; i < elem->materials.count; i++) {
-		if (elem->materials.data[i].material) {
-			jso_int(s, (int)elem->materials.data[i].material->element_id);
+		if (elem->materials.data[i]) {
+			jso_int(s, (int)elem->materials.data[i]->element_id);
 		}
     }
     jso_end_array(s);

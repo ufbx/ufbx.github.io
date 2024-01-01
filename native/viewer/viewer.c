@@ -673,8 +673,8 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 
 	size_t num_parts = 0;
 	for (size_t pi = 0; pi < fbx_mesh->materials.count; pi++) {
-		ufbx_mesh_material *fbx_mesh_mat = &fbx_mesh->materials.data[pi];
-		if (fbx_mesh_mat->num_triangles == 0) continue;
+		ufbx_mesh_part *fbx_mesh_part = &fbx_mesh->material_parts.data[pi];
+		if (fbx_mesh_part->num_triangles == 0) continue;
 
 		vi_part *part = &parts[num_parts++];
 
@@ -686,13 +686,13 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 		size_t num_tri_ix = fbx_mesh->max_face_triangles * 3;
 		uint32_t *tri_ix = aalloc_uninit(&tmp_inner, uint32_t, num_tri_ix);
 
-		size_t num_indices = fbx_mesh_mat->num_triangles * 3;
+		size_t num_indices = fbx_mesh_part->num_triangles * 3;
 		vi_vertex *vertices = aalloc_uninit(&tmp_inner, vi_vertex, num_indices);
 		uint32_t *indices = aalloc_uninit(&tmp_inner, uint32_t, num_indices);
 
 		vi_vertex *vert = vertices;
-		for (size_t fi = 0; fi < fbx_mesh_mat->num_faces; fi++) {
-			ufbx_face face = fbx_mesh->faces.data[fbx_mesh_mat->face_indices.data[fi]];
+		for (size_t fi = 0; fi < fbx_mesh_part->num_faces; fi++) {
+			ufbx_face face = fbx_mesh->faces.data[fbx_mesh_part->face_indices.data[fi]];
 			size_t num_tris = ufbx_triangulate_face(tri_ix, num_tri_ix, fbx_mesh, face);
 			for (size_t ti = 0; ti < num_tris; ti++) {
 				uint8_t vert_ids[3] = { 0 };
@@ -1532,10 +1532,10 @@ static void vi_update(vi_scene *vs, const vi_target *target, const vi_desc *desc
 	}
 
 	if (desc->num_overrides > 0) {
-		ufbx_anim_opts opts = { };
+		ufbx_anim_opts opts = { 0 };
 
-		opts.overrides.data = desc->overrides;
-		opts.overrides.count = desc->num_overrides;
+		opts.prop_overrides.data = desc->overrides;
+		opts.prop_overrides.count = desc->num_overrides;
 
 		arena_t tmp;
 		arena_init(&tmp, NULL);
