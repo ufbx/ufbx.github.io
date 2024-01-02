@@ -672,7 +672,7 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 	mesh->deform_buffer = make_static_buffer(vs->arena, NULL, deform_buf, deform_buf_size);
 
 	size_t num_parts = 0;
-	for (size_t pi = 0; pi < fbx_mesh->materials.count; pi++) {
+	for (size_t pi = 0; pi < fbx_mesh->material_parts.count; pi++) {
 		ufbx_mesh_part *fbx_mesh_part = &fbx_mesh->material_parts.data[pi];
 		if (fbx_mesh_part->num_triangles == 0) continue;
 
@@ -734,7 +734,9 @@ static void vi_init_mesh(vi_scene *vs, vi_mesh *mesh, ufbx_mesh *fbx_mesh)
 			}
 		}
 
-		ufbx_vertex_stream streams[] = { vertices, sizeof(vi_vertex) };
+		ufbx_vertex_stream streams[] = {
+			{ vertices, num_indices, sizeof(vi_vertex) },
+		};
 		size_t num_vertices = ufbx_generate_indices(streams, 1, indices, num_indices, NULL, NULL);
 
 		part->vertex_buffer = make_buffer(vs->arena, NULL, &(sg_buffer_desc){
