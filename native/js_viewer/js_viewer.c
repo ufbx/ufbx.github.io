@@ -27,8 +27,8 @@ static void js_create_context()
     emscripten_webgl_make_context_current(g_webgl_ctx);
 
 	sg_setup(&(sg_desc) {
-        .buffer_pool_size = 4096,
-        .image_pool_size = 4096,
+        .buffer_pool_size = 0x4000,
+        .image_pool_size = 0x4000,
         .context = {
             .sample_count = 1,
             .color_format = SG_PIXELFORMAT_RGBA8,
