@@ -75,15 +75,22 @@ html:has(.dv-expanded) {
     height: 1.45rem;
 }
 .ol-name span {
+    margin-left: 0.15rem;
     margin-right: 0.25rem;
 }
 .ol-row.ol-selected .ol-name {
     background-color: var(--bg-bluish-mid);
     color: #404040;
 }
+.ol-row .ol-icon {
+    color: #727992;
+}
 .ol-row.ol-node-selected .ol-name {
     background-color: var(--bg-dark);
     color: #f8f8ff;
+}
+.ol-row.ol-node-selected .ol-name .ol-icon {
+    color: #4abef0;
 }
 .ol-type {
     flex-grow: 1;
@@ -140,6 +147,10 @@ html:has(.dv-expanded) {
 .ol-attrib .ol-icon {
     height: 1.25rem;
     width: 1.25rem;
+    color: #727992;
+}
+.ol-row .ol-attrib.ol-attrib-selected .ol-icon {
+    color: #ffbd65;
 }
 .ol-row:not(.ol-selected) .ol-name:hover {
     background-color: var(--bg-bluish-mid);

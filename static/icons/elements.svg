@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" version="1.1" viewBox="0 0 33.867 33.867" xmlns="http://www.w3.org/2000/svg">
+
+ <g id="node">
+  <path d="m16.933 6.35-9.525 4.4097v12.347l9.525 4.4097 9.525-4.4097v-12.347z" fill="currentColor" stop-color="#000000" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7496"/>
+ </g>
+
+ <g id="mesh">
+  <circle cx="27.517" cy="24.681" r="3.7703" fill="currentColor" />
+  <circle cx="6.35" cy="24.681" r="3.7703" fill="currentColor" />
+  <circle transform="rotate(60)" cx="13.966" cy="-11.49" r="3.7703" fill="currentColor"/>
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.175">
+   <path d="m6.35 24.681h21.167" />
+   <path d="m16.933 6.35 10.633 18.331" />
+   <path d="m6.35 24.681 10.583-18.331" />
+  </g>
+ </g>
+
+ <g id="light">
+  <circle cx="16.933" cy="16.933" r="5.9297" fill="currentColor" />
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.7762">
+   <path d="m16.933 8.2121v-3.5651" />
+   <path d="m23.1 10.767 2.5209-2.5209" />
+   <path d="m25.655 16.933h3.5651" />
+   <path d="m23.1 23.1 2.5209 2.5209" />
+   <path d="m16.933 25.655v3.5651" />
+   <path d="m10.767 23.1-2.5209 2.5209" />
+   <path d="m8.2121 16.933h-3.5651" />
+   <path d="m10.767 10.767-2.5209-2.5209" />
+  </g>
+ </g>
+
+ <g id="empty">
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.7042">
+   <path d="m16.933 5.2917v23.283" />
+   <path d="m27.015 11.113-5.2463 3.0317" />
+   <path d="m28.178 19.946-22.49-6.0262" />
+   <path d="m16.933 16.933-10.082 5.8208" />
+  </g>
+ </g>
+
+ <g id="camera">
+  <g fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+   <circle cx="11.112" cy="9.5249" r="3.9937" stroke-width="2.5959" />
+   <circle cx="22.754" cy="9.5249" r="3.9937" stroke-width="2.5959" />
+   <g stroke-width="2.1167">
+    <rect x="11.112" y="16.933" width="11.642" height="8.4667" />
+    <path d="m22.754 19.05 6.35-4.2333v12.7l-6.35-4.2333" />
+    <path d="m11.113 20.108h-3.175l-2.1167-2.1167v6.35l2.1167-2.1167h3.175" />
+   </g>
+  </g>
+ </g>
+
+</svg>

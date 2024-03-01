@@ -1,4 +1,4 @@
-import { rpcCall, rpcMemory, rpcGl, rpcSetup, rpcReload, rpcOnReady, rpcLoadScene, rpcDestroy } from "./rpc.js"
+import { rpcCall, rpcSetup, rpcOnReady, rpcLoadScene, rpcDestroy } from "./rpc.js"
 import { deepEqual, getTime } from "../common"
 
 type SceneDesc = {
@@ -120,21 +120,23 @@ function readyToRender(viewer: Viewer) {
     return true
 }
 
-function getRealtimeCanvas(): HTMLCanvasElement {
+async function getRealtimeCanvas(): Promise<HTMLCanvasElement> {
+    /* TODO
     const gl = rpcGl()
     if (gl && gl.isContextLost()) {
         console.log("Recreating lost context")
         if (!rpcDestroyed) {
-            rpcCall({
+            await rpcCall({
                 cmd: "freeResources",
                 scenes: true,
                 targets: true,
                 globals: true,
             })
-            rpcDestroy()
+            await rpcDestroy()
             rpcDestroyed = true
         }
     }
+    */
 
     if (rpcDestroyed) {
         if (globalRealtimeCanvas) {
@@ -153,8 +155,8 @@ function getRealtimeCanvas(): HTMLCanvasElement {
     globalRealtimeCanvas = canvas
     document.body.appendChild(canvas)
 
-    rpcSetup()
-    rpcCall({ cmd: "init" })
+    await rpcSetup()
+    await rpcCall({ cmd: "init" })
 
     return canvas
 }
@@ -198,7 +200,7 @@ async function waitForExistingSync() {
 
 async function finishRendering() {
     if (!globalSyncLocked) {
-        const gl = rpcGl()
+        const gl: any = null
         const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)
         if (!sync) return
         globalSyncLocked = true
@@ -259,15 +261,15 @@ async function renderToTarget(targetIndex: number, desc: SceneDesc, resolution: 
     await waitForExistingSync()
 
     const samples = 4
-    rpcCall({
+    await rpcCall({
         cmd: "render",
         target: { targetIndex, width: resolution.width, height: resolution.height, samples, pixelScale },
         desc,
     })
 }
 
-function presentTarget(targetIndex: number, resolution: Resolution) {
-    rpcCall({
+async function presentTarget(targetIndex: number, resolution: Resolution) {
+    await rpcCall({
         cmd: "present",
         targetIndex,
         width: resolution.width,
@@ -277,9 +279,10 @@ function presentTarget(targetIndex: number, resolution: Resolution) {
 
 async function renderToImageData(targetIndex: number, desc: SceneDesc, resolution: Resolution, pixelScale: number) {
     return acquireTarget(0, async () => {
+        throw new Error("TODO")
         await renderToTarget(0, desc, resolution, pixelScale)
         await finishRendering()
-        const result = rpcCall({
+        const result = await rpcCall({
             cmd: "getPixels",
             targetIndex,
             width: resolution.width,
@@ -320,8 +323,8 @@ function resolutionEqual(a: Resolution, b: Resolution) {
 }
 
 function setRenderResolution(canvas: HTMLCanvasElement, resolution: Resolution) {
-    canvas.width = resolution.width
-    canvas.height = resolution.height
+    // canvas.width = resolution.width
+    // canvas.height = resolution.height
 }
 
 function setElementResolution(canvas: HTMLElement, resolution: Resolution) {
@@ -432,7 +435,7 @@ async function transitionViewer(viewer: Viewer, target: ViewerTag) {
         const renderResolution = getRenderResolution(canvasResolution, true)
         const pixelScale = renderResolution.width / canvasResolution.width
 
-        const canvas = getRealtimeCanvas()
+        const canvas = await getRealtimeCanvas()
         if (canvas.style.display !== "block") {
             canvas.style.display = "block"
         }
@@ -441,7 +444,7 @@ async function transitionViewer(viewer: Viewer, target: ViewerTag) {
         setElementResolution(canvas, canvasResolution)
 
         await renderToTarget(1, viewer.desc, renderResolution, pixelScale)
-        presentTarget(1, renderResolution)
+        await presentTarget(1, renderResolution)
 
         let previousCanvas = null
         if (source === "canvas") {
@@ -505,14 +508,14 @@ async function refreshViewer(viewer: Viewer) {
             state.canvasResolution = canvasResolution
         }
 
-        presentTarget(1, renderResolution)
+        await presentTarget(1, renderResolution)
     } else {
         await transitionViewer(viewer, "canvas")
     }
 }
 
-function loadSceneFromBuffer(name: string, buffer: ArrayBuffer) {
-    const info = rpcLoadScene(name, buffer)
+async function loadSceneFromBlob(name: string, blob: Blob) {
+    const info = await rpcLoadScene(name, blob)
     if (info) {
         const scene = scenes.get(name)!
         scene.info = info
@@ -522,14 +525,15 @@ function loadSceneFromBuffer(name: string, buffer: ArrayBuffer) {
     }
 }
 
-function animationFrame() {
+async function animationFrame() {
     frameToken = null
     if (!rpcInitialized) return
     const time = getTime()
 
+    /* TODO
     const gl = rpcGl()
     if ((gl && gl.isContextLost()) || rpcDestroyed) {
-        getRealtimeCanvas()
+        await getRealtimeCanvas()
         for (const viewer of viewers.values()) {
             acquireViewer(viewer.id, async () => {
                 viewer.dirty = true
@@ -541,6 +545,7 @@ function animationFrame() {
             })
         }
     }
+    */
 
     if (scenesToLoad.length > 0) {
         for (const url of scenesToLoad) {
@@ -549,11 +554,10 @@ function animationFrame() {
 
             const blob = blobFiles.has(url) 
                 ? Promise.resolve(blobFiles.get(url)!)
-                : fetch(url)
+                : fetch(url).then(r => r.blob())
 
             blob
-                .then(response => response.arrayBuffer())
-                .then(buffer => loadSceneFromBuffer(url, buffer))
+                .then(blob => loadSceneFromBlob(url, blob))
                 .then(() => scene.state = "loaded")
                 .catch(() => scene.state = "error")
                 .then(requestFrame)
@@ -598,6 +602,7 @@ function animationFrame() {
 
             let promoteToRealtime = false
             if (realtimeViewerId === "" && viewer.state.state !== "realtime") {
+                promoteToRealtime = true
                 if (interactedViewerId === viewer.id) {
                     promoteToRealtime = true
                 } else if (interactedViewerId === "" && time - prevRenderTime < 0.5) {
@@ -615,7 +620,7 @@ function animationFrame() {
     }
 }
 
-function idleTick() {
+async function idleTick() {
     slowIdleToken = null
     fastIdleToken = null
     if (!rpcInitialized) return
@@ -634,6 +639,7 @@ function idleTick() {
         if (lockedViewers.has(viewer.id)) continue
         const idleTime = time - viewer.lastRenderTime
 
+        /*
         if (state.state === "realtime" && idleTime > 0.5) {
             acquireViewer(viewer.id, async () => {
                 await transitionViewer(viewer, "canvas")
@@ -650,11 +656,12 @@ function idleTick() {
             })
             break
         }
+        */
     }
 
     if (idleStage == 20) {
         console.log("Freeing targets")
-        rpcCall({
+        await rpcCall({
             cmd: "freeResources",
             targets: true,
         })
@@ -662,7 +669,7 @@ function idleTick() {
 
     if (idleStage == 22) {
         console.log("Freeing scenes")
-        rpcCall({
+        await rpcCall({
             cmd: "freeResources",
             scenes: true,
         })
@@ -670,15 +677,16 @@ function idleTick() {
 
     if (idleStage == 25) {
         console.log("Dropping globals")
-        rpcCall({
+        await rpcCall({
             cmd: "freeResources",
             targets: true,
             scenes: true,
             globals: true,
         })
-        rpcDestroy()
+        await rpcDestroy()
         rpcDestroyed = true
 
+        /* TODO
         const gl = rpcGl()
         if (gl) {
             const ext = gl.getExtension('WEBGL_lose_context')
@@ -687,6 +695,7 @@ function idleTick() {
                 ext.loseContext()
             }
         }
+        */
 
         if (globalRealtimeCanvas) {
             destroy(globalRealtimeCanvas)

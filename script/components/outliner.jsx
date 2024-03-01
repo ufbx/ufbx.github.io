@@ -2,6 +2,15 @@ import globalState from "./global-state"
 import { h, Fragment } from "kaiku"
 import { elementTypeCategory, typeToIconUrl } from "./common"
 
+function Icon({ type }) {
+    const structName = `ufbx_${type}`
+    return <div className="ol-icon" title={structName}>
+        <svg version="1.1" viewBox="0 0 33.867 33.867" xmlns="http://www.w3.org/2000/svg">
+            <use href={`/static/icons/elements.svg#${type}`} />
+        </svg>
+    </div>
+}
+
 function TreeNode({ state, info, id, level=0 }) {
     const element = info.elements[id]
     const icon = typeToIconUrl(element.type)
@@ -88,7 +97,8 @@ function TreeNode({ state, info, id, level=0 }) {
                 className="ol-name"
                 onClick={onClick}
             >
-                <img className="ol-icon" src={icon} title={structName} alt="" aria-hidden="true" />
+                {/*<img className="ol-icon" src={icon} title={structName} alt="" aria-hidden="true" />*/}
+                <Icon type={element.type} />
                 <span>{name}</span>
             </div>
             {element.type === "node" && attribIcon ?
@@ -99,7 +109,8 @@ function TreeNode({ state, info, id, level=0 }) {
                     }}
                     onClick={onClickAttrib}
                 >
-                    <img className="ol-icon" src={attribIcon} title={attribStruct} alt="" aria-hidden="true" />
+                    {/*<img className="ol-icon" src={attribIcon} title={attribStruct} alt="" aria-hidden="true" />*/}
+                    <Icon type={attrib.type} />
                     {selected ? <span>{attribName}</span> : null}
                 </div>
             : null}

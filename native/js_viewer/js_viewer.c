@@ -18,6 +18,7 @@ static void js_create_context()
     if (has_context) return;
     has_context = true;
 
+    /*
     g_webgl_ctx = emscripten_webgl_create_context("#ufbx-render-canvas", &(EmscriptenWebGLContextAttributes){
         .powerPreference = EM_WEBGL_POWER_PREFERENCE_LOW_POWER,
         .majorVersion = 2,
@@ -25,6 +26,7 @@ static void js_create_context()
     });
 
     emscripten_webgl_make_context_current(g_webgl_ctx);
+    */
 
 	sg_setup(&(sg_desc) {
         .buffer_pool_size = 0x4000,

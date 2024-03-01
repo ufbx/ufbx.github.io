@@ -1206,10 +1206,32 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 		ufbx_element *fbx_elem = vs->fbx_state->elements.data[desc->selected_element_id];
 
 		if (fbx_elem->type == UFBX_ELEMENT_NODE) {
+			ufbx_node *fbx_node = (ufbx_node*)fbx_elem;
 			vi_node *node = &vs->nodes[fbx_elem->typed_id];
 
 			um_mat node_to_world = node->node_to_world;
 			um_vec3 c = node_to_world.cols[3].xyz;
+
+			if (fbx_node->has_geometry_transform) {
+				um_mat geometry_to_world = node->geometry_to_world;
+				um_vec3 gc = geometry_to_world.cols[3].xyz;
+
+				for (size_t i = 0; i < 3; i++) {
+					um_vec3 cx = um_mad3(gc, geometry_to_world.cols[i].xyz, widget_scale);
+					gl_draw_line_3d(vs, gc, cx, 5.0f, vi_rgb8(0xf4bf6e), true);
+				}
+
+				for (size_t i = 0; i < 3; i++) {
+					um_vec3 cx = um_mad3(gc, geometry_to_world.cols[i].xyz, widget_scale);
+					gl_draw_line_3d(vs, gc, cx, 10.0f, vi_rgb8(0x342e25), true);
+
+					um_vec4 c4;
+					c4.xyz = um_mad3(gc, geometry_to_world.cols[i].xyz, widget_scale * 1.1f);
+					c4.w = 1.0f;
+					c4 = um_mat_mulr(vs->world_to_clip, c4);
+					gl_draw_icon_4d(vs, icons[VI_ICON_X + i], c4, 30.0f, vi_rgb8(0xf4bf6e), 2.5f, vi_rgb8(0x342e25));
+				}
+			}
 
 			for (size_t i = 0; i < 3; i++) {
 				um_vec3 cx = um_mad3(c, node_to_world.cols[i].xyz, widget_scale);
@@ -1220,12 +1242,15 @@ static void vi_draw_widgets(vi_pipelines *ps, vi_scene *vs, const vi_desc *desc)
 				um_vec3 cx = um_mad3(c, node_to_world.cols[i].xyz, widget_scale);
 				gl_draw_line_3d(vs, c, cx, 10.0f, vi_rgb8(0x0e2a36), true);
 
-				um_vec4 c4;
-				c4.xyz = um_mad3(c, node_to_world.cols[i].xyz, widget_scale * 1.1f);
-				c4.w = 1.0f;
-				c4 = um_mat_mulr(vs->world_to_clip, c4);
-				gl_draw_icon_4d(vs, icons[VI_ICON_X + i], c4, 30.0f, vi_rgb8(0x6cb9da), 2.5f, vi_rgb8(0x0e2a36));
+				if (!fbx_node->has_geometry_transform) {
+					um_vec4 c4;
+					c4.xyz = um_mad3(c, node_to_world.cols[i].xyz, widget_scale * 1.1f);
+					c4.w = 1.0f;
+					c4 = um_mat_mulr(vs->world_to_clip, c4);
+					gl_draw_icon_4d(vs, icons[VI_ICON_X + i], c4, 30.0f, vi_rgb8(0x6cb9da), 2.5f, vi_rgb8(0x0e2a36));
+				}
 			}
+
 		} if (fbx_elem->type == UFBX_ELEMENT_MESH) {
 			ufbx_mesh *fbx_mesh = (ufbx_mesh*)fbx_elem;
 

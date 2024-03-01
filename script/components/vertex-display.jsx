@@ -12,8 +12,8 @@ function vec3ToString(v) {
 function VertexRow({ viewerId, sceneName, elementId, index }) {
     const sceneState = globalState.scenes[viewerId]
     const state = useState({ row: null })
-    useEffect(() => {
-        state.row = rpcCall({
+    useEffect(async () => {
+        state.row = await rpcCall({
             cmd: "getVertex",
             sceneName, elementId, index,
         })
