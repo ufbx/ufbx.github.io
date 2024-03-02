@@ -14,6 +14,13 @@ A node by itself contains information about the transformation (`ufbx_node.local
 Nodes are specialized by attributes, such as `ufbx_mesh` or `ufbx_light`.
 A single attribute can be referenced by multiple nodes,
 allowing for example FBX files to have multiple instances of a mesh with different transforms.
+Common attributes can be accessed directly from a node, such as `ufbx_node.mesh` or `ufbx_node.light`.
+Less common attributes are stored in `ufbx_node.attrib`,
+you can use helper functions such as `ufbx_as_bone()` to convert this to concrete types or `NULL`.
+
+Conversely, instead of enumerating the attributes of a node it can be easier to consider the inverse.
+Attributes (eg. `ufbx_mesh`) have a field `ufbx_element.instances[]`,
+which contains a list of all nodes that use the element.
 
 <div class="doc-viewer doc-viewer-tall">
 <div data-dv-popout id="container-lamp" class="dv-inline">
