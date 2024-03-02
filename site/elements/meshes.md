@@ -21,7 +21,7 @@ each reference having a different index,
 allowing each face to define a unique UV coordinate for the same vertex.
 
 ```c
-// ufbx-doc-example: nodes/draw-polygons
+// ufbx-doc-example: meshes/draw-polygons
 
 void draw_polygons(ufbx_mesh *mesh)
 {
@@ -49,7 +49,7 @@ void draw_polygons(ufbx_mesh *mesh)
 ```
 
 ```cpp
-// ufbx-doc-example: nodes/draw-polygons
+// ufbx-doc-example: meshes/draw-polygons
 
 void draw_polygons(ufbx_mesh *mesh)
 {
@@ -76,6 +76,8 @@ void draw_polygons(ufbx_mesh *mesh)
 ```
 
 ```rust
+// ufbx-doc-example: meshes/draw-polygons
+
 fn draw_polygons(mesh: &ufbx::Mesh)
 {
     for face in &mesh.faces {
