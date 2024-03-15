@@ -1,5 +1,13 @@
 #pragma once
 
+#include <math.h>
+
+#define array_count(arr) ((sizeof(arr))/sizeof(*(arr)))
+
+#define F_PI (3.14159265359f)
+#define F_DEG_TO_RAD (F_PI / 180.0f)
+#define F_RAD_TO_DEG (180.0f / F_PI)
+
 typedef struct Vector2 {
     float x, y;
 } Vector2;
@@ -12,6 +20,10 @@ typedef struct Vector4 {
     float x, y, z, w;
 } Vector4;
 
+typedef struct Quaternion {
+    float x, y, z, w;
+} Quaternion;
+
 typedef struct Matrix4 {
     float m00, m10, m20, m30;
     float m01, m11, m21, m31;
@@ -19,7 +31,9 @@ typedef struct Matrix4 {
     float m03, m13, m23, m33;
 } Matrix4;
 
-#include "ufbx.h"
+#if !defined(UFBX_VERSION)
+    #include "ufbx.h"
+#endif
 
 static Vector2 Vector2_new(float x, float y)
 {
@@ -84,6 +98,79 @@ static Vector4 Vector4_mul(Vector4 a, float b) {
     return r;
 };
 
+static float Vector2_dot(Vector2 a, Vector2 b) {
+    return a.x*b.x + a.y*b.y;
+}
+
+static float Vector3_dot(Vector3 a, Vector3 b) {
+    return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+
+static float Vector4_dot(Vector4 a, Vector4 b) {
+    return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w;
+}
+
+static float Vector2_length(Vector2 a) {
+    return sqrtf(Vector2_dot(a, a));
+}
+
+static float Vector3_length(Vector3 a) {
+    return sqrtf(Vector3_dot(a, a));
+}
+
+static float Vector4_length(Vector4 a) {
+    return sqrtf(Vector4_dot(a, a));
+}
+
+static Vector2 Vector2_normalize(Vector2 a) {
+    return Vector2_mul(a, 1.0f / Vector2_length(a));
+}
+
+static Vector3 Vector3_normalize(Vector3 a) {
+    return Vector3_mul(a, 1.0f / Vector3_length(a));
+}
+
+static Vector4 Vector4_normalize(Vector4 a) {
+    return Vector4_mul(a, 1.0f / Vector4_length(a));
+}
+
+static Vector3 Vector3_cross(Vector3 a, Vector3 b) {
+    return Vector3_new(a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x);
+}
+
+static Quaternion Quaternion_new(float x, float y, float z, float w)
+{
+    Quaternion r = { x, y, z, w };
+    return r;
+}
+
+static Quaternion Quaternion_axis_angle(Vector3 axis, float radians)
+{
+	axis = Vector3_normalize(axis);
+	float c = cosf(radians * 0.5f), s = sinf(radians * 0.5f);
+	return Quaternion_new(axis.x * s, axis.y * s, axis.z * s, c);
+}
+
+static Quaternion Quaternion_mul(Quaternion a, Quaternion b)
+{
+	return Quaternion_new(
+		a.w*b.x + a.x*b.w + a.y*b.z - a.z*b.y,
+		a.w*b.y - a.x*b.z + a.y*b.w + a.z*b.x,
+		a.w*b.z + a.x*b.y - a.y*b.x + a.z*b.w,
+		a.w*b.w - a.x*b.x - a.y*b.y - a.z*b.z);
+}
+
+static Vector3 Quaternion_rotate(Quaternion a, Vector3 b)
+{
+	float xy = a.x*b.y - a.y*b.x;
+	float xz = a.x*b.z - a.z*b.x;
+	float yz = a.y*b.z - a.z*b.y;
+	return Vector3_new(
+		2.0f * (+ a.w*yz + a.y*xy + a.z*xz) + b.x,
+		2.0f * (- a.x*xy - a.w*xz + a.z*yz) + b.y,
+		2.0f * (- a.x*xz - a.y*yz + a.w*xy) + b.z);
+}
+
 static Matrix4 Matrix4_mul(Matrix4 a, Matrix4 b)
 {
     Matrix4 r = {
@@ -110,6 +197,17 @@ static Matrix4 Matrix4_mul(Matrix4 a, Matrix4 b)
     return r;
 }
 
+static Matrix4 Matrix4_transpose(Matrix4 a)
+{
+    Matrix4 r = {
+        a.m00, a.m01, a.m02, a.m03,
+        a.m10, a.m11, a.m12, a.m13,
+        a.m20, a.m21, a.m22, a.m23,
+        a.m30, a.m31, a.m32, a.m33,
+    };
+    return r;
+}
+
 static Vector3 Matrix4_transform_point(Matrix4 a, Vector3 b)
 {
     Vector3 r = {
@@ -118,6 +216,55 @@ static Vector3 Matrix4_transform_point(Matrix4 a, Vector3 b)
         a.m20*b.x + a.m21*b.y + a.m22*b.z + a.m23,
     };
     return r;
+}
+
+
+static Vector4 Vector4_xyz(Vector3 p)
+{
+    Vector4 r = { p.x, p.y, p.z, 0.0f }; 
+    return r;
+}
+
+static Matrix4 Matrix4_inverse_basis(Vector3 x, Vector3 y, Vector3 z, Vector3 origin)
+{
+	Matrix4 r = {
+		x.x, x.y, x.z, -Vector3_dot(origin, x),
+		y.x, y.y, y.z, -Vector3_dot(origin, y),
+		z.x, z.y, z.z, -Vector3_dot(origin, z),
+		0, 0, 0, 1,
+    };
+    return Matrix4_transpose(r);
+}
+
+static Matrix4 Matrix4_perspective_gl(float fov_degrees, float aspect, float near_plane, float far_plane)
+{
+    float fov = fov_degrees * (F_PI / 180.0f);
+	float tan_fov = 1.0f / tanf(fov / 2.0f);
+	float n = near_plane, f = far_plane;
+	Matrix4 r = {
+		tan_fov / aspect, 0, 0, 0,
+		0, tan_fov, 0, 0,
+		0, 0, (f+n) / (f-n), -2.0f * (f*n)/(f-n),
+		0, 0, 1, 0,
+    };
+    return Matrix4_transpose(r);
+}
+
+static Matrix4 Matrix4_look(Vector3 position, Vector3 direction, Vector3 up_hint)
+{
+	Vector3 right = Vector3_normalize(Vector3_cross(direction, up_hint));
+	Vector3 up = Vector3_normalize(Vector3_cross(right, direction));
+	return Matrix4_inverse_basis(right, up, direction, position);
+}
+
+static float float_min(float a, float b) {
+    return a < b ? a : b;
+}
+static float float_max(float a, float b) {
+    return a < b ? b : a;
+}
+static float float_clamp(float a, float min_v, float max_v) {
+    return float_min(float_max(a, min_v), max_v);
 }
 
 // -- ufbx conversions

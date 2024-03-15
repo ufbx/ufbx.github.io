@@ -7,11 +7,11 @@
 
 uint32_t g_index_base = 0;
 
-void create_vertex_buffer(void *data, size_t size)
+void create_vertex_buffer(const void *data, size_t size)
 {
 }
 
-void create_index_buffer(uint32_t *data, size_t size)
+void create_index_buffer(const uint32_t *data, size_t size)
 {
 }
 
@@ -39,3 +39,4 @@ int main(int argc, char **argv)
 
     return 0;
 }
+

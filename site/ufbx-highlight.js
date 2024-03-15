@@ -31,6 +31,7 @@ const keywords = new Set([
     "inline",
     "break",
     "continue",
+    "sizeof",
 ])
 
 const builtins = new Set([
@@ -69,6 +70,8 @@ const advancedTypes = new Set([
     "Vector3",
     "Vector4",
     "Matrix4",
+    "VertexBuffer",
+    "IndexBuffer",
 ])
 
 function tokenize(source) {
