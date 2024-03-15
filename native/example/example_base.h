@@ -197,6 +197,17 @@ static Matrix4 Matrix4_mul(Matrix4 a, Matrix4 b)
     return r;
 }
 
+static Matrix4 Matrix4_abs(Matrix4 a)
+{
+    Matrix4 r = {
+        fabsf(a.m00), fabsf(a.m10), fabsf(a.m20), fabsf(a.m30),
+        fabsf(a.m01), fabsf(a.m11), fabsf(a.m21), fabsf(a.m31),
+        fabsf(a.m02), fabsf(a.m12), fabsf(a.m22), fabsf(a.m32),
+        fabsf(a.m03), fabsf(a.m13), fabsf(a.m23), fabsf(a.m33),
+    };
+    return r;
+}
+
 static Matrix4 Matrix4_transpose(Matrix4 a)
 {
     Matrix4 r = {
@@ -218,6 +229,15 @@ static Vector3 Matrix4_transform_point(Matrix4 a, Vector3 b)
     return r;
 }
 
+static Vector3 Matrix4_transform_direction(Matrix4 a, Vector3 b)
+{
+    Vector3 r = {
+        a.m00*b.x + a.m01*b.y + a.m02*b.z,
+        a.m10*b.x + a.m11*b.y + a.m12*b.z,
+        a.m20*b.x + a.m21*b.y + a.m22*b.z,
+    };
+    return r;
+}
 
 static Vector4 Vector4_xyz(Vector3 p)
 {
@@ -244,14 +264,15 @@ static Matrix4 Matrix4_perspective_gl(float fov_degrees, float aspect, float nea
 	Matrix4 r = {
 		tan_fov / aspect, 0, 0, 0,
 		0, tan_fov, 0, 0,
-		0, 0, (f+n) / (f-n), -2.0f * (f*n)/(f-n),
-		0, 0, 1, 0,
+		0, 0, f / (f-n), -(f*n)/(f-n),
+		0, 0, 1.0f, 0,
     };
     return Matrix4_transpose(r);
 }
 
 static Matrix4 Matrix4_look(Vector3 position, Vector3 direction, Vector3 up_hint)
 {
+    direction = Vector3_normalize(direction);
 	Vector3 right = Vector3_normalize(Vector3_cross(direction, up_hint));
 	Vector3 up = Vector3_normalize(Vector3_cross(right, direction));
 	return Matrix4_inverse_basis(right, up, direction, position);
@@ -265,6 +286,26 @@ static float float_max(float a, float b) {
 }
 static float float_clamp(float a, float min_v, float max_v) {
     return float_min(float_max(a, min_v), max_v);
+}
+
+static Vector2 Vector2_min(Vector2 a, Vector2 b) {
+    return Vector2_new(float_min(a.x, b.x), float_min(a.y, b.y));
+}
+static Vector3 Vector3_min(Vector3 a, Vector3 b) {
+    return Vector3_new(float_min(a.x, b.x), float_min(a.y, b.y), float_min(a.z, b.z));
+}
+static Vector4 Vector4_min(Vector4 a, Vector4 b) {
+    return Vector4_new(float_min(a.x, b.x), float_min(a.y, b.y), float_min(a.z, b.z), float_min(a.w, b.w));
+}
+
+static Vector2 Vector2_max(Vector2 a, Vector2 b) {
+    return Vector2_new(float_max(a.x, b.x), float_max(a.y, b.y));
+}
+static Vector3 Vector3_max(Vector3 a, Vector3 b) {
+    return Vector3_new(float_max(a.x, b.x), float_max(a.y, b.y), float_max(a.z, b.z));
+}
+static Vector4 Vector4_max(Vector4 a, Vector4 b) {
+    return Vector4_new(float_max(a.x, b.x), float_max(a.y, b.y), float_max(a.z, b.z), float_max(a.w, b.w));
 }
 
 // -- ufbx conversions

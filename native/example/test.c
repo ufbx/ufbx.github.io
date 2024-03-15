@@ -1,14 +1,5 @@
+#define EXAMPLE_IMPLEMENTATION
 #include "example_graphics.h"
-
-#define SOKOL_DEBUG
-#define SOKOL_IMPL
-#define SOKOL_GLCORE33
-#include "sokol/sokol_app.h"
-#include "sokol/sokol_gfx.h"
-#include "sokol/sokol_log.h"
-#include "sokol/sokol_glue.h"
-
-#include <stdlib.h>
 
 typedef struct {
     Vector3 position;
@@ -226,7 +217,6 @@ State state;
 void init(void)
 {
     graphics_setup();
-	arcball_setup(&state.arcball);
 
     sg_pipeline_desc mesh_desc = pipeline_default_solid();
     mesh_desc.shader = load_shader_data(vertex_shader, fragment_shader);
@@ -253,6 +243,8 @@ void init(void)
     }
 
     state.scene = create_scene(scene);
+
+    arcball_setup(&state.arcball, scene);
 
     ufbx_free_scene(scene);
 }

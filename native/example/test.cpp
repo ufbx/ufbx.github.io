@@ -204,7 +204,6 @@ State state;
 void init(void)
 {
     graphics_setup();
-	arcball_setup(&state.arcball);
 
     sg_pipeline_desc mesh_desc = pipeline_default_solid();
     mesh_desc.shader = load_shader_data(vertex_shader, fragment_shader);
@@ -215,10 +214,10 @@ void init(void)
     state.mesh_pipe = sg_make_pipeline(&mesh_desc);
 
     ufbx_load_opts opts = { };
-	opts.target_axes = ufbx_axes_right_handed_y_up;
-	opts.target_unit_meters = 1.0;
-	opts.geometry_transform_handling = UFBX_GEOMETRY_TRANSFORM_HANDLING_MODIFY_GEOMETRY;
-	opts.space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY;
+    opts.target_axes = ufbx_axes_right_handed_y_up;
+    opts.target_unit_meters = 1.0;
+    opts.geometry_transform_handling = UFBX_GEOMETRY_TRANSFORM_HANDLING_MODIFY_GEOMETRY;
+    opts.space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY;
 
     ufbx_error error;
     ufbx_scene *scene = ufbx_load_file(state.filename, &opts, &error);
@@ -230,6 +229,8 @@ void init(void)
     }
 
     state.scene = create_scene(scene);
+
+    arcball_setup(&state.arcball, scene);
 
     ufbx_free_scene(scene);
 }
