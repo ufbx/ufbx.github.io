@@ -1,101 +1,102 @@
-#pragma once
+#include "example_app.h"
 
-#include "example_base.h"
+#define UPNG_WRITE_IMPLEMENTATION
+#include "external/upng_write.h"
 
-#include "sokol/sokol_app.h"
-#include "sokol/sokol_gfx.h"
-#include "sokol/sokol_log.h"
-#include "sokol/sokol_glue.h"
+#define SOKOL_IMPL
+#define SOKOL_GLCORE33
+#include "external/sokol_app.h"
+#include "external/sokol_gfx.h"
+#include "external/sokol_log.h"
+#include "external/sokol_glue.h"
 
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include "external/ufbx.h"
 
-#include <gl/GL.h>
+#if defined(_WIN32)
+	#define WIN32_LEAN_AND_MEAN
+	#include <Windows.h>
+#endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
-// -- Geometry
+static uint8_t *example_read_pixels(size_t width, size_t height)
+{
+	typedef void (*fn_ReadPixels)(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void *data);
+	fn_ReadPixels p_ReadPixels = NULL;
 
-typedef struct VertexBuffer {
-    sg_buffer buffer;
-    size_t count;
-    size_t stride;
-} VertexBuffer;
-
-typedef struct IndexBuffer {
-    sg_buffer buffer;
-    size_t count;
-    size_t stride;
-} IndexBuffer;
-
-VertexBuffer create_vertex_buffer(const void *data, size_t count, size_t stride);
-IndexBuffer create_index_buffer(const uint32_t *data, size_t count, size_t stride);
-
-void free_vertex_buffer(VertexBuffer buffer);
-void free_index_buffer(IndexBuffer buffer);
-
-// -- Shaders
-
-sg_shader load_shader_data(const char *vs_data, const char *fs_data);
-sg_shader load_shader_file(const char *vs_path, const char *fs_path);
-
-// -- Pipelines
-
-sg_pipeline_desc pipeline_default_solid();
-
-// -- Frame
-
-void begin_main_pass(uint32_t clear_color);
-void end_main_pass();
-
-// -- Setup
-
-void graphics_setup();
-void graphics_cleanup();
-
-// -- Utility
-
-typedef struct Arcball {
-	float camera_yaw;
-	float camera_pitch;
-	float camera_distance;
-	uint32_t mouse_buttons;
-
-    Vector3 camera_offset;
-    Vector3 camera_target;
-    Vector3 camera_position;
-    Quaternion camera_rotation;
-
-    float camera_fov;
-
-} Arcball;
-
-void arcball_setup(Arcball *arcball, ufbx_scene *scene);
-void arcball_event(Arcball *arcball, const sapp_event *e);
-Matrix4 arcball_world_to_view(const Arcball *arcball);
-Matrix4 arcball_view_to_clip(const Arcball *arcball);
-Matrix4 arcball_world_to_clip(const Arcball *arcball);
-
-#ifdef __cplusplus
-}
+#if defined(_WIN32)
+	{
+		HANDLE dll = LoadLibraryA("opengl32.dll");
+		if (dll) {
+			typedef PROC (WINAPI * fn_wglGetProcAddress)(LPCSTR);
+			fn_wglGetProcAddress p_wglGetProcAddress = (fn_wglGetProcAddress)GetProcAddress(dll, "wglGetProcAddress");
+			p_ReadPixels = p_wglGetProcAddress ? (fn_ReadPixels)p_wglGetProcAddress("glReadPixels") : NULL;
+			if (!p_ReadPixels) {
+				p_ReadPixels = (fn_ReadPixels)GetProcAddress(dll, "glReadPixels");
+			}
+			FreeLibrary(dll);
+		}
+	}
+#else
+	p_ReadPixels = (fn_ReadPixels)&glReadPixels;
 #endif
 
-#if defined(EXAMPLE_IMPLEMENTATION)
+	if (p_ReadPixels) {
+		uint8_t *temp = (uint8_t*)malloc(width * height * 4);
+		uint8_t *result = (uint8_t*)malloc(width * height * 4);
+		if (!temp || !result) {
+			free(temp);
+			free(result);
+			return NULL;
+		}
 
-#define SOKOL_DEBUG
-#define SOKOL_IMPL
-#define SOKOL_GLCORE33
-#include "sokol/sokol_app.h"
-#include "sokol/sokol_gfx.h"
-#include "sokol/sokol_log.h"
-#include "sokol/sokol_glue.h"
+		p_ReadPixels(0, 0, (GLsizei)width, (GLsizei)height, GL_RGBA, GL_UNSIGNED_BYTE, temp);
 
-// -- Geometry
+		// Flip the framebuffer and clear alpha
+		for (size_t dst_y = 0; dst_y < height; dst_y++) {
+			size_t src_y = height - dst_y - 1;
+
+			for (size_t x = 0; x < width; x++) {
+				uint8_t *src = temp + (src_y * width + x) * 4;
+				uint8_t *dst = result + (dst_y * width + x) * 4;
+				dst[0] = src[0];
+				dst[1] = src[1];
+				dst[2] = src[2];
+				dst[3] = 0xff;
+			}
+		}
+
+		free(temp);
+		return result;
+	} else {
+		return NULL;
+	}
+}
+
+// -- Arguments
+
+Args example_args;
+
+// -- Graphics
+
+void begin_main_pass(uint32_t clear_color)
+{
+	sg_pass pass = { 0 };
+	pass.swapchain = sglue_swapchain();
+	pass.action.colors[0].load_action = SG_LOADACTION_CLEAR;
+	pass.action.colors[0].clear_value.r = (float)((clear_color >> 16) & 0xff) / 255.0f;
+	pass.action.colors[0].clear_value.g = (float)((clear_color >> 8) & 0xff) / 255.0f;
+	pass.action.colors[0].clear_value.b = (float)((clear_color >> 0) & 0xff) / 255.0f;
+	pass.action.colors[0].clear_value.a = 1.0f;
+	sg_begin_pass(&pass);
+}
+
+void end_main_pass()
+{
+	sg_end_pass();
+}
 
 VertexBuffer create_vertex_buffer(const void *data, size_t count, size_t stride)
 {
@@ -144,8 +145,6 @@ void free_index_buffer(IndexBuffer buffer)
 {
 	sg_destroy_buffer(buffer.buffer);
 }
-
-// -- Shaders
 
 // Hacky parsing for uniform blocks to generate Sokol descs to keep examples terse.
 
@@ -314,38 +313,7 @@ sg_pipeline_desc pipeline_default_solid()
 	return desc;
 }
 
-void begin_main_pass(uint32_t clear_color)
-{
-    sg_pass pass = { 0 };
-    pass.swapchain = sglue_swapchain();
-    pass.action.colors[0].load_action = SG_LOADACTION_CLEAR;
-    pass.action.colors[0].clear_value.r = (float)((clear_color >> 16) & 0xff) / 255.0f;
-    pass.action.colors[0].clear_value.g = (float)((clear_color >> 8) & 0xff) / 255.0f;
-    pass.action.colors[0].clear_value.b = (float)((clear_color >> 0) & 0xff) / 255.0f;
-    pass.action.colors[0].clear_value.a = 1.0f;
-    sg_begin_pass(&pass);
-}
-
-void end_main_pass()
-{
-	sg_end_pass();
-
-	uint8_t *pixels = malloc(800*600*4);
-	glReadPixels(0, 0, 800, 600, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-}
-
-void graphics_setup()
-{
-    sg_setup(&(sg_desc){
-        .environment = sglue_environment(),
-		.logger = { slog_func },
-    });
-}
-
-void graphics_cleanup()
-{
-	sg_shutdown();
-}
+// -- Arcball
 
 static void arcball_update_camera(Arcball *arcball)
 {
@@ -467,4 +435,70 @@ Matrix4 arcball_world_to_clip(const Arcball *arcball)
 	return Matrix4_mul(arcball_view_to_clip(arcball), arcball_world_to_view(arcball));
 }
 
+void example_sokol_init(void)
+{
+	sg_desc gfx_desc = { 0 };
+	gfx_desc.environment = sglue_environment();
+	gfx_desc.logger.func = slog_func;
+	sg_setup(&gfx_desc);
+
+	example_setup();
+}
+
+void example_sokol_frame(void)
+{
+	example_frame();
+	sg_commit();
+
+	if (example_args.screenshot_path) {
+		uint32_t width = (uint32_t)sapp_width();
+		uint32_t height = (uint32_t)sapp_height();
+		uint8_t *pixels = example_read_pixels(width, height);
+		if (pixels) {
+			upng_write_file(example_args.screenshot_path, pixels, width, height);
+			free(pixels);
+			sapp_request_quit();
+			example_args.screenshot_path = NULL;
+		} else {
+			exit(1);
+		}
+	}
+}
+
+void example_sokol_event(const sapp_event *e)
+{
+	example_event(e);
+}
+
+void example_sokol_cleanup(void)
+{
+	sg_shutdown();
+}
+
+sapp_desc sokol_main(int argc, char* argv[]) {
+
+	for (int i = 1; i < argc; i++) {
+		if (!strcmp(argv[i], "--screenshot-path")) {
+			if (++i < argc) example_args.screenshot_path = argv[i];
+		} else {
+			example_args.filename = argv[i];
+		}
+	}
+
+	sapp_desc app_desc = { 0 };
+	app_desc.init_cb = example_sokol_init;
+	app_desc.frame_cb = example_sokol_frame;
+	app_desc.event_cb = example_sokol_event;
+	app_desc.cleanup_cb = example_sokol_cleanup;
+	app_desc.width = 800;
+	app_desc.height = 600;
+	app_desc.sample_count = 4;
+	app_desc.window_title = "ufbx example";
+	app_desc.logger.func = slog_func;
+	return app_desc;
+}
+
+#if defined(__cplusplus)
+}
 #endif
+

@@ -13,7 +13,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <gl/GL.h>
+// #include <GL/gl.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -330,12 +332,20 @@ void end_main_pass()
 {
 	sg_end_pass();
 
-	uint8_t *pixels = malloc(800*600*4);
-	glReadPixels(0, 0, 800, 600, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	printf("WHA!\n");
+
+	int width = sapp_width();
+	int height = sapp_height();
+	uint8_t *pixels = malloc(width * height * 4);
+	glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	stbi_write_png("result.png", width, height, 4, pixels, 0);
+	free(pixels);
+	exit(0);
 }
 
 void graphics_setup()
 {
+	printf("HERE\n");
     sg_setup(&(sg_desc){
         .environment = sglue_environment(),
 		.logger = { slog_func },
