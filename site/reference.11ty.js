@@ -10,7 +10,7 @@ const forceTableEnums = new Set([])
 
 const ignoredDecls = new Set([
     "ufbx_inline",
-    "UFBX_UFBX_H_INLCUDED",
+    "UFBX_UFBX_H_INCLUDED",
     "UFBX_LIST_TYPE",
     "UFBX_VERTEX_ATTRIB_IMPL",
     "UFBX_CALLBACK_IMPL",

@@ -12,3 +12,9 @@ PreferedAngleZ = "PreferedAngleZ"
 
 # Level of Detail
 lod = "lod"
+
+[files]
+extend-exclude = [
+    "native/window/external/*",
+    "native/viewer/external/*",
+]

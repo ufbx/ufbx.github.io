@@ -82,7 +82,7 @@ This method works in all cases,
 but may result in extra nodes that are not present in the file.
 
 Modifying the geometry (`UFBX_GEOMETRY_TRANSFORM_HANDLING_MODIFY_GEOMETRY`) bakes the geometry transform into the vertices of meshes (and curves/surfaces).
-This results in a cleaner scene graph, but may fall back to helper nodes if the transormed object cannot be modified or is instanced.
+This results in a cleaner scene graph, but may fall back to helper nodes if the transformed object cannot be modified or is instanced.
 `UFBX_GEOMETRY_TRANSFORM_HANDLING_MODIFY_GEOMETRY_NO_FALLBACK` will never insert helper nodes but will result in incorrect transformations when loading tricky files.
 
 ## Inherit modes

@@ -11,7 +11,7 @@ eleventyNavigation:
 Nearly everything in *ufbx* consist of elements[^1] represented by a "base-class" like `struct ufbx_element`.
 Elements contain common properties such as `@(ufbx_element.)name` and `@(ufbx_element.)props` for FBX key/value properties.
 
-"Derived" types such as `ufbx_node`, `ufbx_mesh`, or `ufbx_material` embed a `ufbx_element` header as an anynomous `union`,
+"Derived" types such as `ufbx_node`, `ufbx_mesh`, or `ufbx_material` embed a `ufbx_element` header as an anonymous `union`,
 allowing you to cast it to a `ufbx_element` or access the common `ufbx_element` properties directly.
 
 ```c
