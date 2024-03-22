@@ -1,0 +1,10 @@
+mesh 'Mesh_Cube'
+. [0] material: Material_Top
+.. 4 vertices
+.. 6 indices
+. [1] material: Material_Bottom
+.. 4 vertices
+.. 6 indices
+. [2] material: Material_Side
+.. 16 vertices
+.. 24 indices
