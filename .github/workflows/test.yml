@@ -88,3 +88,17 @@ jobs:
           bash build.sh
       - name: Compile examples
         run: python3 tests/compile-examples.py --ufbx-rust-path build/ufbx-rust
+
+  typos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: ufbx/ufbx.github.io
+          ref: ${{ inputs.ufbx-documentation-ref }}
+          fetch-depth: 2
+      - name: Check for typos
+        if: ${{ always() && !cancelled() }}
+        uses: crate-ci/typos@master
+        with: 
+          config: ./misc/typos.toml
