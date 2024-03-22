@@ -265,9 +265,10 @@ fn convert_mesh_part(mesh: &ufbx::Mesh, part: &ufbx::MeshPart) {
 
         // Triangulate the face into `tri_indices[]`.
         let num_tris = mesh.triangulate_face(&mut tri_indices, face);
+        let num_tri_corners = (num_tris * 3) as usize;
 
         // Iterate over each triangle corner contiguously.
-        for &index in &tri_indices[0..(num_tris*3) as usize] {
+        for &index in &tri_indices[..num_tri_corners] {
             // Write the vertex. In actual implementation you'd want to convert to custom
             // vector types or other more compact formats.
             vertices.push(Vertex {
