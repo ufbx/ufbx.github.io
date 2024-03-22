@@ -1,6 +1,6 @@
 // $dep ufbx material_parts.fbx
 // $ clang ufbx.c main.c -lm -o example
-// $ ./example > result.obj
+// $ ./example
 #include <stdio.h>
 #include <stddef.h>
 #include <assert.h>
