@@ -26,7 +26,7 @@ Values for given index can be read from `data[indices[index]]`,
 or alternatively using helpers like `ufbx_get_vertex_vec3()`.
 C++ and Rust also support the shorthand `attrib[index]`.
 
-Example below draws a mesh with a hypotetical immediate-mode polygon API:
+Example below draws a mesh with a hypothetical immediate-mode polygon API:
 
 ```c
 // ufbx-doc-example: meshes/draw-polygons
