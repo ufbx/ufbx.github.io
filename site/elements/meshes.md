@@ -289,7 +289,8 @@ fn convert_mesh_part(mesh: &ufbx::Mesh, part: &ufbx::MeshPart) {
 
     // This call will deduplicate vertices, modifying the arrays passed in `streams[]`,
     // indices are written in `indices[]` and the number of unique vertices is returned.
-    let num_vertices = ufbx::generate_indices(&mut streams, &mut indices, ufbx::AllocatorOpts::default())
+    let num_vertices = ufbx::generate_indices(
+            &mut streams, &mut indices, ufbx::AllocatorOpts::default())
         .expect("expected to generate indices");
 
     // Trim to only unique vertices.
