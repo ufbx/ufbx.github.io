@@ -21,7 +21,7 @@ each reference having a different index,
 allowing each face to define a unique UV coordinate for the same vertex.
 
 Mesh data is stored in attributes, such as `ufbx_mesh.vertex_position`, `ufbx_mesh.vertex_normal`, and `ufbx_mesh.vertex_uv`.
-Each attribute has its own indices (`ufbx_vertex_attrib.indices[]`) and data (`ufbx_vertex_attrib.data[]`).
+Each attribute has its own indices (`ufbx_vertex_attrib.indices[]`) and values (`ufbx_vertex_attrib.values[]`).
 Values for given index can be read from `data[indices[index]]`,
 or alternatively using helpers like `ufbx_get_vertex_vec3()`.
 C++ and Rust also support the shorthand `attrib[index]`.
