@@ -68,6 +68,8 @@ const advancedTypes = new Set([
     "Vector2",
     "Vector3",
     "Vector4",
+    "Quaternion",
+    "EulerOrder",
     "Matrix4",
 ])
 
@@ -146,7 +148,7 @@ function search(tokens, pattern) {
     return results
 }
 
-function patchKeywords(tokens) {
+function patchKeywords(ctx, tokens) {
     for (const m of search(tokens, /name/)) {
         if (keywords.has(m.token.text)) {
             m.token.type = "kw"
@@ -156,7 +158,14 @@ function patchKeywords(tokens) {
     }
 }
 
-function patchTypes(tokens) {
+function patchTypeDecls(ctx, tokens) {
+    for (const m of search(tokens, /(?:kw:struct )(name:\S* )(?:op:\{ )/)) {
+        const token = m.groups[1].token
+        ctx.userTypes.add(token.text)
+    }
+}
+
+function patchTypes(ctx, tokens) {
     const { ufbxInfo } = global
     for (const m of search(tokens, /name/)) {
         const text = m.token.text
@@ -169,13 +178,16 @@ function patchTypes(tokens) {
             m.token.type = "type"
             m.token.refType = m.token.text
             m.token.ufbxType = ufbxInfo.types[text]
+        } else if (ctx.userTypes.has(text)) {
+            m.token.type = "type"
+            m.token.viewType = "type-cpp"
         }
     }
 }
 
 let globalDeclId = 0
 
-function patchDecls(tokens) {
+function patchDecls(ctx, tokens) {
     for (const m of search(tokens, /line (?:kw:const )?(type:\S* )(?:op:< (?:type:\S+ (?:op:, )?)*op:> )?(?:op:\* )*(name:\S* )(?:op:= |op:; |op:\[ )/)) {
         const type = m.groups[1].token
         const name = m.groups[2].token
@@ -190,7 +202,7 @@ function patchDecls(tokens) {
     }
 }
 
-function patchRefs(tokens) {
+function patchRefs(ctx, tokens) {
     let scopes = [{ }]
     let prevToken = { type: "line", text: "" }
     for (let i = 0; i < tokens.length; i++) {
@@ -218,7 +230,7 @@ function patchRefs(tokens) {
     }
 }
 
-function patchFields(tokens) {
+function patchFields(ctx, tokens) {
     const { ufbxInfo } = global
     for (const m of search(tokens, /(name:\S* )(?:op:\. |op:-> )(name:\S* )/)) {
         const parent = m.groups[1].token
@@ -243,7 +255,7 @@ function patchFields(tokens) {
     }
 }
 
-function patchInitFields(tokens) {
+function patchInitFields(ctx, tokens) {
     for (const m of search(tokens, /line op:\. (name:\S* )/)) {
         const name = m.groups[1].token
         let pos = m.groups[1].begin
@@ -262,7 +274,7 @@ function patchInitFields(tokens) {
     }
 }
 
-function patchCalls(tokens) {
+function patchCalls(ctx, tokens) {
     for (const m of search(tokens, /(name:\S* )(op:\( )/)) {
         let pos = m.groups[1].begin
         tokens[pos].isCall = true
@@ -279,14 +291,19 @@ function linkRef(ref) {
 
 function highlight(str) {
     const tokens = tokenize(str)
-    patchKeywords(tokens)
-    patchTypes(tokens)
-    patchDecls(tokens)
-    patchRefs(tokens)
-    patchFields(tokens)
-    patchFields(tokens)
-    patchInitFields(tokens)
-    patchCalls(tokens)
+    const ctx = {
+        userTypes: new Set(),
+    }
+
+    patchKeywords(ctx, tokens)
+    patchTypeDecls(ctx, tokens)
+    patchTypes(ctx, tokens)
+    patchDecls(ctx, tokens)
+    patchRefs(ctx, tokens)
+    patchFields(ctx, tokens)
+    patchFields(ctx, tokens)
+    patchInitFields(ctx, tokens)
+    patchCalls(ctx, tokens)
 
     let prevTokenNext = null
     return tokens.map((token) => {
