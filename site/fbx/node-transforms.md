@@ -202,12 +202,12 @@ Matrix4 get_geometry_transform(ufbx_node *node)
 
     // Fetch the transform properties.
     // In practice these could be for example manually evaluated from animation curves.
-    Vector3 geo_translation = ufbx_find_vec3(props, "GeometryTranslation", ufbx_zero_vec3);
-    Vector3 geo_scaling     = ufbx_find_vec3(props, "GeometryScaling", ufbx_zero_vec3);
-    Vector3 geo_rotation    = ufbx_find_vec3(props, "GeometryRotation", ufbx_zero_vec3);
+    Vector3 geo_translation = ufbx_find_vec3(props, "GeometricTranslation", ufbx_zero_vec3);
+    Vector3 geo_scaling     = ufbx_find_vec3(props, "GeometricScaling", ufbx_zero_vec3);
+    Vector3 geo_rotation    = ufbx_find_vec3(props, "GeometricRotation", ufbx_zero_vec3);
 
     // Convert the rotation from Euler to quaternions.
-    Quaternion geo_quat = Quaternion_euler(lcl_rotation, EulerOrder_XYZ);
+    Quaternion geo_quat = Quaternion_euler(geo_rotation, EulerOrder_XYZ);
 
     Matrix4 m = Matrix4_identity;
 
