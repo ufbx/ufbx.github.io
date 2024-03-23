@@ -65,7 +65,7 @@ The internal representation of FBX transforms is detailed in [Node Transforms](/
 
 FBX files may be specified in arbitrary coordinate spaces,
 meaining that the forward/right/up axes and the scale of a single unit can vary.
-To accomodate for this you can read `@(ufbx_scene_settings.)axes` and `@(ufbx_scene_settings.)unit_meters` from `ufbx_scene.settings`.
+To accommodate for this you can read `@(ufbx_scene_settings.)axes` and `@(ufbx_scene_settings.)unit_meters` from `ufbx_scene.settings`.
 
 *ufbx* also allows converting loaded scenes into preferred coordinate spaces by supplying `ufbx_load_opts.target_axes` and `ufbx_load_opts.target_unit_meters`.
 There are multiple options for how this conversion should be performed, specified by `ufbx_load_opts.space_conversion`:
@@ -74,7 +74,7 @@ There are multiple options for how this conversion should be performed, specifie
 * `UFBX_SPACE_CONVERSION_ADJUST_TRANSFORMS`: Modify the transforms of nodes to compensate for the space conversion
 * `UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY`: Bake the unit scaling into the geometry, axis conversion is still performed as in `@(UFBX_SPACE_CONVERSION_)ADJUST_TRANSFORMS`.
 
-*ufbx* can also convert the handedness of the scene by mirroring, using `ufbx_load_opts.mirror_axis`.
+*ufbx* can also convert the handedness of the scene by mirroring, using `ufbx_load_opts.handedness_conversion_axis`.
 In practice the overwhelming majority of FBX files are right-handed, so this is usually not necessary if you are using right-handed axes.
 However, if loading scenes into a left-handed coordinate space, the mirroring is practically always necessary.
 

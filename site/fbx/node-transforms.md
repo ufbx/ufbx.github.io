@@ -97,7 +97,8 @@ However, if you are using the following functionality you also must account for 
     UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY   -> @(ufbx_node.)adjust_pre_rotation, @(ufbx_node.)adjust_translation_scale
     UFBX_PIVOT_HANDLING_ADJUST_TO_PIVOT     -> @(ufbx_node.)adjust_pre_translation
     UFBX_INHERIT_MODE_HANDLING_COMPENSATE   -> @(ufbx_node.)adjust_post_scale
-    ufbx_load_opts.camera_axes/@(ufbx_load_opts.)light_axes   -> @(ufbx_node.)adjust_post_rotation
+    ufbx_load_opts.target_camera_axes       -> @(ufbx_node.)adjust_post_rotation
+    ufbx_load_opts.target_light_axes        -> @(ufbx_node.)adjust_post_rotation
 
 Nodes that have a non-identity adjust transform have `ufbx_node.has_adjust_transform` set to `true`,
 but it is always safe to apply the adjust transforms even if unnecessary.

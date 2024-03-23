@@ -15,4 +15,4 @@ One should be very cautious when interfacing with the FBX format, as it has many
 meaning that any new file may require a feature that you must account for,
 if aiming for correctness across any files in the wild.
 Less care is required if you are in control both of the importer and the files,
-as then you only need to support the necessar ysubset of features.
+as then you only need to support the necessary ysubset of features.
