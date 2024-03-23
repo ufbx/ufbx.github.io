@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     // Affects: adjust_post_scale
     opts.inherit_mode_handling = UFBX_INHERIT_MODE_HANDLING_COMPENSATE;
     // Affects: adjust_post_rotation
-    opts.target_camera_axes = ufbx_axes_right_handed_z_up;
+    opts.target_light_axes = ufbx_axes_right_handed_z_up;
 
     ufbx_scene *scene = ufbx_load_file(argv[1], &opts, NULL);
     assert(scene);

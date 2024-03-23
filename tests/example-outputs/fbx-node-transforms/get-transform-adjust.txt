@@ -47,10 +47,11 @@ PostRotation:
   Lcl Scaling: (1.00, 1.00, 1.00)
   PostRotation: (-90.00, -0.00, -0.00)
   adjust_pre_rotation: (0.71, 0.00, 0.00, 0.71)
+  adjust_post_rotation: (1.00, 0.00, 0.00, 0.00)
   adjust_translation_scale: 0.39
   X: (+1.00, +0.00, +0.00), reference (+1.00, +0.00, +0.00)
-  Y: (+0.00, -1.00, -0.00), reference (+0.00, -1.00, +0.00)
-  Z: (+0.00, +0.00, -1.00), reference (+0.00, -0.00, -1.00)
+  Y: (+0.00, +1.00, +0.00), reference (+0.00, +1.00, -0.00)
+  Z: (+0.00, -0.00, +1.00), reference (+0.00, +0.00, +1.00)
   W: (+0.00, +0.00, +0.00), reference (+0.00, +0.00, +0.00)
 
 SimplePivot:
