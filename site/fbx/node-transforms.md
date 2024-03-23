@@ -212,7 +212,6 @@ Matrix4 get_geometry_transform(ufbx_node *node)
 
     Matrix4 m = Matrix4_identity;
 
-    // Combine the T/R/S translation
     m = Matrix4_scale_nonuniform(geo_scaling) * m;
     m = Matrix4_rotate(geo_quat) * m;
     m = Matrix4_translate(geo_translation) * m;
