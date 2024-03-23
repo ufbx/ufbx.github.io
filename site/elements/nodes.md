@@ -109,7 +109,7 @@ This causes the exported file to use meter units (`@(ufbx_scene_settings.)unit_m
 ```c
 // ufbx-doc-example: nodes/space-conversion
 
-// Convert the scene into glTF space.
+// Convert the scene into meters, right-handed Y-up.
 ufbx_load_opts opts = { 0 };
 opts.target_axes = ufbx_axes_right_handed_y_up;
 opts.target_unit_meters = 1.0f;
@@ -125,7 +125,7 @@ if (prefer_blender) {
 ```cpp
 // ufbx-doc-example: nodes/space-conversion
 
-// Convert the scene into glTF space.
+// Convert the scene into meters, right-handed Y-up.
 ufbx_load_opts opts = { };
 opts.target_axes = ufbx_axes_right_handed_y_up;
 opts.target_unit_meters = 1.0f;
@@ -141,7 +141,7 @@ if (prefer_blender) {
 ```rust
 // ufbx-doc-example: nodes/space-conversion
 
-// Convert the scene into glTF space.
+// Convert the scene into meters, right-handed Y-up.
 let opts = ufbx::LoadOpts {
     target_axes: ufbx::CoordinateAxes::right_handed_y_up(),
     target_unit_meters: 1.0,
