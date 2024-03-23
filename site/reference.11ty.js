@@ -26,6 +26,12 @@ md.renderer.rules.code_inline = (tokens, idx, options, env, self) => {
     return `<code>${highlight(content)}</code>`
 }
 
+function stripTodos(lines) {
+    return lines
+        .filter(line => !/^\s*\[?\s*TODO:/.test(line))
+        .map(line => line.replace(/\s*\[TODO[^\]]+\]/, ""))
+}
+
 function parseComment(comment, pos=0, type="text") {
     let lines = []
     const start = pos
@@ -36,6 +42,7 @@ function parseComment(comment, pos=0, type="text") {
     // separate it to it's own paragraph.
     if (pos === 0 && comment[0].endsWith(".")) {
         lines.push(comment[0])
+        lines = stripTodos(lines)
         return [{ type, lines }, ...parseComment(comment, 1)]
     }
 
@@ -64,6 +71,7 @@ function parseComment(comment, pos=0, type="text") {
                 lines.push("  " + line)
             }
         }
+        lines = stripTodos(lines)
         return [{ type, lines }, ...parseComment(comment, pos)]
     } else {
         let nextType = "text"
@@ -89,6 +97,7 @@ function parseComment(comment, pos=0, type="text") {
             lines[0] = lines[0].replace("HINT: ", "")
         }
 
+        lines = stripTodos(lines)
         return [{ type, lines }, ...parseComment(comment, pos, nextType)]
     }
 }
