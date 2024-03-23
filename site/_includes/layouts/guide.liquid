@@ -26,6 +26,11 @@ License information:
       {% include "nav.liquid" %}
       <main class="g-main">
         <article>
+          {% if fbxWarning %}
+            <div class="fbx-note">
+              This page describes the internal behavior of the FBX format and is not recommended for most users of <em>ufbx</em>.
+            </div>
+          {% endif %}
           {% if noTitle %} {% else %}
             <h1>{{ title }}</h1>
           {% endif %}

@@ -125,9 +125,17 @@ Even if the mesh has no materials assigned, there will be a single material part
 
 ## Example
 
+Below is an example of a common use case: converting mesh data to a GPU-friendly indexed format.
+The example below uses *ufbx* helper functions:
+`ufbx_triangulate_face()` generates an array of indices for triangles in a face,
+and `ufbx_generate_indices()` deduplicates an array of vertices.
+
 ```c
 // ufbx-doc-example: meshes/mesh-parts
 
+// GPU vertex representation.
+// In practice you would need to use more compact custom vector types as
+// by default `ufbx_real` is 64 bits wide.
 typedef struct Vertex {
     ufbx_vec3 position;
     ufbx_vec3 normal;
@@ -155,8 +163,6 @@ void convert_mesh_part(ufbx_mesh *mesh, ufbx_mesh_part *part)
         for (size_t i = 0; i < num_tris * 3; i++) {
             uint32_t index = tri_indices[i];
 
-            // Write the vertex. In actual implementation you'd want to convert to custom
-            // vector types or other more compact formats.
             Vertex *v = &vertices[num_vertices++];
             v->position = ufbx_get_vertex_vec3(&mesh->vertex_position, index);
             v->normal = ufbx_get_vertex_vec3(&mesh->vertex_normal, index);
@@ -181,12 +187,18 @@ void convert_mesh_part(ufbx_mesh *mesh, ufbx_mesh_part *part)
 
     create_vertex_buffer(vertices, num_vertices);
     create_index_buffer(indices, num_indices);
+
+    free(indices);
+    free(vertices);
 }
 ```
 
 ```cpp
 // ufbx-doc-example: meshes/mesh-parts
 
+// GPU vertex representation.
+// In practice you would need to use more compact custom vector types as
+// by default `ufbx_real` is 64 bits wide.
 struct Vertex {
     ufbx_vec3 position;
     ufbx_vec3 normal;
@@ -211,8 +223,6 @@ void convert_mesh_part(ufbx_mesh *mesh, ufbx_mesh_part *part)
         for (size_t i = 0; i < num_tris * 3; i++) {
             uint32_t index = tri_indices[i];
 
-            // Write the vertex. In actual implementation you'd want to convert to custom
-            // vector types or other more compact formats.
             Vertex v;
             v.position = mesh->vertex_position[index];
             v.normal = mesh->vertex_normal[index];
@@ -247,6 +257,9 @@ void convert_mesh_part(ufbx_mesh *mesh, ufbx_mesh_part *part)
 ```rust
 // ufbx-doc-example: meshes/mesh-parts
 
+// GPU vertex representation.
+// In practice you would need to use more compact custom vector types as
+// by default `ufbx::Real` is 64 bits wide.
 #[repr(C)]
 #[derive(Clone, Copy)]
 struct Vertex {
@@ -269,8 +282,6 @@ fn convert_mesh_part(mesh: &ufbx::Mesh, part: &ufbx::MeshPart) {
 
         // Iterate over each triangle corner contiguously.
         for &index in &tri_indices[..num_tri_corners] {
-            // Write the vertex. In actual implementation you'd want to convert to custom
-            // vector types or other more compact formats.
             vertices.push(Vertex {
                 position: mesh.vertex_position[index as usize],
                 normal: mesh.vertex_normal[index as usize],
@@ -304,15 +315,18 @@ fn convert_mesh_part(mesh: &ufbx::Mesh, part: &ufbx::MeshPart) {
 
 ## Attributes
 
-Here's a brief summary of all the geometry data that `ufbx_mesh` contains:
+In addition to the attributes above FBX meshes may contain some other attributes.
+Most attributes are defined per vertex (often, per index) with the `vertex_` prefix,
+but there is also some data defined for each face and edge.
+Edges are optional and defined between two indices in `ufbx_mesh.edges[]`.
 
 - For each index, indexable up to `ufbx_mesh.num_indices`:
     - `ufbx_mesh.vertex_position`: Positions of the vertices
     - `ufbx_mesh.vertex_normal`: Normal vector
     - `ufbx_mesh.vertex_tangent`: Tangent space UV.x
     - `ufbx_mesh.vertex_bitangent`: Tangent space UV.y
-    - `ufbx_mesh.vertex_uv`: Texture coordinate *(first set, see `ufbx_mesh.color_sets` for rest)*
-    - `ufbx_mesh.vertex_color`: Vertex color *(first set, see `ufbx_mesh.color_sets` for rest)*
+    - `ufbx_mesh.vertex_uv`: Texture coordinate (first set, see `ufbx_mesh.color_sets` for rest)
+    - `ufbx_mesh.vertex_color`: Vertex color (first set, see `ufbx_mesh.color_sets` for rest)
     - `ufbx_mesh.vertex_crease`: Vertex crease for subdivision
 - For each face, indexable up to `ufbx_mesh.num_faces`:
     - `ufbx_mesh.face_material`: Per-face material

@@ -200,6 +200,9 @@ def main():
         "example_base": [
             ("example_base.h", "native/example/example_base.h"),
         ],
+        "example_math": [
+            ("example_math.h", "native/example/example_math.h"),
+        ],
     }
 
     setup_info = {

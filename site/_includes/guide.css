@@ -41,7 +41,12 @@ pre,.lang-content {
     background-color: var(--bg-bluish);
 }
 
+pre {
+    padding: 0.5em;
+}
+
 .lang-content pre {
+    padding: 0;
     border-radius: unset;
     background-color: unset;
 }
@@ -146,4 +151,25 @@ code {
     height: 4rem;
     margin-top: 0rem;
     margin-bottom: 1rem;
+}
+
+.fbx-note::before {
+    font-size: 0.8rem;
+    font-weight: bold;
+    display: block;
+    text-transform: uppercase;
+    color: #f66;
+    content: 'Note';
+}
+
+.fbx-note {
+    margin: 0.5rem 0rem;
+    border-left: 3px solid #f88;
+    margin-top: 1.0em;
+    margin-bottom: 1.0em;
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+    background-color: #fee;
 }
