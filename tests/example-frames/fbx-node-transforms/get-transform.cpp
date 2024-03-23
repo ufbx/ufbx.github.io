@@ -26,7 +26,7 @@ void check_column(const char *label, Vector3 col, Vector3 ref)
 
 int main(int argc, char **argv)
 {
-    if (argc < 1) {
+    if (argc < 2) {
         fprintf(stderr, "Usage: ./example <filename.fbx>\n");
         return 1;
     }

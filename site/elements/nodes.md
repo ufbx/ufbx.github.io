@@ -81,40 +81,6 @@ However, if loading scenes into a left-handed coordinate space, the mirroring is
 Additionally, *ufbx* also supports "fixing" the coordinate axes of cameras (face towards local +X) and lights (face towards local -Y by default).
 These axes may be converted using `ufbx_load_opts.target_camera_axes` and `@(ufbx_load_opts.)target_light_axes`.
 
-```c
-// ufbx-doc-example: nodes/space-conversion
-
-// Convert the scene into glTF space.
-ufbx_load_opts opts = { 0 };
-opts.target_axes = ufbx_axes_right_handed_y_up;
-opts.target_unit_meters = 1.0f;
-opts.target_camera_axes = ufbx_axes_right_handed_y_up;
-opts.target_light_axes = ufbx_axes_right_handed_y_up;
-```
-
-```cpp
-// ufbx-doc-example: nodes/space-conversion
-
-// Convert the scene into glTF space.
-ufbx_load_opts opts = { };
-opts.target_axes = ufbx_axes_right_handed_y_up;
-opts.target_unit_meters = 1.0f;
-opts.target_camera_axes = ufbx_axes_right_handed_y_up;
-opts.target_light_axes = ufbx_axes_right_handed_y_up;
-```
-
-```rust
-// ufbx-doc-example: nodes/space-conversion
-
-// Convert the scene into glTF space.
-let opts = ufbx::LoadOpts {
-    target_axes: ufbx::CoordinateAxes::right_handed_y_up(),
-    target_unit_meters: 1.0,
-    target_camera_axes: ufbx::CoordinateAxes::right_handed_y_up(),
-    target_light_axes: ufbx::CoordinateAxes::right_handed_y_up(),
-};
-```
-
 ### Coordinate spaces in files
 
 FBX coordinate spaces and exporters have been a major source of confusion for end-users,
@@ -139,6 +105,56 @@ for example for setting the initial value of the option mentioned above in an ed
 
 If you are in control of the Blender exports, I highly recommend exporting with the setting `Apply Scalings` set to `FBX Units Scale`.
 This causes the exported file to use meter units (`@(ufbx_scene_settings.)unit_meters = 1.0`) without any additional transforms.
+
+```c
+// ufbx-doc-example: nodes/space-conversion
+
+// Convert the scene into glTF space.
+ufbx_load_opts opts = { 0 };
+opts.target_axes = ufbx_axes_right_handed_y_up;
+opts.target_unit_meters = 1.0f;
+opts.target_camera_axes = ufbx_axes_right_handed_y_up;
+opts.target_light_axes = ufbx_axes_right_handed_y_up;
+if (prefer_blender) {
+    opts.space_conversion = UFBX_SPACE_CONVERSION_ADJUST_TRANSFORMS;
+} else {
+    opts.space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY;
+}
+```
+
+```cpp
+// ufbx-doc-example: nodes/space-conversion
+
+// Convert the scene into glTF space.
+ufbx_load_opts opts = { };
+opts.target_axes = ufbx_axes_right_handed_y_up;
+opts.target_unit_meters = 1.0f;
+opts.target_camera_axes = ufbx_axes_right_handed_y_up;
+opts.target_light_axes = ufbx_axes_right_handed_y_up;
+if (prefer_blender) {
+    opts.space_conversion = UFBX_SPACE_CONVERSION_ADJUST_TRANSFORMS;
+} else {
+    opts.space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY;
+}
+```
+
+```rust
+// ufbx-doc-example: nodes/space-conversion
+
+// Convert the scene into glTF space.
+let opts = ufbx::LoadOpts {
+    target_axes: ufbx::CoordinateAxes::right_handed_y_up(),
+    target_unit_meters: 1.0,
+    target_camera_axes: ufbx::CoordinateAxes::right_handed_y_up(),
+    target_light_axes: ufbx::CoordinateAxes::right_handed_y_up(),
+    space_conversion: if prefer_blender {
+        ufbx::SpaceConversion::AdjustTransforms
+    } else {
+        ufbx::SpaceConversion::ModifyGeometry
+    },
+    ..Default::default()
+};
+```
 
 ## Geometry transforms
 

@@ -104,7 +104,9 @@ def search_examples(path):
                         code_name = None
                         code_lines = []
                         continue
-                    code_lines.append(line)
+
+                    if code_lines or line.strip():
+                        code_lines.append(line)
 
 def setup_c(example, info):
     run_path = os.path.join(example.path, "build_and_run.sh")
@@ -202,6 +204,11 @@ def main():
         ],
         "example_math": [
             ("example_math.h", "native/example/example_math.h"),
+        ],
+        "units_*.fbx": [
+            ("units_blender_default.fbx", "static/models/units_blender_default.fbx"),
+            ("units_blender_meters.fbx", "static/models/units_blender_meters.fbx"),
+            ("units_maya_default.fbx", "static/models/units_maya_default.fbx"),
         ],
     }
 

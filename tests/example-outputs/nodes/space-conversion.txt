@@ -1,0 +1,12 @@
+
+units_blender_meters.fbx:
+  MODIFY_GEOMETRY      node_size 1.00     mesh_size 1.00     clean
+  ADJUST_TRANSFORMS    node_size 1.00     mesh_size 1.00     clean
+
+units_blender_default.fbx:
+  MODIFY_GEOMETRY      node_size 100.00   mesh_size 0.01     ..
+  ADJUST_TRANSFORMS    node_size 1.00     mesh_size 1.00     clean
+
+units_maya_default.fbx:
+  MODIFY_GEOMETRY      node_size 1.00     mesh_size 1.00     clean
+  ADJUST_TRANSFORMS    node_size 0.01     mesh_size 100.00   ..
