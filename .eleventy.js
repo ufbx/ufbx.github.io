@@ -141,7 +141,7 @@ module.exports = function(eleventyConfig) {
       if (examplePath !== "") {
         const exampleUrl = `https://ufbx-examples.b-cdn.net/${examplePath}-${lang}.zip`
         exampleDownload = `<a class="example-dl" href="${exampleUrl}">
-          <img alt="Download" title="Download example" src="/static/icons/tabler/download.svg">
+          <img alt="Download" title="Download full example" src="/static/icons/tabler/download.svg">
         </a>\n`
       }
 

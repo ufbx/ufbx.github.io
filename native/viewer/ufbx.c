@@ -31836,11 +31836,6 @@ ufbx_abi uint32_t ufbx_ffi_triangulate_face(uint32_t *indices, size_t num_indice
 	return ufbx_triangulate_face(indices, num_indices, mesh, *face);
 }
 
-ufbx_abi size_t ufbx_ffi_get_triangulate_face_num_indices(const ufbx_face *face)
-{
-	return ufbx_get_triangulate_face_num_indices(*face);
-}
-
 ufbx_abi ufbx_vec3 ufbx_ffi_evaluate_baked_vec3(const ufbx_baked_vec3 *keyframes, size_t num_keyframes, double time)
 {
 	ufbx_baked_vec3_list list = { (ufbx_baked_vec3*)keyframes, num_keyframes };

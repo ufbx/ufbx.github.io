@@ -1,0 +1,18 @@
+stack Cube_Jump:
+  node Floor:
+    translation: 2 keys
+    rotation: 2 keys
+    scale: 2 keys
+  node Cube:
+    translation: 21 keys
+    rotation: 20 keys
+    scale: 17 keys
+stack Floor_Spin:
+  node Floor:
+    translation: 2 keys
+    rotation: 9 keys
+    scale: 2 keys
+  node Cube:
+    translation: 2 keys
+    rotation: 9 keys
+    scale: 2 keys

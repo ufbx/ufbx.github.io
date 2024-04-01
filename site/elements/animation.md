@@ -50,6 +50,99 @@ This function converts transform animation into simple linearly interpolated tra
 translation, quaternion rotation, and scale.
 Non-transform properties are also baked into linearly interpolated keyframes.
 
+The baking algorithm is fairly sophisticated and won't simply blindly resample all tracks.
+However, cubic interpolation and Euler rotation has to be resampled into quaternions.
+The resampling framerate can be controlled via `ufbx_bake_opts.resample_rate`.
+Many exporters also resample the animation internally,
+to avoid double resampling *ufbx* will not resample frequent keys,
+defined by `ufbx_bake_opts.minimum_sample_rate`.
+
+```c
+// ufbx-doc-example: animation/bake-anim
+
+void bake_animation(ufbx_scene *scene, ufbx_anim *anim)
+{
+    ufbx_baked_anim *bake = ufbx_bake_anim(scene, anim, NULL, NULL);
+    assert(bake);
+
+    for (size_t i = 0; i < bake->nodes.count; i++) {
+        ufbx_baked_node *bake_node = &bake->nodes.data[i];
+        ufbx_node *scene_node = scene->nodes.data[bake_node->typed_id];
+
+        printf("  node %s:\n", scene_node->name.data);
+        printf("    translation: %zu keys\n", bake_node->translation_keys.count);
+        printf("    rotation: %zu keys\n", bake_node->rotation_keys.count);
+        printf("    scale: %zu keys\n", bake_node->scale_keys.count);
+    }
+
+    ufbx_free_baked_anim(bake);
+}
+
+void bake_animations(ufbx_scene *scene)
+{
+    // Iterate over every animation stack (aka. clip/take) in the file
+    for (size_t i = 0; i < scene->anim_stacks.count; i++) {
+        ufbx_anim_stack *stack = scene->anim_stacks.data[i];
+        printf("stack %s:\n", stack->name.data);
+        bake_animation(scene, stack->anim);
+    }
+}
+```
+
+```cpp
+// ufbx-doc-example: animation/bake-anim
+
+void bake_animation(ufbx_scene *scene, ufbx_anim *anim)
+{
+    ufbx_baked_anim *bake = ufbx_bake_anim(scene, anim, NULL, NULL);
+    assert(bake);
+
+    for (const ufbx_baked_node &bake_node : bake->nodes) {
+        ufbx_node *scene_node = scene->nodes[bake_node.typed_id];
+
+        printf("  node %s:\n", scene_node->name.data);
+        printf("    translation: %zu keys\n", bake_node.translation_keys.count);
+        printf("    rotation: %zu keys\n", bake_node.rotation_keys.count);
+        printf("    scale: %zu keys\n", bake_node.scale_keys.count);
+    }
+
+    ufbx_free_baked_anim(bake);
+}
+
+void bake_animations(ufbx_scene *scene)
+{
+    // Iterate over every animation stack (aka. clip/take) in the file
+    for (ufbx_anim_stack *stack : scene->anim_stacks) {
+        printf("stack %s:\n", stack->name.data);
+        bake_animation(scene, stack->anim);
+    }
+}
+```
+
+```rust
+// ufbx-doc-example: animation/bake-anim
+
+fn bake_animation(scene: &ufbx::Scene, anim: &ufbx::Anim) {
+    let bake = ufbx::bake_anim(scene, anim, ufbx::BakeOpts::default())
+        .expect("expected to bake animation");
+
+    for bake_node in &bake.nodes {
+        let scene_node = &scene.nodes[bake_node.typed_id as usize];
+
+        println!("  node {}:", scene_node.element.name);
+        println!("    translation: {} keys", bake_node.translation_keys.len());
+        println!("    rotation: {} keys", bake_node.rotation_keys.len());
+        println!("    scale: {} keys", bake_node.scale_keys.len());
+    }
+}
+
+fn bake_animations(scene: &ufbx::Scene) {
+    for stack in &scene.anim_stacks {
+        println!("stack {}:", stack.element.name);
+        bake_animation(scene, &stack.anim);
+    }
+}
+```
 
 ### Transform/property evaluation
 
