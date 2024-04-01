@@ -151,7 +151,7 @@ fn bake_animations(scene: &ufbx::Scene) {
 * `ufbx_evaluate_transform()` evaluates node's translation, quaternion rotation, and scale.
 * `ufbx_evaluate_blend_weight()` evaluates blend shape weight.
 * `ufbx_evaluate_prop()` evaluates an arbitrary FBX property value.
-* `ufbx_evaluate_props()` evaluates all the propeties of an element.
+* `ufbx_evaluate_props()` evaluates all the properties of an element.
 
 Even lower level utilities allow you to evaluate the aspects of animations:
 
