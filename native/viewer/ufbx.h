@@ -4713,16 +4713,19 @@ UFBX_LIST_TYPE(ufbx_const_transform_override_list, const ufbx_transform_override
 typedef struct ufbx_anim_opts {
 	uint32_t _begin_zero;
 
-	// Animation layers
+	// Animation layers indices.
+	// Corresponding to `ufbx_scene.anim_layers[]`, aka `ufbx_anim_layer.typed_id`.
 	ufbx_const_uint32_list layer_ids;
 
-	// Override layer weights
+	// Override layer weights, parallel to `ufbx_anim_opts.layer_ids[]`.
 	ufbx_const_real_list override_layer_weights;
 
-	// Property overrides
+	// Property overrides.
+	// These allow you to override FBX properties, such as 'UFBX_Lcl_Rotation`.
 	ufbx_const_prop_override_desc_list prop_overrides;
 
-	// Transform overrides
+	// Transform overrides.
+	// These allow you to override individual nodes' `ufbx_node.local_transform`.
 	ufbx_const_transform_override_list transform_overrides;
 
 	// Ignore connected properties
