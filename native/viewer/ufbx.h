@@ -3698,11 +3698,14 @@ typedef struct ufbx_scene_settings {
 	// HINT: Use `ufbx_load_opts.target_unit_meters` to normalize this.
 	ufbx_real unit_meters;
 
+	// Frames per second the animation is defined at.
 	double frames_per_second;
 
 	ufbx_vec3 ambient_color;
 	ufbx_string default_camera;
 
+	// Animation user interface settings.
+	// HINT: Use `ufbx_scene_settings.frames_per_second` instead of interpreting these yourself.
 	ufbx_time_mode time_mode;
 	ufbx_time_protocol time_protocol;
 	ufbx_snap_mode snap_mode;
@@ -3844,10 +3847,13 @@ typedef struct ufbx_topo_edge {
 	ufbx_topo_flags flags;
 } ufbx_topo_edge;
 
+// Vertex data array for `ufbx_generate_indices()`.
+// NOTE: `ufbx_generate_indices()` compares the vertices using `memcmp()`, so
+// any padding should be cleared to zero.
 typedef struct ufbx_vertex_stream {
-	void *data;
-	size_t vertex_count;
-	size_t vertex_size;
+	void *data;          // < Data pointer of shape `char[vertex_count][vertex_size]`.
+	size_t vertex_count; // < Number of vertices in this stream, for sanity checking.
+	size_t vertex_size;  // < Size of a vertex in bytes.
 } ufbx_vertex_stream;
 
 // -- Memory callbacks
