@@ -42,6 +42,7 @@ you can only take the first `N` weights per vertex.
 
 typedef struct Vertex {
     ufbx_vec3 position;
+    ufbx_vec3 normal;
     float weights[MAX_WEIGHTS];
     uint32_t bones[MAX_WEIGHTS];
 } Vertex;
@@ -50,6 +51,7 @@ Vertex get_skinned_vertex(ufbx_mesh *mesh, ufbx_skin_deformer *skin, size_t inde
 {
     Vertex v = { 0 };
     v.position = ufbx_get_vertex_vec3(&mesh->vertex_position, index);
+    v.normal = ufbx_get_vertex_vec3(&mesh->vertex_normal, index);
 
     // NOTE: This calculation below is the same for each `vertex`, we could
     // precalculate these up to `mesh->num_vertices`, and just load the results
@@ -86,6 +88,7 @@ Vertex get_skinned_vertex(ufbx_mesh *mesh, ufbx_skin_deformer *skin, size_t inde
 
 typedef struct Vertex {
     ufbx_vec3 position;
+    ufbx_vec3 normal;
     float weights[MAX_WEIGHTS];
     uint32_t bones[MAX_WEIGHTS];
 } Vertex;
@@ -94,6 +97,7 @@ Vertex get_skinned_vertex(ufbx_mesh *mesh, ufbx_skin_deformer *skin, size_t inde
 {
     Vertex v = { 0 };
     v.position = mesh->vertex_position[index];
+    v.normal = mesh->vertex_normal[index];
 
     // NOTE: This calculation below is the same for each `vertex`, we could
     // precalculate these up to `mesh->num_vertices`, and just load the results.
@@ -131,6 +135,7 @@ const MAX_WEIGHTS: usize = 4;
 #[derive(Clone, Copy, Default)]
 struct Vertex {
     position: ufbx::Vec3,
+    normal: ufbx::Vec3,
     weights: [f32; MAX_WEIGHTS],
     bones: [u32; MAX_WEIGHTS],
 }
@@ -138,6 +143,7 @@ struct Vertex {
 fn get_skinned_vertex(mesh: &ufbx::Mesh, skin: &ufbx::SkinDeformer, index: usize) -> Vertex {
     let mut v = Vertex{
         position: mesh.vertex_position[index],
+        normal: mesh.vertex_normal[index],
         ..Default::default()
     };
 

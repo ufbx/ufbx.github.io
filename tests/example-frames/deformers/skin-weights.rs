@@ -2,6 +2,9 @@
 // $ cargo build
 // $ cargo run --quiet -- skinned_human.fbx Female > result.obj
 
+// `Vertex::normal` is not used in this example
+#![allow(unused)]
+
 // -- EXAMPLE_SOURCE --
 
 struct Bone {
