@@ -78,6 +78,10 @@ const viewerDescDefaults = {
     show: false,
     showGeometricTransform: false,
   },
+  options: {
+    show: false,
+    visible: [],
+  },
   animation: {
     time: 0.0,
   },

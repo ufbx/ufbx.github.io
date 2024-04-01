@@ -158,6 +158,30 @@ let opts = ufbx::LoadOpts {
 
 ## Geometry transforms
 
+<div class="doc-viewer doc-viewer-mid">
+<div data-dv-popout id="container-geometry-transforms" class="dv-inline">
+<div class="dv-top">
+{% include "viewer.md",
+  id: "geometry-transforms",
+  class: "dv-normal",
+%}
+</div>
+</div>
+</div>
+
+<script>
+viewerDescs["geometry-transforms"] = {
+    scene: "/static/models/geometry_transforms.fbx",
+    camera: {"yaw":-305.90381493505913,"pitch":18.233766233766076,"distance":6.176932629506754,"offset":{"x":0.6376895853405128,"y":1.627634482859347,"z":0.24936775827133878}},
+    widgetScale: 10.0,
+    options: {
+        show: true,
+        visible: ["geometryTransformHandling"],
+        geometryTransformHandling: "preserve",
+    },
+}
+</script>
+
 One complicated aspect of FBX files is the support for geometry[^1] transforms.
 These transforms only apply to the immediate content of the node, such as a mesh,
 but are not inherited to children.

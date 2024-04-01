@@ -3,6 +3,7 @@ import FbxViewer from "./fbx-viewer"
 import { addBlobFile } from "../viewer/viewer"
 import Outliner from "./outliner"
 import PropertySheet from "./property-sheet"
+import LoadOptions from "./load-options"
 import globalState from "./global-state"
 import Icon from "./icon"
 import { IconMaximize, IconMinimize, IconUpload, IconReset } from "../icons"
@@ -73,6 +74,8 @@ export default function DocViewer({ id }) {
 
     const expanded = globalState.expandedId === id
 
+    console.log(state.options)
+
     return (
         <div className="dv-top">
             <div className="dv-menu">
@@ -99,6 +102,7 @@ export default function DocViewer({ id }) {
                 <div className="sp-pane sp-outliner">
                     <Outliner id={ id } />
                     {state.props.show ? <PropertySheet id={ id } /> : null}
+                    {state.options.show ? <LoadOptions id={ id } /> : null}
                 </div>
                 <div className="sp-pane sp-viewer">
                     <FbxViewer id={ id } allowRawScroll={ expanded } />
