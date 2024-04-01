@@ -31633,12 +31633,6 @@ ufbx_abi ufbx_vec4 ufbx_catch_get_vertex_vec4(ufbx_panic *panic, const ufbx_vert
 	return v->values.data[(int32_t)ix];
 }
 
-ufbx_abi size_t ufbx_get_triangulate_face_num_indices(ufbx_face face)
-{
-	if (face.num_indices < 3) return 0;
-	return (face.num_indices - 2) * 3;
-}
-
 ufbx_abi ufbx_unknown *ufbx_as_unknown(const ufbx_element *element) { return element && element->type == UFBX_ELEMENT_UNKNOWN ? (ufbx_unknown*)element : NULL; }
 ufbx_abi ufbx_node *ufbx_as_node(const ufbx_element *element) { return element && element->type == UFBX_ELEMENT_NODE ? (ufbx_node*)element : NULL; }
 ufbx_abi ufbx_mesh *ufbx_as_mesh(const ufbx_element *element) { return element && element->type == UFBX_ELEMENT_MESH ? (ufbx_mesh*)element : NULL; }

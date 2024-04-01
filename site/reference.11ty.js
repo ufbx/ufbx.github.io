@@ -10,6 +10,12 @@ const forceTableEnums = new Set([])
 
 const ignoredDecls = new Set([
     "ufbx_inline",
+    "UFBX_REAL_TYPE",
+    "UFBX_STDC",
+    "UFBX_CPP",
+    "UFBX_PLATFORM_MSC",
+    "UFBX_PLATFORM_GNUC",
+    "UFBX_CPP11",
     "UFBX_UFBX_H_INCLUDED",
     "UFBX_LIST_TYPE",
     "UFBX_VERTEX_ATTRIB_IMPL",
@@ -177,7 +183,7 @@ function shouldIgnoreDeclGroup(decl) {
         let nonIgnoredDeclName = null
         for (const inner of decl.decls) {
             if (inner.kind !== "decl") continue
-            if (ignoredDecls.has(inner.name)) {
+            if (ignoredDecls.has(inner.name) || inner.name.startsWith("ufbx_ffi_")) {
                 ignoredDeclName = inner.name
             } else {
                 nonIgnoredDeclName = inner.name
@@ -439,7 +445,10 @@ function renderDecl(decl) {
             r.push(`<div class="decl toplevel">`)
             {
                 r.push(`<table class="code field-decls" role="presentation">`)
+                let prevName = null
                 for (const inner of decl.decls) {
+                    if (inner.name === prevName) continue
+                    prevName = inner.name
                     const argString = inner.defineArgs ? inner.defineArgs.join(", ") : ""
                     const id = inner.name.toLowerCase()
                     r.push(`<tr class="field-row">`)
@@ -448,6 +457,7 @@ function renderDecl(decl) {
                     r.push(`</tr>`)
                 }
                 r.push(`</table>`)
+                console.log(decl)
                 r.push(renderDescComment(decl.comment, true, "desc top-desc"))
             }
             r.push(`</div>`)

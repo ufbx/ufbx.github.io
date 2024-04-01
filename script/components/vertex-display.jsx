@@ -45,14 +45,23 @@ function VertexRow({ viewerId, sceneName, elementId, index }) {
     </div>
 }
 
+function VertexDisplayFallback() {
+    return <div className="vw-top">
+        <div className="vw-header"></div>
+        <div className="vw-warning">
+            Select a mesh to view vertices
+        </div>
+    </div>
+}
+
 export default function VertexDisplay({ id }) {
     const state = globalState.scenes[id]
     const info = globalState.infos[state.scene]
-    if (!state || !info) return null
+    if (!state || !info) return <VertexDisplayFallback />
     const { selectedElement } = state
-    if (selectedElement < 0) return null
+    if (selectedElement < 0) return <VertexDisplayFallback />
     const element = info.elements[selectedElement]
-    if (element.type !== "mesh") return null
+    if (element.type !== "mesh") return <VertexDisplayFallback />
     const { numIndices } = element
 
     return <div className="vw-top">
