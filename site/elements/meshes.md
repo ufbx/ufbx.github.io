@@ -19,6 +19,38 @@ Meshes (`ufbx_mesh`) contain the polygonal geometry data.
 The same vertex may be referred to by multiple faces,
 each reference having a different index,
 allowing each face to define a unique UV coordinate for the same vertex.
+In the example below, you can see that both indices **3** and **4** refer to the same vertex **2**,
+yet have different normals.
+
+<div class="doc-viewer doc-viewer-tall">
+<div data-dv-popout id="container-cube" class="dv-inline">
+<div class="dv-top">
+{% include "viewer.md",
+  id: "cube",
+  class: "dv-normal",
+%}
+
+<div data-viewer-id="cube" class="dv-vertices" style="min-height: 14rem"></div>
+</div>
+</div>
+</div>
+
+<script>
+viewerDescs["cube"] = {
+  scene: "/static/models/cube.fbx",
+  camera: {
+    pitch: 30.0,
+    yaw: -40.0,
+    distance: 10,
+    offset: { x: 0.0, y: 0.0, z: 0.0 },
+  },
+  outliner: {
+    showMaterials: true,
+  },
+  selectedNode: 2,
+  selectedElement: 1,
+}
+</script>
 
 Mesh data is stored in attributes, such as `ufbx_mesh.vertex_position`, `ufbx_mesh.vertex_normal`, and `ufbx_mesh.vertex_uv`.
 Each attribute has its own indices (`ufbx_vertex_attrib.indices[]`) and values (`ufbx_vertex_attrib.values[]`).
