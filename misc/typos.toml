@@ -20,4 +20,5 @@ ws = "ws"
 extend-exclude = [
     "native/window/external/*",
     "native/viewer/external/*",
+    "static/models/*",
 ]
