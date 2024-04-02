@@ -457,7 +457,6 @@ function renderDecl(decl) {
                     r.push(`</tr>`)
                 }
                 r.push(`</table>`)
-                console.log(decl)
                 r.push(renderDescComment(decl.comment, true, "desc top-desc"))
             }
             r.push(`</div>`)

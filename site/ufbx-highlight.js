@@ -73,6 +73,12 @@ const advancedTypes = new Set([
     "Matrix4",
 ])
 
+const nonRefIdentifiers = new Set([
+    "UFBX_REAL_TYPE",
+    "UFBX_REAL_IS_FLOAT",
+    "UFBX_NO_ASSERT",
+])
+
 function tokenize(source) {
     const re = new RegExp(tokenRegex)
     let match = null
@@ -336,6 +342,9 @@ function highlight(str) {
 
             let doRef = true
             if (refText.startsWith("ufbx_") && refText.toLowerCase() != refText) {
+                doRef = false
+            }
+            if (nonRefIdentifiers.has(refText)) {
                 doRef = false
             }
 
