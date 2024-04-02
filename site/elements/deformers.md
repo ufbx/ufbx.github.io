@@ -296,7 +296,7 @@ fn get_blend_vertex(mesh: &ufbx::Mesh, deformer: &ufbx::BlendDeformer, index: us
     // precalculate these up to `mesh->num_vertices`, and just load the results
     let vertex = mesh.vertex_indices[index] as usize;
 
-    let num_blends = (deformer.channels.count as usize).min(MAX_BLENDS);
+    let num_blends = (deformer.channels.len() as usize).min(MAX_BLENDS);
     for i in 0..num_blends {
         let channel = &deformer.channels[i];
         let shape = channel.target_shape.as_ref().expect("no blend shape, broken file");

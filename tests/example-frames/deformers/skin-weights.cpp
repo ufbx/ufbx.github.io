@@ -7,16 +7,16 @@
 
 // -- EXAMPLE_SOURCE --
 
-typedef struct Bone {
+struct Bone {
     uint32_t node_index;
     ufbx_matrix geometry_to_bone;
-} Bone;
+};
 
 // Non-indexed triangulated skinned mesh
-typedef struct Mesh {
+struct Mesh {
     std::vector<Bone> bones;
     std::vector<Vertex> vertices;
-} Mesh;
+};
 
 Mesh process_skinned_mesh(ufbx_mesh *mesh, ufbx_skin_deformer *skin)
 {
@@ -25,8 +25,7 @@ Mesh process_skinned_mesh(ufbx_mesh *mesh, ufbx_skin_deformer *skin)
     // Triangulate the mesh, using `get_skinned_vertex()` to fetch each index.
     size_t num_tri_indices = mesh->max_face_triangles * 3;
     std::vector<uint32_t> tri_indices(num_tri_indices);
-    for (size_t face_ix = 0; face_ix < mesh->num_faces; face_ix++) {
-        ufbx_face face = mesh->faces[face_ix];
+    for (ufbx_face face : mesh->faces) {
         uint32_t num_tris = ufbx_triangulate_face(
             tri_indices.data(), tri_indices.size(), mesh, face);
         for (size_t i = 0; i < num_tris * 3; i++) {

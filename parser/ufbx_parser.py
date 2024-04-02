@@ -553,18 +553,11 @@ def to_sbody(typ: AType):
     else:
         raise TypeError(f"Unhandled type {type(typ)}")
 
-class TopState:
-    def __init__(self):
-        self.preproc_line = -1
-        self.preproc_start = -1
-
-def top_sdecls(top: ATop, state: TopState = None) -> List[SCommentDecl]:
-    if not state:
-        state = TopState()
+def top_sdecls(top: ATop) -> List[SCommentDecl]:
     if isinstance(top, ATopFile):
         decls = []
         for t in top.tops:
-            decls += top_sdecls(t, state)
+            decls += top_sdecls(t)
         return decls
     elif isinstance(top, ATopTypedef):
         return [to_sdecl(top.decl, "typedef")]
@@ -595,13 +588,10 @@ def top_sdecls(top: ATop, state: TopState = None) -> List[SCommentDecl]:
             )]
         )]
     elif isinstance(top, ATopPreproc):
-        line = top.preproc.location.line - 1
+        line = top.preproc.location.line
         text = top.preproc.text()
         m = re.match(r"#\s*define\s+(\w+)(\([^\)]*\))?\s+(.*)", text)
         if m:
-            start_line = line
-            if line == state.preproc_line + 1:
-                start_line = state.preproc_start
             name = m.group(1)
             args = m.group(2)
             if args:
@@ -609,13 +599,10 @@ def top_sdecls(top: ATop, state: TopState = None) -> List[SCommentDecl]:
             else:
                 args = None
             value = m.group(3)
-            return [SDecl(start_line, line, "define", [SName(name, SType("define", "define"))],
+            return [SDecl(line, line, "define", [SName(name, SType("define", "define"))],
                 define_args=args,
                 value=value)]
         else:
-            if line != state.preproc_line + 1:
-                state.preproc_start = line
-            state.preproc_line = line
             return [] # TODO
     else:
         raise TypeError(f"Unhandled type {type(top)}")
@@ -669,8 +656,6 @@ def collect_decl_groups(decls: List[SCommentDecl]):
         else:
             yield dc
             n += 1
-
-hack = 0
 
 def collect_decls(decls: List[SCommentDecl], allow_groups: bool) -> List[SCommentDecl]:
     decls = list(collect_decl_comments(decls))
