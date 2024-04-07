@@ -77,6 +77,7 @@ const nonRefIdentifiers = new Set([
     "UFBX_REAL_TYPE",
     "UFBX_REAL_IS_FLOAT",
     "UFBX_NO_ASSERT",
+    "UFBX_STATIC",
 ])
 
 function tokenize(source) {
