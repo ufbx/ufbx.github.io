@@ -213,7 +213,7 @@ def main():
     }
 
     setup_info = {
-        "ufbx_crate": "\"0.5.0-integration\"",
+        "ufbx_crate": "\"0.5.0\"",
         "ufbx_rust_path": None,
     }
 
