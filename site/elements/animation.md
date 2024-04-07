@@ -155,5 +155,5 @@ fn bake_animations(scene: &ufbx::Scene) {
 
 Even lower level utilities allow you to evaluate the aspects of animations:
 
-* `ufbx_evaluate_anim_value_real/@(ufbx_evaluate_anim_value_)vec2/@(ufbx_evaluate_anim_value_)vec3()` evaluates a `ufbx_anim_value`
+* `ufbx_evaluate_anim_value_real/@(ufbx_evaluate_anim_value_)vec3()` evaluates a `ufbx_anim_value`
 * `ufbx_evaluate_curve()` evaluates a single `ufbx_anim_curve`
