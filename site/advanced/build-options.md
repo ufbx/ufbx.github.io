@@ -71,22 +71,18 @@ void *ufbx_stdio_open(const char *path, size_t path_len);
 
 // Read `size` bytes from `file` to `data`.
 // Return the number of bytes read.
-// `file` is returned from a previous call t o`ufbx_stdio_open()`.
 size_t ufbx_stdio_read(void *file, void *data, size_t size);
 
 // Skip `size` bytes forward in `file`.
 // Return `true` if there was no error.
 // HINT: If imposssible, you can internally call `ufbx_stdio_read()` into a dummy buffer.
-// `file` is returned from a previous call t o`ufbx_stdio_open()`.
 bool ufbx_stdio_skip(void *file, size_t size);
 
 // Return the estimated size of `file` in bytes.
 // You can return 0 if the size cannot be estimated or SIZE_MAX if an error occurred.
-// `file` is returned from a previous call t o`ufbx_stdio_open()`.
 uint64_t ufbx_stdio_size(void *file);
 
 // Close a previously opened `file`.
-// `file` is returned from a previous call t o`ufbx_stdio_open()`.
 void ufbx_stdio_close(void *file);
 ```
 
