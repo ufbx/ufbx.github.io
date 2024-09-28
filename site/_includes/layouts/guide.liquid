@@ -11,7 +11,11 @@ License information:
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} | ufbx</title>
+    {% if plainTitle %}
+      <title>ufbx - single source FBX loader</title>
+    {% else %}
+      <title>{{ title }} | ufbx</title>
+    {% endif %}
     <style>
       {{ css | cssmin }}
     </style>

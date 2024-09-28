@@ -3,7 +3,7 @@ title: nurbs
 pageTitle: NURBS
 layout: "layouts/guide"
 eleventyNavigation:
-  parent: Advanced
+  parent: Advanced2
   key: NURBS
   order: 2
 ---
