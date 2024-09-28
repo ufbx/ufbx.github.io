@@ -117,6 +117,11 @@ const nonRefIdentifiers = new Set([
     "ufbx_memcmp",
     "ufbx_strcmp",
     "ufbx_strncmp",
+    "ufbx_stdio_open",
+    "ufbx_stdio_read",
+    "ufbx_stdio_skip",
+    "ufbx_stdio_size",
+    "ufbx_stdio_close",
 ])
 
 function tokenize(source) {
