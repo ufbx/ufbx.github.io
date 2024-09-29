@@ -95,7 +95,7 @@ such as `ufbx_load_file()` without a custom `ufbx_load_opts.open_file_cb`.
 ## Math
 
 *ufbx* needs some functions from the standard `<math.h>` library.
-The implementation of these may vary a bit depending on the platform,
+The implementation of these may vary depending on the platform,
 so if you need bit-exact results on all environments you can override the math library.
 
 If you define `UFBX_EXTERNAL_MATH`, *ufbx* will use the following externally defined functions instead:
