@@ -32,8 +32,8 @@ However, some defines should be visible to `"ufbx.h"`, as they change the types 
 
 ## Memory allocation
 
-By default, *ufbx* uses the C standard `malloc()` interface for memory allocation.
-You can override the default memory allocator used by ufbx in three ways:
+*ufbx* uses the C standard `malloc()` interface for memory allocation.
+You can override the default memory allocator used by *ufbx* in three ways:
 either by preprocessor define, external functions, or disabling it completely.
 
 ```c
@@ -55,12 +55,11 @@ void ufbx_free(void *ptr, size_t size);
 ```
 
 Finally, if you don't need to use the default memory allocator,
-you can define `UFBX_NO_MALLOC`, which will any allocating API fail if you do not pass a user-provided `ufbx_allocator`.
+you can define `UFBX_NO_MALLOC`, which will make any allocating API fail if you do not pass a user-provided `ufbx_allocator`.
 
 ## File I/O
 
-By default, *ufbx* uses the C standard `<stdio.h>` `FILE*` API for loading files
-when you call `ufbx_load_file()`.
+*ufbx* uses the C standard `FILE` API for loading files when you call `ufbx_load_file()`.
 You can override this either via external functions or disabling the default file API.
 
 If `UFBX_EXTERNAL_STDIO` is defined, *ufbx* will use externally defined standard file functions:
@@ -149,7 +148,8 @@ Note that *ufbx* still needs the following standard headers to function:
 #include <stdarg.h>
 ```
 
-If these are not available, you can define `UFBX_NO_LIBC_TYPES`,
+These are usually available even in freestanding scenarios.
+If not, you can define `UFBX_NO_LIBC_TYPES`,
 but in that case you _must_ define the contents of these files manually both to `"ufbx.h"` and `"ufbx.c"`.
 
 [^1]: These must be defined using the default calling convention and using `extern "C"` linkage in C++.
