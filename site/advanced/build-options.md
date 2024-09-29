@@ -10,7 +10,9 @@ eleventyNavigation:
 
 Building *ufbx* is primarily customized via preprocessor macros.
 
-You can either define the macros globally using compiler flags, before including `"ufbx.h"` or `"ufbx.c"`, or by defining `UFBX_CONFIG_HEADER="my-config.h"` or `UFBX_CONFIG_SOURCE="my-source-config.h"` makes *ufbx* include the files in `ufbx.h` and `ufbx.c` respectively.
+You can either define the macros globally using compiler flags, before including `"ufbx.h"` or `"ufbx.c"`,
+or by defining `UFBX_CONFIG_HEADER="my-config.h"` or `UFBX_CONFIG_SOURCE="my-source-config.h"`,
+which makes *ufbx* include the specified files in `ufbx.h` and `ufbx.c` respectively.
 
 ## Header
 
