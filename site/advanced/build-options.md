@@ -36,6 +36,8 @@ However, some defines should be visible to `"ufbx.h"`, as they change the types 
 You can override the default memory allocator used by *ufbx* in three ways:
 either by preprocessor define, external functions, or disabling it completely.
 
+Overriding the allocator can be done with the following defines:
+
 ```c
 // Hooks to custom allocator API
 #define ufbx_malloc(size) my_alloc(size)
@@ -76,7 +78,7 @@ size_t ufbx_stdio_read(void *file, void *data, size_t size);
 
 // Skip `size` bytes forward in `file`.
 // Return `true` if there was no error.
-// HINT: If imposssible, you can internally call `ufbx_stdio_read()` into a dummy buffer.
+// HINT: If impossible, you can internally call `ufbx_stdio_read()` into a dummy buffer.
 bool ufbx_stdio_skip(void *file, size_t size);
 
 // Return the estimated size of `file` in bytes.
