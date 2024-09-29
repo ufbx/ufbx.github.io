@@ -16,8 +16,8 @@ which makes *ufbx* include the specified files in `ufbx.h` and `ufbx.c` respecti
 
 ## Header
 
-Some defines that should be visible to `"ufbx.h"` as they change the types or are used in inline functions.
-All the other macros in this page need to be only visible to `"ufbx.c"`.
+Nearly all configuration macros need to be only visible to `"ufbx.c"`.
+However, some defines should be visible to `"ufbx.h"`, as they change the types or are used in inline functions:
 
 ```c
 // Override the default assert.
