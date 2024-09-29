@@ -122,6 +122,15 @@ const nonRefIdentifiers = new Set([
     "ufbx_stdio_skip",
     "ufbx_stdio_size",
     "ufbx_stdio_close",
+    "UFBX_NO_SUBDIVISION",
+    "UFBX_NO_TESSELLATION",
+    "UFBX_NO_GEOMETRY_CACHE",
+    "UFBX_NO_SCENE_EVALUATION",
+    "UFBX_NO_SKINNING_EVALUATION",
+    "UFBX_NO_ANIMATION_BAKING",
+    "UFBX_NO_TRIANGULATION",
+    "UFBX_NO_INDEX_GENERATION",
+    "UFBX_NO_FORMAT_OBJ",
 ])
 
 function tokenize(source) {

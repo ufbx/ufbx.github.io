@@ -30,6 +30,47 @@ However, some defines should be visible to `"ufbx.h"`, as they change the types 
 #define UFBX_REAL_IS_FLOAT
 ```
 
+## Optional features
+
+To reduce the size of *ufbx*, you can selectively disable some optional features:
+
+```c
+// Mesh subdivision
+//   ufbx_subdivide_mesh()
+#define UFBX_NO_SUBDIVISION
+
+// NURBS tessellation
+//   ufbx_tessellate_nurbs_curve()
+//   ufbx_tessellate_nurbs_surface()
+#define UFBX_NO_TESSELLATION
+
+// Geometry caches
+//   ufbx_load_geometry_cache()
+#define UFBX_NO_GEOMETRY_CACHE
+
+// Scene evaluation
+//   ufbx_evaluate_scene()
+#define UFBX_NO_SCENE_EVALUATION
+
+// Skinning evaluation
+#define UFBX_NO_SKINNING_EVALUATION
+
+// Animation baking
+//   ufbx_bake_anim()
+#define UFBX_NO_ANIMATION_BAKING
+
+// Face triangulation
+//   ufbx_triangulate_face()
+#define UFBX_NO_TRIANGULATION
+
+// Index generation
+//   ufbx_generate_indices()
+#define UFBX_NO_INDEX_GENERATION
+
+// .obj file format support
+#define UFBX_NO_FORMAT_OBJ
+```
+
 ## Memory allocation
 
 *ufbx* uses the C standard `malloc()` interface for memory allocation.
