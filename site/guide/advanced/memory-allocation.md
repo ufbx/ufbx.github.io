@@ -3,7 +3,7 @@ title: memory-allocation
 pageTitle: Memory allocation
 layout: "layouts/guide"
 eleventyNavigation:
-  parent: Advanced
+  parent: Advanced2
   key: Memory allocation
   order: 0
 ---

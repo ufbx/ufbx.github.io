@@ -3,7 +3,7 @@ title: Subdivision
 pageTitle: Subdivision
 layout: "layouts/guide"
 eleventyNavigation:
-  parent: Advanced
+  parent: Advanced2
   key: Subdivision
   order: 1
 ---

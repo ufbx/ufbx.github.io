@@ -1,8 +1,9 @@
 ---
-title: Overview
-pageTitle: Overview
+title: ufbx - single source FBX loader
+pageTitle: ufbx documentation
 layout: "layouts/guide"
 noTitle: true
+plainTitle: true
 eleventyNavigation:
   key: Overview
   order: 0
