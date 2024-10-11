@@ -26,7 +26,6 @@ jobs:
       - name: Update ufbx
         if: inputs.ufbx-ref
         run: python3 sfs.py --verbose update ufbx=${{ inputs.ufbx-ref }} --overwrite
-
       - name: Install PyPI dependencies
         run: pip install -r tests/requirements.txt
       - name: Setup Emscripten
@@ -97,6 +96,9 @@ jobs:
           repository: ufbx/ufbx.github.io
           ref: ${{ inputs.ufbx-documentation-ref }}
           fetch-depth: 2
+      - name: Update ufbx
+        if: inputs.ufbx-ref
+        run: python3 sfs.py --verbose update ufbx=${{ inputs.ufbx-ref }} --overwrite
       - name: Check for typos
         if: ${{ always() && !cancelled() }}
         uses: crate-ci/typos@master
