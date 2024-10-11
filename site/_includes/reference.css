@@ -160,7 +160,7 @@ code, pre {
 }
 
 .desc-note pre, .desc-note code {
-    background-color: #edd8d8;
+    background-color: #ffdddd;
 }
 
 .desc-hint {
@@ -174,7 +174,7 @@ code, pre {
 }
 
 .desc-hint pre, .desc-hint code {
-    background-color: #d8d8ed;
+    background-color: #ddddff;
 }
 
 table.enum-values {
