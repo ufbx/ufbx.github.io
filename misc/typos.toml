@@ -16,6 +16,9 @@ lod = "lod"
 # False positive as 'was', used as identifier in ufbx.c
 ws = "ws"
 
+# Metalness: Common PBR term, even if it sounds wonky.
+metalness = "metalness"
+
 [files]
 extend-exclude = [
     "native/window/external/*",
