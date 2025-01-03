@@ -64,7 +64,7 @@ The internal representation of FBX transforms is detailed in [Node Transforms](/
 ## Coordinate spaces
 
 FBX files may be specified in arbitrary coordinate spaces,
-meaining that the forward/right/up axes and the scale of a single unit can vary.
+meaning that the forward/right/up axes and the scale of a single unit can vary.
 To accommodate for this you can read `@(ufbx_scene_settings.)axes` and `@(ufbx_scene_settings.)unit_meters` from `ufbx_scene.settings`.
 
 *ufbx* also allows converting loaded scenes into preferred coordinate spaces by supplying `ufbx_load_opts.target_axes` and `ufbx_load_opts.target_unit_meters`.
