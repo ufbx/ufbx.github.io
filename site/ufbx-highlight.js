@@ -83,6 +83,7 @@ const nonRefIdentifiers = new Set([
     "ufbx_malloc",
     "ufbx_realloc",
     "ufbx_free",
+    "ufbx_os",
     "UFBX_EXTERNAL_MALLOC",
     "UFBX_EXTERNAL_STDIO",
     "UFBX_EXTERNAL_MATH",
@@ -131,6 +132,7 @@ const nonRefIdentifiers = new Set([
     "UFBX_NO_TRIANGULATION",
     "UFBX_NO_INDEX_GENERATION",
     "UFBX_NO_FORMAT_OBJ",
+    "UFBX_ENABLE_ERROR_STACK",
 ])
 
 function tokenize(source) {
