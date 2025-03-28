@@ -19,6 +19,9 @@ ws = "ws"
 # Metalness: Common PBR term, even if it sounds wonky.
 metalness = "metalness"
 
+# False positive in Python
+typ = "typ"
+
 [files]
 extend-exclude = [
     "native/window/external/*",
