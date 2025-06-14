@@ -19,6 +19,9 @@ ws = "ws"
 # Metalness: Common PBR term, even if it sounds wonky.
 metalness = "metalness"
 
+# Typo found in some FBX files
+Vertice = "Vertice"
+
 # False positive in Python
 typ = "typ"
 
