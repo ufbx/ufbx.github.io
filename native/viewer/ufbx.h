@@ -257,7 +257,7 @@ struct ufbx_converter { };
 // -- Version
 
 // Packing/unpacking for `UFBX_HEADER_VERSION` and `ufbx_source_version`.
-#define ufbx_pack_version(major, minor, patch) ((uint32_t)(major)*1000000u + (uint32_t)(minor)*1000u + (uint32_t)(patch))
+#define ufbx_pack_version(major, minor, patch) ((major)*1000000u + (minor)*1000u + (patch))
 #define ufbx_version_major(version) ((uint32_t)(version)/1000000u%1000u)
 #define ufbx_version_minor(version) ((uint32_t)(version)/1000u%1000u)
 #define ufbx_version_patch(version) ((uint32_t)(version)%1000u)
@@ -267,7 +267,7 @@ struct ufbx_converter { };
 // `ufbx_source_version` contains the version of the corresponding source file.
 // HINT: The version can be compared numerically to the result of `ufbx_pack_version()`,
 // for example `#if UFBX_VERSION >= ufbx_pack_version(0, 12, 0)`.
-#define UFBX_HEADER_VERSION ufbx_pack_version(0, 19, 0)
+#define UFBX_HEADER_VERSION ufbx_pack_version(0, 21, 4)
 #define UFBX_VERSION UFBX_HEADER_VERSION
 
 // -- Basic types
@@ -1584,7 +1584,7 @@ struct ufbx_camera {
 	ufbx_vec2 field_of_view_deg;
 
 	// Component-wise `tan(field_of_view_deg)`, also represents the size of the
-	// proection frustum slice at distance of 1.
+	// frustum slice at distance of 1.
 	// Valid if `projection_mode == UFBX_PROJECTION_MODE_PERSPECTIVE`.
 	ufbx_vec2 field_of_view_tan;
 
@@ -5427,7 +5427,7 @@ ufbx_abi ufbx_vec3 ufbx_evaluate_anim_value_vec3_flags(const ufbx_anim_value *an
 // NOTE: If the property is not found it will have the flag `UFBX_PROP_FLAG_NOT_FOUND`.
 ufbx_abi ufbx_prop ufbx_evaluate_prop_len(const ufbx_anim *anim, const ufbx_element *element, const char *name, size_t name_len, double time);
 ufbx_abi ufbx_prop ufbx_evaluate_prop(const ufbx_anim *anim, const ufbx_element *element, const char *name, double time);
-ufbx_abi ufbx_prop ufbx_evaluate_prop_len_flags(const ufbx_anim *anim, const ufbx_element *element, const char *name, size_t name_len, double time, uint32_t flags);
+ufbx_abi ufbx_prop ufbx_evaluate_prop_flags_len(const ufbx_anim *anim, const ufbx_element *element, const char *name, size_t name_len, double time, uint32_t flags);
 ufbx_abi ufbx_prop ufbx_evaluate_prop_flags(const ufbx_anim *anim, const ufbx_element *element, const char *name, double time, uint32_t flags);
 
 // Evaluate all _animated_ properties of `element`.
